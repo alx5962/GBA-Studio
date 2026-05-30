@@ -16,6 +16,8 @@ const KEY_BITS: Record<string, number> = {
   b: 0x20,
   select: 0x40,
   start: 0x80,
+  r: 0x100,
+  l: 0x200,
 } as const;
 
 export const inputDec = (input: string | string[]) => {

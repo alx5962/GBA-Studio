@@ -55,12 +55,13 @@ export const MAX_ONSCREEN = 10;
 export const MAX_PROJECTILES = 5;
 
 // Background Limits
-export const MAX_BACKGROUND_TILES = 16 * 12;
-export const MAX_BACKGROUND_TILES_CGB = 16 * 12 * 2;
+export const MAX_BACKGROUND_TILES = 30 * 20;
+export const MAX_BACKGROUND_TILES_CGB = 30 * 20 * 2;
 
 // Screen
-export const SCREEN_WIDTH = 20;
-export const SCREEN_HEIGHT = 18;
+// GBA display is 240x160 pixels, or 30x20 tiles at 8px.
+export const SCREEN_WIDTH = 30;
+export const SCREEN_HEIGHT = 20;
 export const TILE_SIZE = 8;
 
 export const SCREEN_WIDTH_PX = SCREEN_WIDTH * TILE_SIZE;
@@ -423,6 +424,8 @@ export const defaultProjectSettings: Settings = {
   customControlsRight: ["ArrowRight", "d"],
   customControlsA: ["Alt", "z", "j"],
   customControlsB: ["Control", "k", "x"],
+  customControlsL: ["q"],
+  customControlsR: ["e"],
   customControlsStart: ["Enter"],
   customControlsSelect: ["Shift"],
   debuggerEnabled: false,

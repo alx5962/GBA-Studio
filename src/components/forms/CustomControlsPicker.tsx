@@ -19,6 +19,8 @@ interface CustomControlsPickerProps {
 const buttons = [
   { key: "a", label: "A" },
   { key: "b", label: "B" },
+  { key: "l", label: "L" },
+  { key: "r", label: "R" },
   {
     key: "start",
     label: "Start",
@@ -36,6 +38,8 @@ const keyMap = {
   right: "customControlsRight",
   a: "customControlsA",
   b: "customControlsB",
+  l: "customControlsL",
+  r: "customControlsR",
   start: "customControlsStart",
   select: "customControlsSelect",
 } as const;
@@ -47,6 +51,8 @@ const defaultValues = {
   customControlsRight: ["ArrowRight", "d"],
   customControlsA: ["Alt", "z", "j"],
   customControlsB: ["Control", "k", "x"],
+  customControlsL: ["q"],
+  customControlsR: ["e"],
   customControlsStart: ["Enter"],
   customControlsSelect: ["Shift"],
 } as const;

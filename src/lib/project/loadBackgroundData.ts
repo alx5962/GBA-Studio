@@ -5,7 +5,7 @@ import sizeOf from "image-size";
 import { stat } from "fs";
 import parseAssetPath from "shared/lib/assets/parseAssetPath";
 import { toValidSymbol } from "shared/lib/helpers/symbols";
-import { TILE_SIZE } from "consts";
+import { SCREEN_HEIGHT_PX, SCREEN_WIDTH_PX, TILE_SIZE } from "consts";
 import {
   CompressedBackgroundResource,
   CompressedBackgroundResourceAsset,
@@ -37,8 +37,8 @@ const loadBackgroundData =
       const fileStat = await statAsync(filename, { bigint: true });
       const inode = fileStat.ino.toString();
       const name = file.replace(/.png/i, "");
-      const imageWidth = size?.width ?? 160;
-      const imageHeight = size?.height ?? 144;
+      const imageWidth = size?.width ?? SCREEN_WIDTH_PX;
+      const imageHeight = size?.height ?? SCREEN_HEIGHT_PX;
       const tileWidth = Math.min(Math.floor(imageWidth / TILE_SIZE), 255);
       const tileHeight = Math.min(Math.floor(imageHeight / TILE_SIZE), 255);
       return {

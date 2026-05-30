@@ -6,6 +6,7 @@ import { readFileToIndexedImage } from "lib/tiles/readFileToTiles";
 import { Static, TSchema } from "@sinclair/typebox";
 import { Value } from "@sinclair/typebox/value";
 import { readJson } from "lib/helpers/fs/readJson";
+import { SCREEN_HEIGHT_PX, SCREEN_WIDTH_PX } from "consts";
 
 export type AssetFolder =
   | "backgrounds"
@@ -76,7 +77,11 @@ export const potentialAssetFolders = async (
   }
 
   // Is Background?
-  if (size.width >= 160 && size.height >= 144 && !hasTransparency) {
+  if (
+    size.width >= SCREEN_WIDTH_PX &&
+    size.height >= SCREEN_HEIGHT_PX &&
+    !hasTransparency
+  ) {
     folders.push("backgrounds");
   }
 

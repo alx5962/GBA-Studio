@@ -8,6 +8,7 @@ static actor_t actors[16]; // Maximum 16 actors for now
 static bool engine_running = true;
 
 void gba_studio_proof_scene(void);
+void gba_studio_proof_update(uint16_t keys);
 
 // Default palette (Game Boy-like colors adapted for GBA)
 static const uint16_t default_palette[4] = {
@@ -44,7 +45,8 @@ void engine_init(void) {
 
 void engine_update(void) {
     // Update input
-    get_keys();
+    uint16_t keys = get_keys();
+    gba_studio_proof_update(keys);
     
     // Update actors
     for (int i = 0; i < current_scene.num_actors; i++) {

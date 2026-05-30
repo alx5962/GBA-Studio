@@ -98,6 +98,18 @@ const InputPicker = ({ id, ...props }: InputPickerProps) => {
           title: "B",
         },
         {
+          value: "l",
+          name: "L",
+          label: "L",
+          title: "L",
+        },
+        {
+          value: "r",
+          name: "R",
+          label: "R",
+          title: "R",
+        },
+        {
           value: "start",
           name: "Start",
           label: "Start",

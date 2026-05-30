@@ -8,6 +8,12 @@ import {
   SplashCreateButton,
   SplashEasterEggButton,
   SplashForm,
+  SplashGBADevice,
+  SplashGBADPad,
+  SplashGBAFaceButtons,
+  SplashGBAScreen,
+  SplashGBAShoulder,
+  SplashGBASystemButtons,
   SplashInfoMessage,
   SplashLoading,
   SplashLogo,
@@ -22,7 +28,6 @@ import {
 } from "ui/splash/Splash";
 import GlobalStyle from "ui/globalStyle";
 import ThemeProvider from "ui/theme/ThemeProvider";
-import logoFile from "ui/icons/GBStudioLogo.png";
 import { FormField, FormRow } from "ui/form/layout/FormLayout";
 import { TextField } from "ui/form/TextField";
 import { DotsIcon, LoadingIcon } from "ui/icons/Icons";
@@ -282,8 +287,18 @@ const Splash = () => {
       <GlobalStyle />
       <SplashWindow focus={windowFocus}>
         <SplashSidebar>
-          <SplashLogo>
-            <img src={logoFile} alt="GB Studio" />
+          <SplashLogo aria-label="GBA Studio">
+            <SplashGBADevice>
+              <SplashGBAShoulder $side="left">L</SplashGBAShoulder>
+              <SplashGBAShoulder $side="right">R</SplashGBAShoulder>
+              <SplashGBADPad />
+              <SplashGBAScreen>GBA Studio</SplashGBAScreen>
+              <SplashGBAFaceButtons />
+              <SplashGBASystemButtons>
+                <span />
+                <span />
+              </SplashGBASystemButtons>
+            </SplashGBADevice>
             <SplashEasterEggButton
               onClick={() => setOpenCredits(true)}
               tabIndex={-1}

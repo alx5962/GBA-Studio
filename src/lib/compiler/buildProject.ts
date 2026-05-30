@@ -82,6 +82,8 @@ const buildProject = async (
       right: project.settings.customControlsRight,
       a: project.settings.customControlsA,
       b: project.settings.customControlsB,
+      l: project.settings.customControlsL ?? [],
+      r: project.settings.customControlsR ?? [],
       start: project.settings.customControlsStart,
       select: project.settings.customControlsSelect,
     });

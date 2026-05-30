@@ -719,6 +719,8 @@ export const SettingsResource = Type.Object({
   customControlsRight: Type.Array(Type.String()),
   customControlsA: Type.Array(Type.String()),
   customControlsB: Type.Array(Type.String()),
+  customControlsL: Type.Optional(Type.Array(Type.String())),
+  customControlsR: Type.Optional(Type.Array(Type.String())),
   customControlsStart: Type.Array(Type.String()),
   customControlsSelect: Type.Array(Type.String()),
   debuggerEnabled: Type.Boolean(),

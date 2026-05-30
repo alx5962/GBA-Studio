@@ -1347,6 +1347,24 @@ void gba_studio_proof_scene(void) {
     for (int i = 0; i < 240 * 160; i++) {
         vram[i] = (i % 32) * 1024; // Simple color gradient
     }
+}
+
+void gba_studio_proof_update(uint16_t keys) {
+    uint16_t* vram = MEM_VRAM;
+    uint16_t color = RGB15(6, 10, 16);
+
+    if (keys & KEY_A) color = RGB15(31, 8, 16);
+    if (keys & KEY_B) color = RGB15(8, 18, 31);
+    if (keys & KEY_L) color = RGB15(31, 24, 4);
+    if (keys & KEY_R) color = RGB15(7, 29, 12);
+    if (keys & KEY_START) color = RGB15(31, 31, 31);
+    if (keys & KEY_SELECT) color = RGB15(10, 10, 10);
+
+    for (int y = 132; y < 152; y++) {
+        for (int x = 20; x < 220; x++) {
+            vram[(y * 240) + x] = color;
+        }
+    }
 }`;
 
   // Provide the minimal required game globals files for GBA builds

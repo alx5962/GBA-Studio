@@ -62,6 +62,8 @@
     "customControlsRight": ["ArrowRight", "d"],
     "customControlsA": ["Alt", "z", "j"],
     "customControlsB": ["Control", "k", "x"],
+    "customControlsL": ["q"],
+    "customControlsR": ["e"],
     "customControlsStart": ["Enter"],
     "customControlsSelect": ["Shift"],
     "defaultPlayerSprites": {

@@ -65,21 +65,148 @@ export const SplashLogo = styled.div`
   margin: 35px 20px 0;
   transition: transform 0.2s ease-in-out;
 
-  img {
-    width: 100%;
-  }
-
   &:hover {
     transform: scale(1.05);
   }
 `;
 
+export const SplashGBADevice = styled.div`
+  position: relative;
+  height: 92px;
+  border-radius: 24px 24px 30px 30px;
+  background: linear-gradient(180deg, #eef1f8 0%, #b9c1d5 100%);
+  border: 2px solid #7c8498;
+  box-shadow:
+    inset 0 3px 0 rgba(255, 255, 255, 0.75),
+    inset 0 -4px 0 rgba(0, 0, 0, 0.15),
+    0 8px 18px rgba(0, 0, 0, 0.2);
+`;
+
+export const SplashGBAShoulder = styled.div<{ $side: "left" | "right" }>`
+  position: absolute;
+  top: -10px;
+  ${(props) => props.$side}: 18px;
+  width: 38px;
+  height: 14px;
+  border-radius: 10px 10px 4px 4px;
+  background: #9aa3b8;
+  border: 2px solid #737b8c;
+  color: #4a5262;
+  font-size: 8px;
+  font-weight: bold;
+  line-height: 12px;
+  text-align: center;
+`;
+
+export const SplashGBAScreen = styled.div`
+  position: absolute;
+  left: 43px;
+  top: 18px;
+  width: 76px;
+  height: 50px;
+  border-radius: 8px;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.18), transparent 40%),
+    #222b35;
+  border: 6px solid #555d6e;
+  color: #98f59a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: bold;
+  text-align: center;
+`;
+
+export const SplashGBADPad = styled.div`
+  position: absolute;
+  left: 14px;
+  top: 36px;
+  width: 31px;
+  height: 31px;
+
+  &:before,
+  &:after {
+    content: "";
+    position: absolute;
+    background: #303745;
+    border-radius: 4px;
+    box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.3);
+  }
+
+  &:before {
+    left: 11px;
+    top: 0;
+    width: 9px;
+    height: 31px;
+  }
+
+  &:after {
+    left: 0;
+    top: 11px;
+    width: 31px;
+    height: 9px;
+  }
+`;
+
+export const SplashGBAFaceButtons = styled.div`
+  position: absolute;
+  right: 12px;
+  top: 33px;
+  width: 42px;
+  height: 28px;
+
+  &:before,
+  &:after {
+    position: absolute;
+    width: 17px;
+    height: 17px;
+    border-radius: 50%;
+    background: #b0234b;
+    color: #fff;
+    font-size: 8px;
+    font-weight: bold;
+    line-height: 17px;
+    text-align: center;
+    box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.25);
+  }
+
+  &:before {
+    content: "B";
+    left: 0;
+    top: 8px;
+  }
+
+  &:after {
+    content: "A";
+    right: 0;
+    top: 0;
+  }
+`;
+
+export const SplashGBASystemButtons = styled.div`
+  position: absolute;
+  left: 61px;
+  bottom: 8px;
+  display: flex;
+  gap: 8px;
+
+  span {
+    display: block;
+    width: 17px;
+    height: 4px;
+    border-radius: 4px;
+    background: #5e6678;
+    transform: rotate(-12deg);
+  }
+`;
+
 export const SplashEasterEggButton = styled.button`
   position: absolute;
-  left: 18px;
-  top: 52px;
-  width: 20px;
-  height: 20px;
+  left: 20px;
+  top: 42px;
+  width: 28px;
+  height: 28px;
   border-radius: 20px;
   background-color: transparent;
   border: 0;

@@ -11,7 +11,12 @@ import {
 } from "shared/lib/tiles/tileData";
 import { assetFilename } from "shared/lib/helpers/assets";
 import { readFileToTilesDataArray } from "lib/tiles/readFileToTiles";
-import { MAX_BACKGROUND_TILES, MAX_BACKGROUND_TILES_CGB } from "consts";
+import {
+  MAX_BACKGROUND_TILES,
+  MAX_BACKGROUND_TILES_CGB,
+  SCREEN_HEIGHT_PX,
+  SCREEN_WIDTH_PX,
+} from "consts";
 
 const MAX_IMAGE_WIDTH = 2040;
 const MAX_IMAGE_HEIGHT = 2040;
@@ -78,7 +83,10 @@ export const getBackgroundInfo = async (
     };
   }
 
-  if (background.imageWidth < 160 || background.imageHeight < 144) {
+  if (
+    background.imageWidth < SCREEN_WIDTH_PX ||
+    background.imageHeight < SCREEN_HEIGHT_PX
+  ) {
     warnings.push(l10n("WARNING_BACKGROUND_TOO_SMALL"));
   }
   if (background.imageWidth > MAX_IMAGE_WIDTH) {
@@ -133,7 +141,8 @@ export const getBackgroundInfo = async (
 
   if (
     is360 &&
-    (background.imageWidth !== 160 || background.imageHeight !== 144)
+    (background.imageWidth !== SCREEN_WIDTH_PX ||
+      background.imageHeight !== SCREEN_HEIGHT_PX)
   ) {
     warnings.push(
       l10n("WARNING_LOGO_WRONG_SIZE", {

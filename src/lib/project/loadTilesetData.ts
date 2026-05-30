@@ -5,7 +5,7 @@ import sizeOf from "image-size";
 import { stat } from "fs";
 import parseAssetPath from "shared/lib/assets/parseAssetPath";
 import { toValidSymbol } from "shared/lib/helpers/symbols";
-import { TILE_SIZE } from "consts";
+import { SCREEN_HEIGHT_PX, SCREEN_WIDTH_PX, TILE_SIZE } from "consts";
 import {
   TilesetResource,
   TilesetResourceAsset,
@@ -28,8 +28,8 @@ const loadTilesetData =
       const fileStat = await statAsync(filename, { bigint: true });
       const inode = fileStat.ino.toString();
       const name = file.replace(/.png/i, "");
-      const width = size?.width ?? 160;
-      const height = size?.height ?? 144;
+      const width = size?.width ?? SCREEN_WIDTH_PX;
+      const height = size?.height ?? SCREEN_HEIGHT_PX;
       return {
         _resourceType: "tileset",
         id: uuid(),

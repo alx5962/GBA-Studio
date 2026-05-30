@@ -121,8 +121,8 @@ describe("compileScrollBounds", () => {
     expect(result).toEqual({
       left: 16,
       top: 24,
-      right: 56,
-      bottom: 40,
+      right: Math.max(16, (2 + 25 - SCREEN_WIDTH) * 8),
+      bottom: Math.max(24, (3 + 20 - SCREEN_HEIGHT) * 8),
     });
   });
 
@@ -157,8 +157,8 @@ describe("compileScrollBounds", () => {
     expect(result).toEqual({
       left: 40,
       top: 80,
-      right: 1880,
-      bottom: 1936,
+      right: (5 + 250 - SCREEN_WIDTH) * 8,
+      bottom: (10 + 250 - SCREEN_HEIGHT) * 8,
     });
   });
 
