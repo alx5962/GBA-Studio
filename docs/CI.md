@@ -18,6 +18,8 @@ The older `.github/workflows/main.yml` still handles broader Electron packaging.
 
 ## Local Equivalent
 
+This is the local equivalent of the repository build workflow:
+
 ```bash
 corepack enable
 yarn install --immutable
@@ -25,6 +27,15 @@ npm run fetch-deps
 npm test
 npm run build:gba -- test/data/projects/RunProject/RunProject.gbsproj out/RunProject.gba
 npm run test:emu -- out/RunProject.gba
+```
+
+On Windows with a default devkitPro install, set the current shell before running the ROM build:
+
+```powershell
+$env:DEVKITPRO = "C:\devkitPro"
+$env:DEVKITARM = "C:\devkitPro\devkitARM"
+$env:Path = "$env:DEVKITARM\bin;$env:Path"
+arm-none-eabi-gcc --version
 ```
 
 ## Release

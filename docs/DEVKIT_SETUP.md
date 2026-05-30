@@ -2,8 +2,8 @@
 
 GBA Studio uses devkitARM to compile and link `.gba` ROMs. The build expects:
 
-- `DEVKITPRO` set to the devkitPro root, usually `/opt/devkitpro` on Linux.
-- `DEVKITARM` set to the devkitARM root, usually `$DEVKITPRO/devkitARM`.
+- `DEVKITPRO` set to the devkitPro root, usually `/opt/devkitpro` on Linux or `C:\devkitPro` on Windows.
+- `DEVKITARM` set to the devkitARM root, usually `$DEVKITPRO/devkitARM` or `C:\devkitPro\devkitARM`.
 - `arm-none-eabi-gcc` available at `$DEVKITARM/bin/arm-none-eabi-gcc`.
 
 ## Linux (Ubuntu)
@@ -47,6 +47,24 @@ arm-none-eabi-gcc --version
 ```
 
 PowerShell builds also work when the equivalent Windows environment variables are set.
+
+For a default `C:\devkitPro` install in PowerShell:
+
+```powershell
+$env:DEVKITPRO = "C:\devkitPro"
+$env:DEVKITARM = "C:\devkitPro\devkitARM"
+$env:Path = "$env:DEVKITARM\bin;$env:Path"
+arm-none-eabi-gcc --version
+```
+
+To persist these for new PowerShell sessions:
+
+```powershell
+[Environment]::SetEnvironmentVariable("DEVKITPRO", "C:\devkitPro", "User")
+[Environment]::SetEnvironmentVariable("DEVKITARM", "C:\devkitPro\devkitARM", "User")
+```
+
+Restart the terminal after changing persisted environment variables.
 
 ## Verify
 

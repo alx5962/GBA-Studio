@@ -2,6 +2,12 @@
 
 This guide covers running GBA Studio from source, opening the GUI, and building a sample `.gba` ROM with the CLI.
 
+The repository root for commands is the nested `gba-studio` folder. For example, on the current Windows checkout:
+
+```powershell
+Set-Location "C:\Users\Eoin\git\GBAStudio\gba-studio"
+```
+
 ## Prerequisites
 
 - Node.js matching `.nvmrc`.
@@ -23,6 +29,15 @@ On Windows, the helper script can do the same setup:
 
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File tools\bootstrap.ps1
+```
+
+If devkitPro is installed to the default Windows path, verify it before building:
+
+```powershell
+$env:DEVKITPRO = "C:\devkitPro"
+$env:DEVKITARM = "C:\devkitPro\devkitARM"
+$env:Path = "$env:DEVKITARM\bin;$env:Path"
+arm-none-eabi-gcc --version
 ```
 
 On macOS or Linux:
@@ -58,6 +73,8 @@ The command builds the CLI bundle first, then calls `make:rom`.
 ```bash
 npm test
 npm run make:cli
+npm run build:gba -- test/data/projects/RunProject/RunProject.gbsproj out/RunProject.gba
+npm run test:emu -- out/RunProject.gba
 ```
 
 If the native link step fails, confirm `DEVKITPRO`, `DEVKITARM`, and `arm-none-eabi-gcc` are available as described in `docs/DEVKIT_SETUP.md`.

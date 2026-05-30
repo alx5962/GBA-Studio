@@ -5,23 +5,37 @@
 
 GBA Studio is an experimental fork of GB Studio tailored for Game Boy Advance game development. Like the original, it provides a visual retro game editor for Mac, Linux, and Windows.
 
-## Maintainers Wanted
+## Project Status
 
-This project is a prototype. I'm not a JS/TS expert, nor a GBA ROM expert. If you can take over where I've left off, please let me know.
+This project is a prototype. The immediate goal is to make the inherited GB Studio authoring workflow produce reproducible `.gba` ROM builds locally and in CI. The editor can launch and the CLI/build path is being wired up, but full GB Studio feature parity and complete GBA hardware support are not finished yet.
 
-## Features
+## Aims
 
-- Creates GBA projects instead of GB projects
-- Exports .gba ROM files that run on Game Boy Advance
-- Uses ARM-based compilation for enhanced performance
-- Supports higher resolution graphics and more colors
+- Keep GB Studio's approachable visual workflow while targeting Game Boy Advance ROM output.
+- Make the GBA build chain explicit, repeatable, and testable on developer machines and GitHub Actions.
+- Support GBA-sized games deliberately, including the 240x160 display, 30x20 tile viewport, A/B/Start/Select/D-pad plus L/R input, and GBA-aware video, sprite, palette, audio, save, and timing constraints.
+- Add sample projects and emulator smoke tests for each supported GBA feature.
+- Keep the project scriptable through CLI workflows so it can support automation and external tooling.
 
-It's a fully functional GB Studio look-alike that:
+## Related Work
 
-- Opens existing GB Studio projects and converts them to GBA format
-- Provides the same visual editor interface
-- Exports working .gba ROM files
-- Runs the compiled games on GBA emulators or real hardware
+This fork sits alongside Eoin Jordan's GB Studio MCP/agent work: [gb-studio-agent](https://github.com/eoinjordan/gb-studio-agent). That project explores MCP-driven automation for GB Studio project creation, scenes, actors, assets, validation, and end-to-end workflows. GBA Studio should keep its CLI and project format automation-friendly so that MCP tools can generate, validate, and build projects without depending on manual editor steps.
+
+## Current Capabilities
+
+- Launches the inherited Electron editor.
+- Builds the CLI bundle with `npm run make:cli`.
+- Provides `npm run build:gba -- <project.gbsproj> <out.gba>` as the standard sample ROM build command.
+- Detects official devkitPro/devkitARM installs instead of relying on stale bundled compiler paths.
+- Includes a sample project fixture at `test/data/projects/RunProject/RunProject.gbsproj`.
+- Includes CI workflow scaffolding for dependency install, tests, CLI build, devkitPro setup, sample ROM build, emulator smoke test, and artifacts.
+
+## Not Finished Yet
+
+- A local `.gba` build must still be proven on machines that have official devkitPro/devkitARM installed.
+- Parts of the editor and asset pipeline still inherit Game Boy screen, palette, sprite, and memory assumptions.
+- GBA-specific hardware support, including L/R inputs and broader video/audio/save behavior, is still under active development.
+- Emulator and hardware validation need to expand as features are added.
 
 For more information on the upstream project see the original [GB Studio](https://www.gbstudio.dev) site.
 
@@ -129,6 +143,7 @@ Pull the latest code and run `make:cli` again.
 See the `docs/` folder for repository-specific guides:
 
 - `docs/GETTING_STARTED.md` - quickstart and run instructions
+- `docs/PROJECT_AIMS.md` - project aims, current status, and build workflow
 - `docs/DEVKIT_SETUP.md` - devkitPro installation and verification
 - `docs/CLI_USAGE.md` - CLI commands and examples
 - `docs/EMULATOR.md` - emulator smoke tests and CI usage
