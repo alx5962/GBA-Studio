@@ -1332,26 +1332,26 @@ const compileGBA = async (
   }
 
   progress("Compiling for GBA...");
+  warnings("GBA proof build: GB Studio VM scripts are currently skipped.");
 
-  // Create simplified main.c for GBA
-  output["main.c"] = `#include "gba_system.h"
-#include "engine.h"
+  // Create a simplified generated proof scene for GBA.
+  // This deliberately avoids emitting GB VM / GBDK assembly for devkitARM.
+  output["gba_proof_scene.c"] = `#include <stdint.h>
+#include "gba_system.h"
 
-int main() {
-    gba_init();
-    
-    // Basic test pattern
-    u16* vram = (u16*)0x06000000;
+void gba_studio_proof_scene(void) {
+    set_mode(MODE_3);
+    REG_DISPCNT = MODE_3 | BG2_ENABLE;
+
+    uint16_t* vram = MEM_VRAM;
     for (int i = 0; i < 240 * 160; i++) {
         vram[i] = (i % 32) * 1024; // Simple color gradient
     }
-    
-    while (1) {
-        gba_wait_vblank();
-    }
-    
-    return 0;
 }`;
+
+  // Provide the minimal required game globals files for GBA builds
+  output["game_globals.i"] = compileGameGlobalsInclude({}, [], engineSchema.consts, []);
+  output["game_globals.h"] = compileGameGlobalsHeader({}, [], engineSchema.consts, []);
 
   // Add basic scene data
   if (rawProjectData.scenes.length > 0) {

@@ -80,6 +80,8 @@ export const getBuildCommands = async (
           "-Wextra",
           "-O2",
           "-fomit-frame-pointer",
+          "-D__TARGET_ap",
+          "-D__PORT_z80",
           "-Iinclude",
           "-c"
         ];
@@ -192,14 +194,17 @@ export const buildLinkFlags = (
       
   if (targetPlatform === "gba") {
     // GBA linking flags
+    const elfFilename = romFilename.replace(/\.gba$/i, ".elf");
     return [
       "-mthumb",
       "-mthumb-interwork",
       "-mcpu=arm7tdmi",
-      "-T", "gba.ld",
-      "-o", `build/rom/${romFilename}`,
+      "-T",
+      "gba.ld",
+      "-o",
+      `build/rom/${elfFilename}`,
       `-Wl,-Map,build/rom/game.map`,
-      linkFile
+      `@${linkFile}`,
     ];
   } else {
     // Original GB linking flags

@@ -72,6 +72,7 @@ const buildProject = async ({
     debugEnabled,
     progress,
     warnings,
+    buildType,
   });
 
   await ejectBuild({

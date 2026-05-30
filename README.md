@@ -144,6 +144,7 @@ See the `docs/` folder for repository-specific guides:
 
 - `docs/GETTING_STARTED.md` - quickstart and run instructions
 - `docs/PROJECT_AIMS.md` - project aims, current status, and build workflow
+- `docs/GBA_SCRIPT_BACKEND.md` - current proof-build behavior and real backend plan
 - `docs/DEVKIT_SETUP.md` - devkitPro installation and verification
 - `docs/CLI_USAGE.md` - CLI commands and examples
 - `docs/EMULATOR.md` - emulator smoke tests and CI usage

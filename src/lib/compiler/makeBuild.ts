@@ -262,6 +262,30 @@ const makeBuild = async ({
   await linkCompleted;
   childSet.delete(child);
 
+  if (isGBA) {
+    const devkitPaths = getDevKitProPaths();
+    const objcopyCommand = Path.join(
+      devkitPaths.devkitArm,
+      "bin",
+      process.platform === "win32"
+        ? "arm-none-eabi-objcopy.exe"
+        : "arm-none-eabi-objcopy",
+    );
+    const elfFilename = romFilename.replace(/\.gba$/i, ".elf");
+    const { completed: objcopyCompleted, child: objcopyChild } = spawn(
+      objcopyCommand,
+      ["-O", "binary", `build/rom/${elfFilename}`, `build/rom/${romFilename}`],
+      options,
+      {
+        onLog: (msg) => progress(msg),
+        onError: (msg) => warnings(msg),
+      },
+    );
+    childSet.add(objcopyChild);
+    await objcopyCompleted;
+    childSet.delete(objcopyChild);
+  }
+
   // Export game globals to ROM directory
   const gameGlobalsPath = `${buildRoot}/include/data/game_globals.i`;
   const gameGlobalsExportPath = `${buildRoot}/build/rom/globals.i`;

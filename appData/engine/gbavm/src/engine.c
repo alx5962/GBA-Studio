@@ -1,10 +1,13 @@
 #include "gba_types.h"
 #include "gba_system.h"
+#include <stddef.h>
 
 // Engine state
 static scene_t current_scene;
 static actor_t actors[16]; // Maximum 16 actors for now
 static bool engine_running = true;
+
+void gba_studio_proof_scene(void);
 
 // Default palette (Game Boy-like colors adapted for GBA)
 static const uint16_t default_palette[4] = {
@@ -17,6 +20,7 @@ static const uint16_t default_palette[4] = {
 void engine_init(void) {
     // Initialize GBA hardware
     gba_init();
+    gba_studio_proof_scene();
     
     // Load default palette
     load_palette(default_palette, 0, 4);

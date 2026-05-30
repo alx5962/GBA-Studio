@@ -23,12 +23,18 @@ type CommandOptions = {
   verbose?: boolean;
 };
 
-const buildTypeForCommand = (command: Command): BuildType => {
+const buildTypeForCommand = (
+  command: Command,
+  destination: string,
+): BuildType => {
   if (command === "make:web") {
     return "web";
   }
   if (command === "make:pocket") {
     return "pocket";
+  }
+  if (command === "make:rom") {
+    return destination.toLowerCase().endsWith(".gba") ? "gba" : "rom";
   }
   return "rom";
 };
@@ -45,7 +51,7 @@ const main = async (
   const projectRoot = Path.resolve(Path.dirname(projectFile));
   const loadedProject = await loadProject(projectFile);
   const project = decompressProjectResources(loadedProject.resources);
-  const buildType = buildTypeForCommand(command);
+  const buildType = buildTypeForCommand(command, destination);
 
   // Load engine schema
   const engineSchema = await loadEngineSchema(projectRoot);
