@@ -57,6 +57,8 @@ Requirements
 
 ### Build and run from source
 
+<img width="712" height="765" alt="image" src="https://github.com/user-attachments/assets/1b1ef475-520f-400e-8d5f-39f16b95a526" />
+
 Windows (PowerShell):
 
 ```powershell
