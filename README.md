@@ -7,7 +7,7 @@ GBA Studio is an experimental fork of GB Studio tailored for Game Boy Advance ga
 
 ## Project Status
 
-This project is a prototype. The immediate goal is to make the inherited GB Studio authoring workflow produce reproducible `.gba` ROM builds locally and in CI. The editor can launch and the CLI/build path is being wired up, but full GB Studio feature parity and complete GBA hardware support are not finished yet.
+This project is a prototype, but the editor UI is running and the GBA ROM build path is wired up. The immediate goal is to make the inherited GB Studio authoring workflow produce reproducible `.gba` ROM builds locally and in CI. The editor can launch, sample projects can be built to `.gba`, and Electron packaging scripts are available for installers, though full GB Studio feature parity and complete GBA hardware support are not finished yet.
 
 ## Aims
 
@@ -23,12 +23,13 @@ This fork sits alongside Eoin Jordan's GB Studio MCP/agent work: [gb-studio-agen
 
 ## Current Capabilities
 
-- Launches the inherited Electron editor.
+- Launches the inherited Electron editor UI and supports the editor workflow.
 - Builds the CLI bundle with `npm run make:cli`.
 - Provides `npm run build:gba -- <project.gbsproj> <out.gba>` as the standard sample ROM build command.
 - Detects official devkitPro/devkitARM installs instead of relying on stale bundled compiler paths.
 - Includes a sample project fixture at `test/data/projects/RunProject/RunProject.gbsproj`.
-- Includes CI workflow scaffolding for dependency install, tests, CLI build, devkitPro setup, sample ROM build, emulator smoke test, and artifacts.
+- Includes CI workflow scaffolding for dependency install, tests, CLI build, devkitPro setup, sample ROM build, emulator smoke test, and generated artifacts.
+- Supports local installer/package generation via Electron Forge scripts such as `npm run make:win`, `npm run make:linux`, and `npm run make:mac`.
 
 ## Not Finished Yet
 
@@ -43,41 +44,40 @@ For more information on the upstream project see the original [GB Studio](https:
 
 GBA Studio consists of an [Electron](https://electronjs.org/) game builder application and a C based game engine using [GBDK](http://gbdk.sourceforge.net/).
 
-## Installation / From source
+## Installation
 
-Download a release for your operating system from this repository's GitHub Releases page, or run from source:
+Download a release installer from the repo's GitHub Releases page, or build from source.
 
-Prerequisites
+Requirements
 
-- Node.js (LTS recommended)
+- Node.js 20 or newer
 - Git
-- devkitPro/devkitARM if you plan to build `.gba` files (see `docs/DEVKIT_SETUP.md`)
+- devkitPro/devkitARM if you want to build `.gba` ROMs
+- Optional: mGBA for local emulator smoke tests
 
-Quick start (use the bootstrap script to enable Corepack/Yarn or fall back to `npm`):
+### Build and run from source
 
-```bash
+Windows (PowerShell):
+
+```powershell
 cd gba-studio
-# Linux / macOS
-bash tools/bootstrap.sh
-# Windows (PowerShell)
 powershell -NoProfile -ExecutionPolicy Bypass -File tools\bootstrap.ps1
-```
-
-If you prefer `npm` instead of Yarn/Corepack:
-
-```bash
 npm ci
 npm run fetch-deps
 npm start
 ```
 
-After checking out a new version run:
+Linux / macOS:
 
 ```bash
+cd gba-studio
+bash tools/bootstrap.sh
+npm ci
 npm run fetch-deps
+npm start
 ```
 
-If you use `nvm` you can switch to the repository Node version with `.nvmrc`:
+If you use `nvm`, run:
 
 ```bash
 nvm use
@@ -151,21 +151,20 @@ See the `docs/` folder for repository-specific guides:
 - `docs/CI.md` - CI notes and recommendations
 - `docs/CONTRIBUTING.md` - contributing and development workflow
 
-## Prebuilt Packages
+## Prebuilt packages
 
-Prebuilt installers are produced by the project's CI when a Git tag is pushed. Download installers from the GitHub Release created for the tag or from the workflow artifacts.
+When a tag is pushed, the release workflow builds the sample `.gba` ROM and publishes application installers for supported platforms.
 
-### Local Package Builds
+### Local package builds
 
-You can build platform installers locally using Electron Forge. The project includes convenience npm scripts for each platform:
+Build installers locally with Electron Forge.
 
 Windows:
 
 ```powershell
-Set-Location 'c:\Users\Eoin\git\GBAStudio\gba-studio'
+cd gba-studio
 npm ci
 npm run make:win
-# Output installers will be in the out/make/ folder
 Get-ChildItem -Path .\out\make -Recurse
 ```
 
@@ -187,10 +186,17 @@ npm run make:mac
 ls -la out/make
 ```
 
+The generated installers are written to `gba-studio/out/make`.
+
+### Attach local packages to a release
+
+If you build installers locally and want them on a GitHub Release, upload the files from `gba-studio/out/make` when you create or update the tag release.
+
 Notes
 
-- Packaging may require additional platform tools (codesign on macOS, signing/certificate tooling on Windows). CI will produce unsigned packages by default unless signing secrets are provided.
-- If a local package build fails, check the `out/` and `out/make/` directories for logs and artifacts and consult `docs/CI.md` for troubleshooting.
+- Windows packaging may require Wine and Mono when built from Linux.
+- macOS packaging may require a macOS runner or local macOS machine if you want signed `.app`/`.zip` bundles.
+- If a local package build fails, inspect `gba-studio/out/make` and `gba-studio/out` for logs.
 
 [GB Studio Documentation](https://www.gbstudio.dev/docs)
 

@@ -199,11 +199,21 @@ const isDevMode = !!process.execPath.match(/[\\/]electron/);
 
 const validProjectExt = [".json", ".gbsproj"];
 
-if (isDevMode) {
-  app.whenReady().then(() => {
-    installExtension([REACT_DEVELOPER_TOOLS, REDUX_DEVTOOLS])
-      .then((name) => console.log(`Added Extension:  ${name}`))
-      .catch((err) => console.log("An error occurred: ", err));
+const shouldInstallDevTools =
+  isDevMode &&
+  (process.env.GBA_STUDIO_INSTALL_DEVTOOLS ?? "false").toLowerCase() === "true";
+
+if (shouldInstallDevTools) {
+  app.whenReady().then(async () => {
+    try {
+      const name = await installExtension([
+        REACT_DEVELOPER_TOOLS,
+        REDUX_DEVTOOLS,
+      ]);
+      console.log(`Added Extension:  ${name}`);
+    } catch (err) {
+      console.warn("DevTools extension install failed:", err);
+    }
   });
 }
 
