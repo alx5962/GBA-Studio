@@ -87,6 +87,30 @@ If you use `nvm`, run:
 nvm use
 ```
 
+### Starter project
+
+A ready-to-run starter project is included at:
+
+- `examples/starter-project/project.gbsproj`
+
+Build a ROM from the starter project:
+
+```bash
+npm run make:cli
+node out/cli/gb-studio-cli.js make:rom examples/starter-project/project.gbsproj build/starter.gba
+```
+
+Export editable build data from the starter project:
+
+```bash
+node out/cli/gb-studio-cli.js export -d examples/starter-project/project.gbsproj build/starter-data
+```
+
+Open the starter project in the app:
+
+1. Run `npm start`
+2. In the editor, open `examples/starter-project/project.gbsproj`
+
 ## GBA Studio CLI
 
 Install GBA Studio from source as above then:
