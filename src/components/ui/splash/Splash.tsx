@@ -72,14 +72,15 @@ export const SplashLogo = styled.div`
 
 export const SplashGBADevice = styled.div`
   position: relative;
-  height: 92px;
-  border-radius: 24px 24px 30px 30px;
-  background: linear-gradient(180deg, #eef1f8 0%, #b9c1d5 100%);
-  border: 2px solid #7c8498;
+  height: 94px;
+  /* Rounded "grip" ends evoke the landscape AGB-001 shape */
+  border-radius: 36px 36px 48px 48px;
+  background: linear-gradient(165deg, #8b7fe6 0%, #6a5cc4 45%, #4f43a0 100%);
+  border: 2px solid #3a3184;
   box-shadow:
-    inset 0 3px 0 rgba(255, 255, 255, 0.75),
-    inset 0 -4px 0 rgba(0, 0, 0, 0.15),
-    0 8px 18px rgba(0, 0, 0, 0.2);
+    inset 0 3px 0 rgba(255, 255, 255, 0.4),
+    inset 0 -5px 0 rgba(0, 0, 0, 0.22),
+    0 8px 18px rgba(0, 0, 0, 0.25);
 `;
 
 export const SplashGBAShoulder = styled.div<{ $side: "left" | "right" }>`
@@ -89,9 +90,9 @@ export const SplashGBAShoulder = styled.div<{ $side: "left" | "right" }>`
   width: 38px;
   height: 14px;
   border-radius: 10px 10px 4px 4px;
-  background: #9aa3b8;
-  border: 2px solid #737b8c;
-  color: #4a5262;
+  background: #6a5cc4;
+  border: 2px solid #4f43a0;
+  color: #e8e4ff;
   font-size: 8px;
   font-weight: bold;
   line-height: 12px;
@@ -100,81 +101,86 @@ export const SplashGBAShoulder = styled.div<{ $side: "left" | "right" }>`
 
 export const SplashGBAScreen = styled.div`
   position: absolute;
-  left: 43px;
-  top: 18px;
-  width: 76px;
-  height: 50px;
-  border-radius: 8px;
+  left: 47px;
+  top: 20px;
+  width: 56px;
+  height: 38px;
+  border-radius: 6px;
   background:
-    linear-gradient(135deg, rgba(255, 255, 255, 0.18), transparent 40%),
-    #222b35;
-  border: 6px solid #555d6e;
-  color: #98f59a;
+    linear-gradient(135deg, rgba(255, 255, 255, 0.22), transparent 45%),
+    #11331f;
+  border: 5px solid #2a2a33;
+  box-shadow:
+    0 0 0 2px rgba(0, 0, 0, 0.3),
+    inset 0 0 8px rgba(0, 0, 0, 0.7);
+  color: #9bf0a0;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 11px;
+  padding: 0 3px;
+  font-size: 8px;
+  line-height: 10px;
   font-weight: bold;
   text-align: center;
 `;
 
 export const SplashGBADPad = styled.div`
   position: absolute;
-  left: 14px;
-  top: 36px;
-  width: 31px;
-  height: 31px;
+  left: 12px;
+  top: 34px;
+  width: 30px;
+  height: 30px;
 
   &:before,
   &:after {
     content: "";
     position: absolute;
-    background: #303745;
+    background: #2b3038;
     border-radius: 4px;
-    box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.3);
+    box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.35);
   }
 
   &:before {
     left: 11px;
     top: 0;
-    width: 9px;
-    height: 31px;
+    width: 8px;
+    height: 30px;
   }
 
   &:after {
     left: 0;
     top: 11px;
-    width: 31px;
-    height: 9px;
+    width: 30px;
+    height: 8px;
   }
 `;
 
 export const SplashGBAFaceButtons = styled.div`
   position: absolute;
-  right: 12px;
-  top: 33px;
-  width: 42px;
-  height: 28px;
+  right: 8px;
+  top: 31px;
+  width: 36px;
+  height: 26px;
 
   &:before,
   &:after {
     position: absolute;
-    width: 17px;
-    height: 17px;
+    width: 15px;
+    height: 15px;
     border-radius: 50%;
-    background: #b0234b;
-    color: #fff;
-    font-size: 8px;
+    background: #4a4470;
+    color: #d8d4f0;
+    font-size: 7px;
     font-weight: bold;
-    line-height: 17px;
+    line-height: 15px;
     text-align: center;
-    box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.25);
+    box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.3);
   }
 
   &:before {
     content: "B";
     left: 0;
-    top: 8px;
+    top: 9px;
   }
 
   &:after {
@@ -186,17 +192,17 @@ export const SplashGBAFaceButtons = styled.div`
 
 export const SplashGBASystemButtons = styled.div`
   position: absolute;
-  left: 61px;
-  bottom: 8px;
+  left: 60px;
+  bottom: 7px;
   display: flex;
-  gap: 8px;
+  gap: 7px;
 
   span {
     display: block;
-    width: 17px;
+    width: 16px;
     height: 4px;
     border-radius: 4px;
-    background: #5e6678;
+    background: #4f43a0;
     transform: rotate(-12deg);
   }
 `;
