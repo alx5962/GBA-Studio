@@ -5,9 +5,9 @@
   "symbol": "bg_titlescreen",
   "tileColors": "",
   "filename": "titlescreen.png",
-  "width": 20,
-  "height": 18,
-  "imageWidth": 160,
-  "imageHeight": 144,
+  "width": 30,
+  "height": 20,
+  "imageWidth": 240,
+  "imageHeight": 160,
   "autoColor": false
 }
