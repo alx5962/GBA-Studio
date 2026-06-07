@@ -55,10 +55,17 @@ module.exports = async () => {
       afterCopy: ["./src/lib/forge/hooks/after-copy"],
       asar: true,
       appBundleId: "dev.gbstudio.gbstudio",
-      osxSign: {
-        "hardened-runtime": true,
-        entitlements: "./entitlements.plist",
-      },
+      // Only code-sign macOS builds when Apple credentials are available.
+      // Without them the build is produced unsigned (signing can be added
+      // later by providing APPLE_ID / signing secrets in CI).
+      ...(process.env.APPLE_ID
+        ? {
+            osxSign: {
+              "hardened-runtime": true,
+              entitlements: "./entitlements.plist",
+            },
+          }
+        : {}),
     },
     hooks: {
       postPackage: require("./src/lib/forge/hooks/notarize"),
