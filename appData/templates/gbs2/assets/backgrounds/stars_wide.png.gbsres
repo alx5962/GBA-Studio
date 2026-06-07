@@ -6,8 +6,8 @@
   "tileColors": "",
   "filename": "stars_wide.png",
   "width": 255,
-  "height": 18,
+  "height": 20,
   "imageWidth": 2040,
-  "imageHeight": 144,
+  "imageHeight": 160,
   "autoColor": false
 }
