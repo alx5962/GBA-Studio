@@ -7,7 +7,7 @@ GBA Studio is an experimental fork of GB Studio tailored for Game Boy Advance ga
 
 ## Project Status
 
-![Local Build Screenshot](screenshots/local_build.png)
+<img width="673" height="480" alt="image" src="https://github.com/user-attachments/assets/3e5c7afd-c222-48e3-93ac-08c4681f2a43" />
 
 This project is a prototype, but the editor UI is running and the GBA ROM build path is wired up. The immediate goal is to make the inherited GB Studio authoring workflow produce reproducible `.gba` ROM builds locally and in CI. The editor can launch, sample projects can be built to `.gba`, and Electron packaging scripts are available for installers, though full GB Studio feature parity and complete GBA hardware support are not finished yet.
 
