@@ -32,7 +32,7 @@ jobs:
 
       - name: Test
         run: |
-          yarn test
+          npm test
 
   deploy:
     needs: test
@@ -108,11 +108,11 @@ jobs:
           APPLE_ID_PASSWORD: ${{ secrets.MAC_NOTARIZE_PWD }}
           APPLE_TEAM_ID: ${{ secrets.MAC_NOTARIZE_TEAM }}
         run: |
-          yarn fetch-deps -- --arch=darwin-arm64
+          npm run fetch-deps -- --arch=darwin-arm64
           export APPLE_ID=${APPLE_ID}
           export APPLE_ID_PASSWORD=${APPLE_ID_PASSWORD}
           export APPLE_TEAM_ID=${APPLE_TEAM_ID}        
-          yarn make:mac
+          npm run make:mac
           mkdir -p ./out/keep
           mv ./out/make/zip/darwin/arm64/*.zip ./out/keep/gb-studio-${GITHUB_REF##*/}-darwin_arm64.zip
 
@@ -123,19 +123,19 @@ jobs:
           APPLE_ID_PASSWORD: ${{ secrets.MAC_NOTARIZE_PWD }}
           APPLE_TEAM_ID: ${{ secrets.MAC_NOTARIZE_TEAM }}
         run: |
-          yarn fetch-deps -- --arch=darwin-x64
+          npm run fetch-deps -- --arch=darwin-x64
           export APPLE_ID=${APPLE_ID}
           export APPLE_ID_PASSWORD=${APPLE_ID_PASSWORD}
           export APPLE_TEAM_ID=${APPLE_TEAM_ID}        
-          yarn make:mac-intel
+          npm run make:mac-intel
           mkdir -p ./out/keep
           mv ./out/make/zip/darwin/x64/*.zip ./out/keep/gb-studio-${GITHUB_REF##*/}-darwin_x64.zip
 
       - name: Build Linux
         if: matrix.name == 'linux'
         run: |
-          yarn fetch-deps -- --arch=linux-x64
-          yarn make:linux
+          npm run fetch-deps -- --arch=linux-x64
+          npm run make:linux
           mkdir -p ./out/keep
           mv ./out/make/deb/x64/*.deb ./out/keep/gb-studio-${GITHUB_REF##*/}-linux_x86_64.deb
           mv ./out/make/rpm/x64/*.rpm ./out/keep/gb-studio-${GITHUB_REF##*/}-linux_x86_64.rpm
@@ -144,11 +144,11 @@ jobs:
       - name: Build Linux arm64
         if: matrix.name == 'linux-arm64'
         run: |
-          yarn fetch-deps -- --arch=linux-arm64
+          npm run fetch-deps -- --arch=linux-arm64
           cd buildTools/linux-arm64/mod2gbt
           sh build_linux.sh
           cd ../../..          
-          yarn make:linux-arm64
+          npm run make:linux-arm64
           mkdir -p ./out/keep
           mv ./out/make/deb/arm64/*.deb ./out/keep/gb-studio-${GITHUB_REF##*/}-linux_arm64.deb
           mv ./out/make/rpm/arm64/*.rpm ./out/keep/gb-studio-${GITHUB_REF##*/}-linux_arm64.rpm
@@ -157,8 +157,8 @@ jobs:
       - name: Build Win32
         if: matrix.name == 'win32'
         run: |
-          yarn fetch-deps -- --arch=win32-ia32
-          yarn make:win32
+          npm run fetch-deps -- --arch=win32-ia32
+          npm run make:win32
           mkdir -p ./out/keep
           mv ./out/make/zip/win32/ia32/*.zip ./out/keep/gba-studio-${GITHUB_REF_NAME}-windows_x86.zip
           mv ./out/make/squirrel.windows/ia32 ./out/keep/gba-studio-${GITHUB_REF_NAME}-windows_x86-squirrel
@@ -166,8 +166,8 @@ jobs:
       - name: Build Win64
         if: matrix.name == 'win64'
         run: |
-          yarn fetch-deps -- --arch=win32-x64
-          yarn make:win
+          npm run fetch-deps -- --arch=win32-x64
+          npm run make:win
           mkdir -p ./out/keep
           mv ./out/make/zip/win32/x64/*.zip ./out/keep/gba-studio-${GITHUB_REF_NAME}-windows_x86_64.zip
           mv ./out/make/squirrel.windows/x64 ./out/keep/gba-studio-${GITHUB_REF_NAME}-windows_x86_64-squirrel
