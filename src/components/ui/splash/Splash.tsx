@@ -90,9 +90,9 @@ export const SplashGBAShoulder = styled.div<{ $side: "left" | "right" }>`
   width: 38px;
   height: 14px;
   border-radius: 10px 10px 4px 4px;
-  background: #6a5cc4;
-  border: 2px solid #4f43a0;
-  color: #e8e4ff;
+  background: #d4d6db;
+  border: 2px solid #b0b3bc;
+  color: #41444c;
   font-size: 8px;
   font-weight: bold;
   line-height: 12px;
@@ -168,13 +168,13 @@ export const SplashGBAFaceButtons = styled.div`
     width: 15px;
     height: 15px;
     border-radius: 50%;
-    background: #4a4470;
-    color: #d8d4f0;
+    background: #d4d6db;
+    color: #41444c;
     font-size: 7px;
     font-weight: bold;
     line-height: 15px;
     text-align: center;
-    box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.3);
+    box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.2);
   }
 
   &:before {
