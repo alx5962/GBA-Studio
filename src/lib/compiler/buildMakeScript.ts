@@ -19,6 +19,11 @@ type BuildOptions = {
   compilerPreset: number;
 };
 
+const objectPathForSource = (buildRoot: string, sourceFile: string) => {
+  const relativeSource = Path.relative(Path.join(buildRoot, "src"), sourceFile);
+  return Path.join(buildRoot, "obj", relativeSource.replace(/\.[cs]$/, ".o"));
+};
+
 export const getBuildCommands = async (
   buildRoot: string,
   {
@@ -39,23 +44,30 @@ export const getBuildCommands = async (
 
   // Check if building for GBA
   const isGBA = targetPlatform === "gba";
-  
+
   let CC: string;
   if (isGBA) {
     // Use system devkitPro
     const devkitPaths = getDevKitProPaths();
     if (!devkitPaths.isValid) {
-      throw new Error("devkitPro not found! Please install devkitPro and ensure DEVKITPRO/DEVKITARM environment variables are set.");
+      throw new Error(
+        "devkitPro not found! Please install devkitPro and ensure DEVKITPRO/DEVKITARM environment variables are set.",
+      );
     }
     CC = devkitPaths.gccPath;
   } else {
     // Original GB build
-    CC = platform === "win32"
-      ? `..\\_gbstools\\gbdk\\bin\\lcc`
-      : `../_gbstools/gbdk/bin/lcc`;
+    CC =
+      platform === "win32"
+        ? `..\\_gbstools\\gbdk\\bin\\lcc`
+        : `../_gbstools/gbdk/bin/lcc`;
   }
 
   for (const file of buildFiles) {
+    if (isGBA && file.replace(/\\/g, "/").endsWith("/src/startup.s")) {
+      continue;
+    }
+
     if (musicDriver === "huge" && file.indexOf("GBT_PLAYER") !== -1) {
       continue;
     }
@@ -63,29 +75,26 @@ export const getBuildCommands = async (
       continue;
     }
 
-    const objFile = `${file
-      .replace(/src.*\//, "obj/")
-      .replace(/\.[cs]$/, "")}.o`;
+    const objFile = objectPathForSource(buildRoot, file);
 
     if (!(await pathExists(objFile))) {
       let buildArgs: string[];
-      
+
       if (isGBA) {
         // GBA compilation flags
         buildArgs = [
           "-mthumb",
-          "-mthumb-interwork", 
+          "-mthumb-interwork",
           "-mcpu=arm7tdmi",
+          "-specs=gba.specs",
           "-Wall",
           "-Wextra",
           "-O2",
           "-fomit-frame-pointer",
-          "-D__TARGET_ap",
-          "-D__PORT_z80",
           "-Iinclude",
-          "-c"
+          "-c",
         ];
-        
+
         if (debug) {
           buildArgs.push("-g");
           buildArgs.push("-DDEBUG");
@@ -159,16 +168,24 @@ export const getBuildCommands = async (
   return output;
 };
 
-export const buildLinkFile = async (buildRoot: string) => {
+export const buildLinkFile = async (
+  buildRoot: string,
+  targetPlatform = "gb",
+) => {
   const output = [];
   const srcRoot = `${buildRoot}/src/**/*.@(c|s)`;
   const buildFiles = await globAsync(srcRoot);
   for (const file of buildFiles) {
-    const objFile = `${file
-      .replace(/src.*\//, "obj/")
-      .replace(/\.[cs]$/, "")}.o`;
+    if (
+      targetPlatform === "gba" &&
+      file.replace(/\\/g, "/").endsWith("/src/startup.s")
+    ) {
+      continue;
+    }
 
-    output.push(objFile);
+    const objFile = objectPathForSource(buildRoot, file);
+
+    output.push(Path.relative(buildRoot, objFile).replace(/\\/g, "/"));
   }
   return output.join("\n");
 };
@@ -191,7 +208,7 @@ export const buildLinkFlags = (
       .toUpperCase()
       .replace(/[^A-Z]*/g, "")
       .substring(0, 15) || "GBSTUDIO";
-      
+
   if (targetPlatform === "gba") {
     // GBA linking flags
     const elfFilename = romFilename.replace(/\.gba$/i, ".elf");
@@ -199,8 +216,7 @@ export const buildLinkFlags = (
       "-mthumb",
       "-mthumb-interwork",
       "-mcpu=arm7tdmi",
-      "-T",
-      "gba.ld",
+      "-specs=gba.specs",
       "-o",
       `build/rom/${elfFilename}`,
       `-Wl,-Map,build/rom/game.map`,

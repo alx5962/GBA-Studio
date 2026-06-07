@@ -215,7 +215,7 @@ const makeBuild = async ({
   }
 
   progress(`${l10n("COMPILER_LINKING")}...`);
-  const linkFile = await buildLinkFile(buildRoot);
+  const linkFile = await buildLinkFile(buildRoot, targetPlatform);
   const linkFilePath = `${buildRoot}/obj/linkfile.lk`;
   await fs.writeFile(linkFilePath, linkFile);
 
@@ -284,6 +284,25 @@ const makeBuild = async ({
     childSet.add(objcopyChild);
     await objcopyCompleted;
     childSet.delete(objcopyChild);
+
+    const gbafixCommand = Path.join(
+      devkitPaths.devkitPro,
+      "tools",
+      "bin",
+      process.platform === "win32" ? "gbafix.exe" : "gbafix",
+    );
+    const { completed: gbafixCompleted, child: gbafixChild } = spawn(
+      gbafixCommand,
+      [`build/rom/${romFilename}`],
+      options,
+      {
+        onLog: (msg) => progress(msg),
+        onError: (msg) => warnings(msg),
+      },
+    );
+    childSet.add(gbafixChild);
+    await gbafixCompleted;
+    childSet.delete(gbafixChild);
   }
 
   // Export game globals to ROM directory
