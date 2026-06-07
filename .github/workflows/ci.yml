@@ -41,13 +41,17 @@ jobs:
 
       - name: Install devkitPro GBA toolchain
         run: |
+          # devkitPro no longer publishes a .deb GitHub release asset; use the
+          # official apt-repo bootstrap script instead.
           sudo apt-get update
-          sudo apt-get install -y --no-install-recommends ca-certificates curl
-          curl -L https://github.com/devkitPro/pacman/releases/latest/download/devkitpro-pacman.deb -o /tmp/devkitpro-pacman.deb
-          sudo apt-get install -y /tmp/devkitpro-pacman.deb
-          sudo dkp-pacman -Sy --needed --noconfirm gba-dev
+          sudo apt-get install -y --no-install-recommends ca-certificates wget
+          wget -q https://apt.devkitpro.org/install-devkitpro-pacman
+          chmod +x ./install-devkitpro-pacman
+          sudo ./install-devkitpro-pacman
+          sudo /opt/devkitpro/bin/dkp-pacman -Sy --needed --noconfirm gba-dev
           echo "DEVKITPRO=/opt/devkitpro" >> "$GITHUB_ENV"
           echo "DEVKITARM=/opt/devkitpro/devkitARM" >> "$GITHUB_ENV"
+          echo "/opt/devkitpro/devkitARM/bin" >> "$GITHUB_PATH"
           test -x /opt/devkitpro/devkitARM/bin/arm-none-eabi-gcc
 
       - name: Build sample GBA ROM
@@ -79,17 +83,50 @@ jobs:
             out/RunProject.gba
             out/ci/RunProject/**
 
+  build-windows-installer:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Install dependencies
+        run: yarn install --immutable || npm ci
+
+      - name: Fetch engine and tool dependencies
+        run: npm run fetch-deps
+
+      - name: Build Windows installer
+        run: npm run make:win
+
+      - name: Upload Windows installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: gba-studio-windows-installer
+          path: |
+            out/make/squirrel.windows/x64/*.exe
+            out/make/squirrel.windows/x64/*.nupkg
+            out/make/squirrel.windows/x64/RELEASES
+            out/make/zip/win32/x64/*.zip
+
   attach-release-artifacts:
-    needs: test-and-rom
+    needs: [test-and-rom, build-windows-installer]
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/v')
     permissions:
       contents: write
     steps:
-      - name: Download ROM artifacts
+      - name: Download all build artifacts
         uses: actions/download-artifact@v4
         with:
-          name: gba-studio-rom-smoke
           path: release-artifacts
 
       - name: Attach artifacts to GitHub release
