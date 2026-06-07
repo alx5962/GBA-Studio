@@ -37,6 +37,7 @@ import contributorsExternal from "contributors-external.json";
 import gbs2Preview from "assets/templatePreview/gbs2.png";
 import gbhtmlPreview from "assets/templatePreview/gbhtml.png";
 import blankPreview from "assets/templatePreview/blank.png";
+import gbaPreview from "assets/templatePreview/gba.png";
 import useWindowFocus from "ui/hooks/use-window-focus";
 import l10n from "shared/lib/lang/l10n";
 import API from "renderer/lib/api";
@@ -159,6 +160,13 @@ const Splash = () => {
         preview: gbs2Preview,
         videoPreview: false,
         description: l10n("SPLASH_SAMPLE_PROJECT_DESCRIPTION"),
+      },
+      {
+        id: "gba-blank",
+        name: l10n("SPLASH_GBA_PROJECT"),
+        preview: gbaPreview,
+        videoPreview: false,
+        description: l10n("SPLASH_GBA_PROJECT_DESCRIPTION"),
       },
       {
         id: "gbhtml",
