@@ -28,8 +28,7 @@ jobs:
         run: corepack enable
 
       - name: Install Dependencies
-        run: |
-          yarn
+        run: yarn install --immutable || npm ci
 
       - name: Test
         run: |
@@ -38,6 +37,9 @@ jobs:
   deploy:
     needs: test
     runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
     if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop' || startsWith(github.ref, 'refs/heads/beta-') || startsWith(github.ref, 'refs/heads/feat-') || startsWith(github.ref, 'refs/heads/wip-') || startsWith(github.ref, 'refs/heads/fix-')
 
     strategy:
@@ -51,10 +53,10 @@ jobs:
             os: macos-14
           - name: win32
             label: Windows 32-bit
-            os: ubuntu-latest
+            os: windows-latest
           - name: win64
             label: Windows 64-bit
-            os: ubuntu-latest
+            os: windows-latest
           - name: linux
             label: Linux
             os: ubuntu-latest
@@ -88,18 +90,14 @@ jobs:
           security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PWD" build.keychain
 
       - name: Install Dependencies
-        run: |
-          yarn
+        run: yarn install --immutable || npm ci
 
       - name: Update credits
         if: ${{ vars.FETCH_CREDITS == 'true' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop') }}
         env:
-          PATREON_ACCESS_TOKEN: ${{ secrets.PATREON_ACCESS_TOKEN }}
-          PATREON_CAMPAIGN_ID: ${{ secrets.PATREON_CAMPAIGN_ID }}
           CREDITS_GITHUB_ACCESS_TOKEN: ${{ secrets.CREDITS_GITHUB_ACCESS_TOKEN }}
         run: |
           npm run fetch-contributors
-          npm run fetch-patrons
 
       # ==== Builds ====
 
@@ -159,28 +157,20 @@ jobs:
       - name: Build Win32
         if: matrix.name == 'win32'
         run: |
-          sudo dpkg --add-architecture i386
-          sudo apt-get -y update
-          sudo apt-get -y install wine wine64 mono-devel
-          export PATH=$PATH:/usr/lib/wine
           yarn fetch-deps -- --arch=win32-ia32
           yarn make:win32
           mkdir -p ./out/keep
-          mv ./out/make/zip/win32/ia32/*.zip ./out/keep/gb-studio-${CIRCLE_BRANCH}-windows_x86.zip
-          mv ./out/make/squirrel.windows/ia32 ./out/keep/gb-studio-${CIRCLE_BRANCH}-windows_x86-squirrel
+          mv ./out/make/zip/win32/ia32/*.zip ./out/keep/gba-studio-${GITHUB_REF_NAME}-windows_x86.zip
+          mv ./out/make/squirrel.windows/ia32 ./out/keep/gba-studio-${GITHUB_REF_NAME}-windows_x86-squirrel
 
       - name: Build Win64
         if: matrix.name == 'win64'
         run: |
-          sudo dpkg --add-architecture i386
-          sudo apt-get -y update
-          sudo apt-get -y install wine wine64 mono-devel
-          export PATH=$PATH:/usr/lib/wine
           yarn fetch-deps -- --arch=win32-x64
           yarn make:win
           mkdir -p ./out/keep
-          mv ./out/make/zip/win32/x64/*.zip ./out/keep/gb-studio-${CIRCLE_BRANCH}-windows_x86_64.zip
-          mv ./out/make/squirrel.windows/x64 ./out/keep/gb-studio-${CIRCLE_BRANCH}-windows_x86_64-squirrel
+          mv ./out/make/zip/win32/x64/*.zip ./out/keep/gba-studio-${GITHUB_REF_NAME}-windows_x86_64.zip
+          mv ./out/make/squirrel.windows/x64 ./out/keep/gba-studio-${GITHUB_REF_NAME}-windows_x86_64-squirrel
 
       - uses: actions/upload-artifact@v4
         with:
