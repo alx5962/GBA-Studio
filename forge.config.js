@@ -16,8 +16,8 @@ module.exports = async () => {
       {
         name: "@electron-forge/maker-squirrel",
         config: {
-          name: "gb_studio",
-          exe: "gb-studio.exe",
+          name: "gba_studio",
+          exe: "gba-studio.exe",
           loadingGif: "src/assets/app/install.gif",
           setupIcon: "src/assets/app/icon/app_icon.ico",
         },
