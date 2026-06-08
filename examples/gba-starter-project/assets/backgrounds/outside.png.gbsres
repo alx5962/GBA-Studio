@@ -1,0 +1,13 @@
+﻿{
+    "_resourceType":  "background",
+    "id":  "07016701-d5df-4983-8a5a-3930c7f45822",
+    "name":  "outside (GBA)",
+    "symbol":  "bg_outside_gba",
+    "tileColors":  "",
+    "width":  48,
+    "height":  36,
+    "imageWidth":  384,
+    "imageHeight":  288,
+    "filename":  "outside.png",
+    "autoColor":  false
+}

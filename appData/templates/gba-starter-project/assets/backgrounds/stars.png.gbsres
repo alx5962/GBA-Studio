@@ -1,0 +1,13 @@
+﻿{
+    "_resourceType":  "background",
+    "id":  "40fda058-df90-4205-a239-fe77bce4fa79",
+    "name":  "stars (GBA)",
+    "symbol":  "bg_stars_gba",
+    "tileColors":  "",
+    "width":  48,
+    "height":  36,
+    "imageWidth":  384,
+    "imageHeight":  288,
+    "filename":  "stars.png",
+    "autoColor":  false
+}

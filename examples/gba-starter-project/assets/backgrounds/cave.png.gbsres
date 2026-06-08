@@ -1,0 +1,13 @@
+﻿{
+    "_resourceType":  "background",
+    "id":  "6fad1892-bcb2-4924-bd1c-1e4d03dfeabb",
+    "name":  "cave (GBA)",
+    "symbol":  "bg_cave_gba",
+    "tileColors":  "002a+0410+004+0410+004+0410+004+0410+004+0410+004+0410+004+0410+004+0410+004+0410+004+0410+004+0410+004+0410+004+0410+004+0410+00b+042+0012+042+009+",
+    "width":  30,
+    "height":  20,
+    "imageWidth":  240,
+    "imageHeight":  160,
+    "filename":  "cave.png",
+    "autoColor":  false
+}

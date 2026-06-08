@@ -11,6 +11,29 @@ GBA Studio is an experimental fork of GB Studio tailored for Game Boy Advance ga
 
 This project is a prototype, but the editor UI is running and the GBA ROM build path is wired up. The immediate goal is to make the inherited GB Studio authoring workflow produce reproducible `.gba` ROM builds locally and in CI. The editor can launch, sample projects can be built to `.gba`, and Electron packaging scripts are available for installers, though full GB Studio feature parity and complete GBA hardware support are not finished yet.
 
+### GBA Feature Completeness
+
+| Area                           | Status      | Notes                                                                                                                    |
+| ------------------------------ | ----------- | ------------------------------------------------------------------------------------------------------------------------ |
+| Editor shell                   | Partial     | The inherited Electron editor launches and can open/edit projects, but some UI assumptions still come from GB Studio.    |
+| Project metadata               | Partial     | `engine.json` exposes GBA dimensions and input options, including 240x160 output and A/B/Start/Select/D-pad/L/R buttons. |
+| Templates                      | Partial     | GBA templates exist and can be built, but many assets still need deeper GBA-specific validation.                         |
+| CLI build command              | Partial     | `make:rom` and `npm run build:gba` can produce `.gba` files through the GBA path.                                        |
+| Editor Play/launch             | Partial     | The toolbar Play action now builds a `.gba` ROM and opens it through the OS/emulator file association.                   |
+| Compiler backend               | Prototype   | The GBA compiler path emits native `gba_scene_data` C records and a minimal bootstrap script.                            |
+| Generated C data compatibility | Partial     | GBA shims for `gbs_types.h`, `bankdata.h`, and bank macros allow generated asset C files to compile without GBDK.        |
+| Toolchain integration          | Working     | devkitPro/devkitARM detection, `gba.specs`, `objcopy`, and `gbafix` are wired for local and CI builds.                   |
+| ROM boot path                  | Working     | The GBA engine boots through devkitARM startup and runs `engine_run()`.                                                  |
+| VM runtime                     | Prototype   | A native GBA bytecode loop now supports end, wait, scene load, and palette tone opcodes.                                 |
+| Background rendering           | Prototype   | Mode 0 renders loaded scene dimensions, collision-marked tiles, generated palette tones, and visible scene transitions.  |
+| Actors                         | Stub        | Actor allocation/update functions exist, but sprite/OAM rendering and scene-driven actor loading are not complete.       |
+| Input/buttons                  | Partial     | GBA key polling supports A/B/Start/Select/D-pad/L/R; gameplay bindings still need VM/event integration.                  |
+| Scenes/scripts                 | Prototype   | Compiled scene records load at runtime; full GB Studio event compilation, triggers, text, and actor scripts are pending. |
+| Sprites/projectiles            | Not started | GBA OAM sprite upload, animation, collisions, and projectile runtime need implementation.                                |
+| Audio                          | Not started | GBA APU/DirectSound music and sound effect runtime has not been ported.                                                  |
+| Save/load                      | Not started | SRAM/flash save support and GB Studio variable persistence are not implemented.                                          |
+| CI/release                     | Working     | GitHub Actions build CLI, sample GBA ROM, emulator smoke test, Windows installer, and release artifacts.                 |
+
 ## Aims
 
 - Keep GB Studio's approachable visual workflow while targeting Game Boy Advance ROM output.
@@ -28,6 +51,8 @@ This fork sits alongside Eoin Jordan's GB Studio MCP/agent work: [gb-studio-agen
 - Launches the inherited Electron editor UI and supports the editor workflow.
 - Builds the CLI bundle with `npm run make:cli`.
 - Provides `npm run build:gba -- <project.gbsproj> <out.gba>` as the standard sample ROM build command.
+- Includes `examples/gba-starter-project/project.gbsproj`, a GBA-format conversion of the bundled GB Studio starter sample with scaled backgrounds and scene metadata.
+- Includes `examples/poachermon/project.gbsproj` and a matching `gba-poachermon` template as a richer GBA compiler/ROM launch fixture.
 - Detects official devkitPro/devkitARM installs instead of relying on stale bundled compiler paths.
 - Includes a sample project fixture at `test/data/projects/RunProject/RunProject.gbsproj`.
 - Includes CI workflow scaffolding for dependency install, tests, CLI build, devkitPro setup, sample ROM build, emulator smoke test, and generated artifacts.

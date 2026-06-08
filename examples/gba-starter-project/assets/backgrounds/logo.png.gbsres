@@ -1,0 +1,13 @@
+﻿{
+    "_resourceType":  "background",
+    "id":  "f8b1c7ad-7bb2-44b2-8189-175ae8698f11",
+    "name":  "logo (GBA)",
+    "symbol":  "bg_logo_gba",
+    "tileColors":  "",
+    "width":  30,
+    "height":  20,
+    "imageWidth":  240,
+    "imageHeight":  160,
+    "filename":  "logo.png",
+    "autoColor":  false
+}

@@ -11,6 +11,8 @@ void engine_run(void);
 
 // Scene management
 void load_scene(uint8_t scene_index);
+void vm_scene_load(uint8_t scene_index);
+void vm_scene_set_tone(uint8_t tone);
 
 // Actor management
 actor_t* spawn_actor(uint8_t sprite_index, uint16_t x, uint16_t y);

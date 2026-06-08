@@ -34,6 +34,11 @@ typedef uint16_t UINT16;
 
 #define EXCEPTION_CODE_NONE 0
 
+#define VM_OP_END 0x00
+#define VM_OP_LOAD_SCENE 0x01
+#define VM_OP_SET_SCENE_TONE 0x02
+#define VM_OP_WAIT 0x03
+
 typedef void (*SCRIPT_CMD_FN)(void);
 
 typedef struct SCRIPT_CMD {
@@ -56,6 +61,7 @@ typedef struct SCRIPT_CTX {
   UBYTE waitable;
   UBYTE lock_count;
   UBYTE flags;
+  UWORD wait_frames;
 } SCRIPT_CTX;
 
 extern UWORD script_memory[VM_HEAP_SIZE +

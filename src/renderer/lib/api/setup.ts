@@ -58,7 +58,7 @@ interface L10NLookup {
 }
 
 export type BuildOptions = {
-  buildType: "rom" | "web" | "pocket";
+  buildType: BuildType;
   engineSchema: EngineSchema;
   exportBuild: boolean;
   debugEnabled?: boolean;

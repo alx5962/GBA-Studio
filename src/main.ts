@@ -1431,12 +1431,13 @@ ipcMain.handle(
       });
 
       if (exportBuild) {
+        const outputBuildType = buildType === "gba" ? "rom" : buildType;
         await copy(
-          `${outputRoot}/build/${buildType}`,
-          `${projectRoot}/build/${buildType}`,
+          `${outputRoot}/build/${outputBuildType}`,
+          `${projectRoot}/build/${outputBuildType}`,
         );
         if (project.settings.openBuildFolderOnExport) {
-          shell.openPath(Path.join(projectRoot, "build", buildType));
+          shell.openPath(Path.join(projectRoot, "build", outputBuildType));
         }
         buildLog(`-`);
         buildLog(
@@ -1452,15 +1453,17 @@ ipcMain.handle(
         );
       }
 
-      const usageData = await romUsage({
-        buildRoot: outputRoot,
-        romStem,
-        tmpPath: getTmp(),
-        progress,
-        warnings,
-      });
+      if (buildType !== "gba") {
+        const usageData = await romUsage({
+          buildRoot: outputRoot,
+          romStem,
+          tmpPath: getTmp(),
+          progress,
+          warnings,
+        });
 
-      sendToProjectWindow("debugger:romusage", usageData);
+        sendToProjectWindow("debugger:romusage", usageData);
+      }
 
       if (buildType === "web" && !exportBuild) {
         buildLog(`-`);
@@ -1500,6 +1503,21 @@ ipcMain.handle(
           sgbEnabled && colorMode === "mono",
           debuggerEnabled,
         );
+      } else if (buildType === "gba" && !exportBuild) {
+        const romPath = Path.normalize(
+          `${outputRoot}/build/rom/${romFilename}`,
+        );
+        buildLog(`-`);
+        buildLog(
+          `${l10n("COMPILER_BUILD_SUCCESS")} ${l10n(
+            "COMPILER_STARTING_EMULATOR",
+          )}...`,
+        );
+        const openResult = await shell.openPath(romPath);
+        if (openResult) {
+          buildErr(openResult);
+          buildLog(`${l10n("COMPILER_ROM_READY_AT")} ${romPath}`);
+        }
       }
 
       const buildTime = Date.now() - buildStartTime;
@@ -1587,14 +1605,14 @@ ipcMain.handle(
         project.settings.romFilename,
         project.metadata.name,
         colorOnly,
-        "rom",
+        "gba",
       );
       await buildProject(project, {
         projectRoot,
         outputRoot,
         romFilename,
         tmpPath: getTmp(),
-        buildType: "rom",
+        buildType: "gba",
         engineSchema,
         debugEnabled: false,
         make: false,

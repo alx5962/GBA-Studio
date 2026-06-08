@@ -2,6 +2,9 @@
 #include <stdarg.h>
 #include <stddef.h>
 
+extern void vm_scene_load(UBYTE scene_index);
+extern void vm_scene_set_tone(UBYTE tone);
+
 UWORD script_memory[VM_HEAP_SIZE + (VM_MAX_CONTEXTS * VM_CONTEXT_STACK_SIZE)];
 SCRIPT_CTX CTXS[VM_MAX_CONTEXTS];
 SCRIPT_CTX *first_ctx;
@@ -53,6 +56,7 @@ void script_runner_init(UBYTE reset) {
     ctx->waitable = 0;
     ctx->lock_count = 0;
     ctx->flags = 0;
+    ctx->wait_frames = 0;
   }
 }
 
@@ -75,6 +79,7 @@ SCRIPT_CTX *script_execute(UBYTE bank, UBYTE *pc, UWORD *handle, UBYTE nargs,
   ctx->waitable = 1;
   ctx->lock_count = 0;
   ctx->flags = 0;
+  ctx->wait_frames = 0;
 
   if (handle != NULL) {
     *handle = ctx->ID;
@@ -122,5 +127,50 @@ UBYTE script_detach_hthread(UBYTE ID) {
 }
 
 UBYTE script_runner_update(void) {
+  SCRIPT_CTX *ctx = first_ctx;
+
+  while (ctx != NULL) {
+    executing_ctx = ctx;
+
+    if (ctx->wait_frames > 0) {
+      ctx->wait_frames--;
+      ctx = ctx->next;
+      continue;
+    }
+
+    for (UBYTE i = 0; i < INSTRUCTIONS_PER_QUANT && ctx->PC != NULL; i++) {
+      UBYTE opcode = *ctx->PC++;
+
+      switch (opcode) {
+      case VM_OP_END:
+        script_terminate(ctx->ID);
+        executing_ctx = NULL;
+        return first_ctx == NULL ? RUNNER_DONE : RUNNER_BUSY;
+
+      case VM_OP_LOAD_SCENE:
+        vm_scene_load(*ctx->PC++);
+        break;
+
+      case VM_OP_SET_SCENE_TONE:
+        vm_scene_set_tone(*ctx->PC++);
+        break;
+
+      case VM_OP_WAIT:
+        ctx->wait_frames = *ctx->PC++;
+        i = INSTRUCTIONS_PER_QUANT;
+        break;
+
+      default:
+        vm_exception_code = opcode;
+        script_terminate(ctx->ID);
+        executing_ctx = NULL;
+        return RUNNER_EXCEPTION;
+      }
+    }
+
+    ctx = ctx->next;
+  }
+
+  executing_ctx = NULL;
   return first_ctx == NULL ? RUNNER_IDLE : RUNNER_BUSY;
 }

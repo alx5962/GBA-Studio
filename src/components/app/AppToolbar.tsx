@@ -96,7 +96,7 @@ const AppToolbar: FC = () => {
   );
 
   const onRun = useCallback(() => {
-    dispatch(buildGameActions.buildGame({ buildType: "web" }));
+    dispatch(buildGameActions.buildGame({ buildType: "gba" }));
   }, [dispatch]);
 
   const onBuild = useCallback(
@@ -272,7 +272,7 @@ const AppToolbar: FC = () => {
         showArrow={false}
         menuDirection="right"
       >
-        <MenuItem onClick={onBuild("rom")}>
+        <MenuItem onClick={onBuild("gba")}>
           {l10n("TOOLBAR_EXPORT_ROM")}{" "}
           <MenuAccelerator accelerator="CommandOrControl+Shift+B" />
         </MenuItem>

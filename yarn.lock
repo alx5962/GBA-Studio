@@ -9227,6 +9227,7 @@ __metadata:
     uuid: "npm:^3.3.2"
     vm2: "npm:3.9.19"
     wavefile: "npm:^11.0.0"
+    webpack: "npm:5.101.3"
     webpack-bundle-analyzer: "npm:^4.4.2"
     webpack-cli: "npm:^4.7.0"
     worker-loader: "npm:^3.0.8"
@@ -16264,7 +16265,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"webpack@npm:5, webpack@npm:^5.69.1":
+"webpack@npm:5, webpack@npm:5.101.3, webpack@npm:^5.69.1":
   version: 5.101.3
   resolution: "webpack@npm:5.101.3"
   dependencies:

@@ -1,0 +1,13 @@
+﻿{
+    "_resourceType":  "background",
+    "id":  "93d8839f-c19c-4eb2-a386-b0bb77068521",
+    "name":  "menu_page1 (GBA)",
+    "symbol":  "bg_menu_page1_gba",
+    "tileColors":  "",
+    "width":  30,
+    "height":  20,
+    "imageWidth":  240,
+    "imageHeight":  160,
+    "filename":  "menu_page1.png",
+    "autoColor":  false
+}

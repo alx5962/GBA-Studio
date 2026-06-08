@@ -1332,54 +1332,134 @@ const compileGBA = async (
   }
 
   progress("Compiling for GBA...");
-  warnings("GBA proof build: GB Studio VM scripts are currently skipped.");
+  warnings(
+    "GBA VM runtime is minimal: scene records load, full GB Studio script events are still pending.",
+  );
 
-  // Create a simplified generated proof scene for GBA.
-  // This deliberately avoids emitting GB VM / GBDK assembly for devkitARM.
-  output["gba_proof_scene.c"] = `#include <stdint.h>
-#include "gba_system.h"
+  const sceneTypeIds: Record<string, number> = {
+    TOPDOWN: 0,
+    PLATFORM: 1,
+    ADVENTURE: 2,
+    SHMUP: 3,
+    POINTNCLICK: 4,
+    LOGO: 5,
+  };
+  const cIdent = (value: string, fallback: string) => {
+    const ident = (value || fallback).replace(/[^A-Za-z0-9_]/g, "_");
+    return /^[A-Za-z_]/.test(ident) ? ident : `_${ident}`;
+  };
+  const firstStartSceneIndex = Math.max(
+    0,
+    rawProjectData.scenes.findIndex(
+      (scene) => scene.id === rawProjectData.settings.startSceneId,
+    ),
+  );
+  const sceneSymbols = rawProjectData.scenes.map((scene, index) =>
+    cIdent(scene.symbol, `scene_${index}`),
+  );
+  const sceneCollisionArrays = rawProjectData.scenes
+    .map((scene, index) => {
+      const width = Math.max(1, Math.min(255, Math.round(scene.width || 30)));
+      const height = Math.max(1, Math.min(255, Math.round(scene.height || 20)));
+      const tileCount = width * height;
+      const collisions = Array.from({ length: tileCount }, (_, tileIndex) =>
+        scene.collisions?.[tileIndex] ? 1 : 0,
+      );
+      const values = collisions
+        .map((value, tileIndex) =>
+          tileIndex % 30 === 0 ? `\n  ${value}` : ` ${value}`,
+        )
+        .join(",");
+      return `static const uint8_t ${sceneSymbols[index]}_collisions[${tileCount}] = {${values}\n};`;
+    })
+    .join("\n\n");
+  const sceneInitScripts = rawProjectData.scenes
+    .map((scene, index) => {
+      const tone = index % 4;
+      return `static const uint8_t ${sceneSymbols[index]}_init_script[] = {
+  VM_OP_SET_SCENE_TONE, ${tone},
+  VM_OP_WAIT, 4,
+  VM_OP_END,
+};`;
+    })
+    .join("\n\n");
+  const sceneDefs = rawProjectData.scenes
+    .map((scene, index) => {
+      const width = Math.max(1, Math.min(255, Math.round(scene.width || 30)));
+      const height = Math.max(1, Math.min(255, Math.round(scene.height || 20)));
+      const type = sceneTypeIds[scene.type] ?? 0;
+      const actors = scene.actors?.length ?? 0;
+      const triggers = scene.triggers?.length ?? 0;
+      const tone = index % 4;
+      return `static const gba_scene_def_t ${sceneSymbols[index]} = {
+  ${width}, ${height}, ${type}, ${actors}, ${triggers}, ${tone},
+  ${sceneSymbols[index]}_collisions,
+  ${sceneSymbols[index]}_init_script,
+};`;
+    })
+    .join("\n\n");
+  const sceneTable = sceneSymbols.map((symbol) => `  &${symbol},`).join("\n");
 
-void gba_studio_proof_scene(void) {
-    set_mode(MODE_3);
-    REG_DISPCNT = MODE_3 | BG2_ENABLE;
+  output["gba_scene_data.h"] = `#ifndef GBA_SCENE_DATA_H
+#define GBA_SCENE_DATA_H
 
-    uint16_t* vram = MEM_VRAM;
-    for (int i = 0; i < 240 * 160; i++) {
-        vram[i] = (i % 32) * 1024; // Simple color gradient
-    }
-}
+#include "gba_scene.h"
 
-void gba_studio_proof_update(uint16_t keys) {
-    uint16_t* vram = MEM_VRAM;
-    uint16_t color = RGB15(6, 10, 16);
+extern const gba_game_data_t gba_game_data;
 
-    if (keys & KEY_A) color = RGB15(31, 8, 16);
-    if (keys & KEY_B) color = RGB15(8, 18, 31);
-    if (keys & KEY_L) color = RGB15(31, 24, 4);
-    if (keys & KEY_R) color = RGB15(7, 29, 12);
-    if (keys & KEY_START) color = RGB15(31, 31, 31);
-    if (keys & KEY_SELECT) color = RGB15(10, 10, 10);
+#endif
+`;
+  output["gba_scene_data.c"] = `#include <stdint.h>
+#include "gba_scene.h"
+#include "vm.h"
+#include "data/gba_scene_data.h"
 
-    for (int y = 132; y < 152; y++) {
-        for (int x = 20; x < 220; x++) {
-            vram[(y * 240) + x] = color;
-        }
-    }
-}`;
+${sceneCollisionArrays}
+
+${sceneInitScripts}
+
+${sceneDefs}
+
+static const gba_scene_def_t *const gba_scene_table[] = {
+${sceneTable}
+};
+
+static const uint8_t gba_bootstrap_script[] = {
+  VM_OP_LOAD_SCENE, ${firstStartSceneIndex},
+  VM_OP_END,
+};
+
+const gba_game_data_t gba_game_data = {
+  ${rawProjectData.scenes.length},
+  ${firstStartSceneIndex},
+  ${Math.max(0, Math.min(255, Math.round(rawProjectData.settings.startX || 0)))},
+  ${Math.max(0, Math.min(255, Math.round(rawProjectData.settings.startY || 0)))},
+  gba_scene_table,
+  gba_bootstrap_script,
+};
+`;
 
   // Provide the minimal required game globals files for GBA builds
-  output["game_globals.i"] = compileGameGlobalsInclude({}, [], engineSchema.consts, []);
-  output["game_globals.h"] = compileGameGlobalsHeader({}, [], engineSchema.consts, []);
+  output["game_globals.i"] = compileGameGlobalsInclude(
+    {},
+    [],
+    engineSchema.consts,
+    [],
+  );
+  output["game_globals.h"] = compileGameGlobalsHeader(
+    {},
+    [],
+    engineSchema.consts,
+    [],
+  );
 
-  // Add basic scene data
-  if (rawProjectData.scenes.length > 0) {
-    const firstScene = rawProjectData.scenes[0];
-    sceneMap[firstScene.symbol || "scene_0"] = {
-      id: firstScene.id,
-      name: firstScene.name || "Scene 1",
-      symbol: firstScene.symbol || "scene_0",
+  rawProjectData.scenes.forEach((scene, index) => {
+    sceneMap[scene.symbol || `scene_${index}`] = {
+      id: scene.id,
+      name: scene.name || `Scene ${index + 1}`,
+      symbol: scene.symbol || `scene_${index}`,
     };
-  }
+  });
 
   progress("GBA compilation complete");
 

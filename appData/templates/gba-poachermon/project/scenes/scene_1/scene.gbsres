@@ -1,0 +1,48 @@
+﻿{
+    "_resourceType":  "scene",
+    "id":  "5ce7e000-0000-4a00-8000-000000000002",
+    "_index":  0,
+    "type":  "TOPDOWN",
+    "name":  "Poachermon Field Office",
+    "symbol":  "scene_poachermon_field_office",
+    "x":  100,
+    "y":  100,
+    "width":  30,
+    "height":  20,
+    "backgroundId":  "b9a1c0de-0000-4a00-8000-000000000001",
+    "tilesetId":  "",
+    "colorModeOverride":  "none",
+    "paletteIds":  [
+
+                   ],
+    "spritePaletteIds":  [
+
+                         ],
+    "autoFadeSpeed":  1,
+    "script":  [
+                   {
+                       "args":  {
+                                    "text":  "POACHERMON!\\nGotta mildly inconvenience them all."
+                                },
+                       "command":  "EVENT_TEXT",
+                       "id":  "poachermon-intro-1"
+                   },
+                   {
+                       "args":  {
+                                    "text":  "Press A to file a complaint.\\nPress B to pretend this is legal."
+                                },
+                       "command":  "EVENT_TEXT",
+                       "id":  "poachermon-intro-2"
+                   }
+               ],
+    "playerHit1Script":  [
+
+                         ],
+    "playerHit2Script":  [
+
+                         ],
+    "playerHit3Script":  [
+
+                         ],
+    "collisions":  "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+}

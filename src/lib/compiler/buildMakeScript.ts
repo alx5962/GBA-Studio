@@ -1,6 +1,6 @@
 import glob from "glob";
 import { promisify } from "util";
-import { pathExists, readFile, writeFile } from "fs-extra";
+import { ensureDir, pathExists, readFile, writeFile } from "fs-extra";
 import Path from "path";
 import l10n from "shared/lib/lang/l10n";
 import { getDevKitProPaths } from "lib/helpers/devkitpro";
@@ -78,6 +78,8 @@ export const getBuildCommands = async (
     const objFile = objectPathForSource(buildRoot, file);
 
     if (!(await pathExists(objFile))) {
+      await ensureDir(Path.dirname(objFile));
+
       let buildArgs: string[];
 
       if (isGBA) {

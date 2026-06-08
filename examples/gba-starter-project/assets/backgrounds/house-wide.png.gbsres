@@ -1,0 +1,13 @@
+﻿{
+    "_resourceType":  "background",
+    "id":  "5b192b93-3957-4b76-8c92-423eabbcd285",
+    "name":  "house-wide (GBA)",
+    "symbol":  "bg_house_wide_gba",
+    "tileColors":  "",
+    "width":  48,
+    "height":  20,
+    "imageWidth":  384,
+    "imageHeight":  160,
+    "filename":  "house-wide.png",
+    "autoColor":  false
+}

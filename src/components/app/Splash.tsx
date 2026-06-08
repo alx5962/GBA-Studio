@@ -38,6 +38,8 @@ import gbs2Preview from "assets/templatePreview/gbs2.png";
 import gbhtmlPreview from "assets/templatePreview/gbhtml.png";
 import blankPreview from "assets/templatePreview/blank.png";
 import gbaPreview from "assets/templatePreview/gba.png";
+import gbaStarterPreview from "assets/templatePreview/gba-starter-project.png";
+import gbaPoachermonPreview from "assets/templatePreview/gba-poachermon.png";
 import useWindowFocus from "ui/hooks/use-window-focus";
 import l10n from "shared/lib/lang/l10n";
 import API from "renderer/lib/api";
@@ -162,11 +164,25 @@ const Splash = () => {
         description: l10n("SPLASH_SAMPLE_PROJECT_DESCRIPTION"),
       },
       {
-        id: "gba-blank",
+        id: "gba-starter-project",
         name: l10n("SPLASH_GBA_PROJECT"),
-        preview: gbaPreview,
+        preview: gbaStarterPreview,
         videoPreview: false,
         description: l10n("SPLASH_GBA_PROJECT_DESCRIPTION"),
+      },
+      {
+        id: "gba-blank",
+        name: l10n("SPLASH_GBA_BLANK_PROJECT"),
+        preview: gbaPreview,
+        videoPreview: false,
+        description: l10n("SPLASH_GBA_BLANK_PROJECT_DESCRIPTION"),
+      },
+      {
+        id: "gba-poachermon",
+        name: l10n("SPLASH_GBA_POACHERMON_PROJECT"),
+        preview: gbaPoachermonPreview,
+        videoPreview: false,
+        description: l10n("SPLASH_GBA_POACHERMON_PROJECT_DESCRIPTION"),
       },
       {
         id: "gbhtml",
