@@ -152,8 +152,89 @@ jobs:
             out/make/squirrel.windows/x64/RELEASES
             out/make/zip/win32/x64/*.zip
 
+  build-linux-installers:
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Install dependencies
+        run: yarn install --immutable || npm ci
+
+      - name: Fetch engine and tool dependencies
+        run: npm run fetch-deps
+
+      - name: Build Linux installers
+        run: npm run make:linux
+
+      - name: Upload Linux installers
+        uses: actions/upload-artifact@v4
+        with:
+          name: gba-studio-linux-installers
+          path: |
+            out/make/deb/x64/*.deb
+            out/make/rpm/x64/*.rpm
+            out/make/AppImage/x64/*.AppImage
+            out/make/zip/linux/x64/*.zip
+
+  build-macos-installers:
+    runs-on: macos-14
+    if: startsWith(github.ref, 'refs/tags/v')
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Install dependencies
+        run: yarn install --immutable || npm ci
+
+      - name: Fetch engine and tool dependencies
+        run: npm run fetch-deps
+
+      - name: Build macOS ARM installers
+        env:
+          APPLE_ID: ${{ secrets.MAC_NOTARIZE_ID }}
+          APPLE_ID_PASSWORD: ${{ secrets.MAC_NOTARIZE_PWD }}
+          APPLE_TEAM_ID: ${{ secrets.MAC_NOTARIZE_TEAM }}
+        run: npm run make:mac
+
+      - name: Build macOS Intel installers
+        env:
+          APPLE_ID: ${{ secrets.MAC_NOTARIZE_ID }}
+          APPLE_ID_PASSWORD: ${{ secrets.MAC_NOTARIZE_PWD }}
+          APPLE_TEAM_ID: ${{ secrets.MAC_NOTARIZE_TEAM }}
+        run: npm run make:mac-intel
+
+      - name: Upload macOS installers
+        uses: actions/upload-artifact@v4
+        with:
+          name: gba-studio-macos-installers
+          path: |
+            out/make/*-arm64.dmg
+            out/make/*-x64.dmg
+            out/make/zip/darwin/arm64/*.zip
+            out/make/zip/darwin/x64/*.zip
+
   attach-release-artifacts:
-    needs: [build-windows-installer]
+    needs: [build-windows-installer, build-linux-installers, build-macos-installers]
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/v')
     permissions:
