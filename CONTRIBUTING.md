@@ -5,7 +5,7 @@ This is intended to be a public project that anyone can participate in. If you w
 Fork, then clone the repo:
 
 ```bash
-git clone git@github.com:your-username/gb-studio.git
+git clone --recurse-submodules git@github.com:your-username/gb-studio.git
 ```
 
 Install it:

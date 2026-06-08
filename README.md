@@ -93,6 +93,7 @@ Windows (PowerShell):
 
 ```powershell
 cd gba-studio
+git submodule update --init --recursive
 powershell -NoProfile -ExecutionPolicy Bypass -File tools\bootstrap.ps1
 npm ci
 npm run fetch-deps
@@ -103,6 +104,7 @@ Linux / macOS:
 
 ```bash
 cd gba-studio
+git submodule update --init --recursive
 bash tools/bootstrap.sh
 npm ci
 npm run fetch-deps

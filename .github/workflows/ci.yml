@@ -36,6 +36,12 @@ jobs:
       - name: Run unit tests
         run: npm test
 
+      - name: Run engine unit tests
+        run: make -C appData/engine/gbavm test-unit HOST_CC=gcc
+
+      - name: Run engine integration tests
+        run: make -C appData/engine/gbavm test-integration HOST_CC=gcc
+
       - name: Build CLI
         run: npm run make:cli
 
@@ -67,6 +73,14 @@ jobs:
           DEVKITARM: ${{ env.DEVKITARM }}
         run: npm run build:gba -- test/data/projects/RunProject/RunProject.gbsproj out/RunProject.gba
 
+      - name: Build engine ROM
+        if: steps.devkitpro.outcome == 'success'
+        continue-on-error: true
+        env:
+          DEVKITPRO: ${{ env.DEVKITPRO }}
+          DEVKITARM: ${{ env.DEVKITARM }}
+        run: make -C appData/engine/gbavm
+
       - name: Install mGBA for smoke test
         if: steps.devkitpro.outcome == 'success'
         continue-on-error: true
@@ -83,6 +97,14 @@ jobs:
           GBA_STUDIO_EMULATOR_TIMEOUT_MS: "10000"
         run: npm run test:emu -- out/RunProject.gba
 
+      - name: Run engine emulator smoke test
+        if: steps.devkitpro.outcome == 'success'
+        continue-on-error: true
+        env:
+          GBA_ENGINE_EMULATOR: mgba
+          GBA_ENGINE_EMULATOR_TIMEOUT_SECS: "10"
+        run: bash appData/engine/gbavm/scripts/test-emu.sh appData/engine/gbavm/bin/game.gba
+
       - name: Export sample GBDK project
         run: node out/cli/gb-studio-cli.js export test/data/projects/RunProject/RunProject.gbsproj out/ci/RunProject
 
@@ -93,6 +115,7 @@ jobs:
           if-no-files-found: ignore
           path: |
             out/RunProject.gba
+            appData/engine/gbavm/bin/game.gba
             out/ci/RunProject/**
 
   build-windows-installer:
