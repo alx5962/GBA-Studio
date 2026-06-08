@@ -26,6 +26,10 @@ module.exports = async () => {
         name: "@electron-forge/maker-zip",
         platforms: ["darwin", "win32", "linux"],
       },
+      {
+        name: "@electron-forge/maker-dmg",
+        platforms: ["darwin"],
+      },
       new MakerAppImage({}),
       {
         name: "@electron-forge/maker-deb",
