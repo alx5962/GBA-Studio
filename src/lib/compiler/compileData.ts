@@ -1373,6 +1373,22 @@ const compileGBA = async (
       return `static const uint8_t ${sceneSymbols[index]}_collisions[${tileCount}] = {${values}\n};`;
     })
     .join("\n\n");
+  const sceneTriggerArrays = rawProjectData.scenes
+    .map((scene, index) => {
+      if (!scene.triggers?.length) {
+        return "";
+      }
+
+      const triggerValues = scene.triggers
+        .map(
+          (trigger) => `  { ${Math.max(0, Math.min(255, Math.round(trigger.x || 0)))}, ${Math.max(0, Math.min(255, Math.round(trigger.y || 0)))}, ${Math.max(0, Math.min(255, Math.round(trigger.width || 0)))}, ${Math.max(0, Math.min(255, Math.round(trigger.height || 0)))}, NULL }`,
+        )
+        .join(",\n");
+
+      return `static const gba_trigger_def_t ${sceneSymbols[index]}_triggers[${scene.triggers.length}] = {\n${triggerValues}\n};`;
+    })
+    .filter(Boolean)
+    .join("\n\n");
   const sceneInitScripts = rawProjectData.scenes
     .map((scene, index) => {
       const tone = index % 4;
@@ -1395,6 +1411,7 @@ const compileGBA = async (
   ${width}, ${height}, ${type}, ${actors}, ${triggers}, ${tone},
   ${sceneSymbols[index]}_collisions,
   ${sceneSymbols[index]}_init_script,
+  ${triggers > 0 ? `${sceneSymbols[index]}_triggers` : "NULL"},
 };`;
     })
     .join("\n\n");
@@ -1410,11 +1427,14 @@ extern const gba_game_data_t gba_game_data;
 #endif
 `;
   output["gba_scene_data.c"] = `#include <stdint.h>
+#include <stddef.h>
 #include "gba_scene.h"
 #include "vm.h"
 #include "data/gba_scene_data.h"
 
 ${sceneCollisionArrays}
+
+${sceneTriggerArrays}
 
 ${sceneInitScripts}
 

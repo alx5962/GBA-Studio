@@ -416,6 +416,72 @@ test("should compile simple project into files object", async () => {
   expect(compiled).toBeInstanceOf(Object);
 });
 
+test("should emit trigger tables for GBA scene data", async () => {
+  const scriptEventHandlers = await getTestScriptHandlers();
+  const project = {
+    settings: {
+      startSceneId: "1",
+      startX: 5,
+      startY: 6,
+      defaultPlayerSprites: {},
+    },
+    scenes: [
+      {
+        id: "1",
+        name: "first_scene",
+        symbol: "scene_1",
+        type: "TOPDOWN",
+        width: 20,
+        height: 18,
+        collisions: [0, 0, 0, 0],
+        actors: [],
+        triggers: [
+          {
+            id: "92",
+            symbol: "trigger_92",
+            x: 1,
+            y: 2,
+            width: 5,
+            height: 1,
+            script: [],
+            leaveScript: [],
+          },
+        ],
+      },
+    ],
+    variables: {
+      variables: [],
+      constants: [],
+    },
+    engineFieldValues: {
+      engineFieldValues: [],
+    },
+  } as unknown as ProjectResources;
+
+  const compiled = await compile(project, {
+    projectRoot: `${__dirname}/_files`,
+    scriptEventHandlers,
+    engineSchema: {
+      fields: [],
+      sceneTypes: [],
+      consts: {},
+    },
+    tmpPath: os.tmpdir(),
+    debugEnabled: false,
+    progress: (_msg: string) => {},
+    warnings: (_msg: string) => {},
+    buildType: "gba",
+  });
+
+  expect(compiled.files["gba_scene_data.c"]).toContain(
+    "static const gba_trigger_def_t scene_1_triggers[1]",
+  );
+  expect(compiled.files["gba_scene_data.c"]).toContain(
+    "{ 1, 2, 5, 1, NULL }",
+  );
+  expect(compiled.files["gba_scene_data.c"]).toContain("scene_1_triggers");
+});
+
 test("should precompile image data", async () => {
   const backgrounds = [
     {
