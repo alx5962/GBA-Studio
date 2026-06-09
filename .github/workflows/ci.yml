@@ -47,8 +47,10 @@ jobs:
 
       - name: Configure downloaded devkitARM
         id: devkitpro
+        continue-on-error: true
         run: |
           DEVKITPRO_PATH="$GITHUB_WORKSPACE/buildTools/linux-x64"
+          find "$DEVKITPRO_PATH" -maxdepth 4 -type f -name '*gcc*' -o -type d -name '*devkit*'
           DEVKITARM_GCC="$(find "$DEVKITPRO_PATH" -type f -path '*/bin/arm-none-eabi-gcc' -print -quit)"
           test -n "$DEVKITARM_GCC"
           DEVKITARM_PATH="$(dirname "$(dirname "$DEVKITARM_GCC")")"
