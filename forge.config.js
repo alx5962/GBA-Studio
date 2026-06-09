@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-var-requires */
 const { FusesPlugin } = require("@electron-forge/plugin-fuses");
 const { FuseV1Options, FuseVersion } = require("@electron/fuses");
+const net = require("net");
 const rendererConfig = require("./webpack.renderer.config.js");
 
 const rendererPreloadConfig = {
@@ -8,8 +9,47 @@ const rendererPreloadConfig = {
   plugins: [],
 };
 
+const parsePort = (value, fallback) => {
+  const port = Number.parseInt(value, 10);
+
+  return Number.isInteger(port) && port >= 1024 && port <= 65535
+    ? port
+    : fallback;
+};
+
+const isPortAvailable = (port) =>
+  new Promise((resolve) => {
+    const server = net.createServer();
+
+    server.once("error", () => resolve(false));
+    server.once("listening", () => {
+      server.close(() => resolve(true));
+    });
+    server.listen(port);
+  });
+
+const findAvailablePort = async (startPort, reservedPorts = new Set()) => {
+  for (let port = startPort; port <= 65535; port++) {
+    if (!reservedPorts.has(port) && (await isPortAvailable(port))) {
+      return port;
+    }
+  }
+
+  throw new Error(`No available port found from ${startPort}`);
+};
+
 module.exports = async () => {
   const { MakerAppImage } = await import("@reforged/maker-appimage");
+  const reservedPorts = new Set();
+  const webpackPort = await findAvailablePort(
+    parsePort(process.env.GBA_STUDIO_WEBPACK_PORT || process.env.PORT, 3000),
+    reservedPorts,
+  );
+  reservedPorts.add(webpackPort);
+  const loggerPort = await findAvailablePort(
+    parsePort(process.env.GBA_STUDIO_WEBPACK_LOGGER_PORT, 9000),
+    reservedPorts,
+  );
 
   return {
     makers: [
@@ -82,6 +122,8 @@ module.exports = async () => {
       {
         name: "@electron-forge/plugin-webpack",
         config: {
+          port: webpackPort,
+          loggerPort,
           devServer: { liveReload: false },
           mainConfig: "./webpack.main.config.js",
           renderer: {

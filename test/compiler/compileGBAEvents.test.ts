@@ -1,10 +1,14 @@
-import { compileGBAScript, emitGBAScriptC, type GBAScriptEvent } from "lib/compiler/compileGBAEvents";
+import {
+  compileGBAScript,
+  emitGBAScriptC,
+  type GBAScriptEvent,
+} from "lib/compiler/compileGBAEvents";
 
-const VM_OP_END            = 0x00;
-const VM_OP_LOAD_SCENE     = 0x01;
-const VM_OP_WAIT           = 0x03;
-const VM_OP_SET_CONST      = 0x04;
-const VM_OP_SHOW_TEXT      = 0x0f;
+const VM_OP_END = 0x00;
+const VM_OP_LOAD_SCENE = 0x01;
+const VM_OP_WAIT = 0x03;
+const VM_OP_SET_CONST = 0x04;
+const VM_OP_SHOW_TEXT = 0x0f;
 
 const noopCtx = {
   sceneIndexById: {} as Record<string, number>,
@@ -84,6 +88,96 @@ describe("compileGBAScript", () => {
     expect(out[3]).toBe(VM_OP_END);
   });
 
+  it("EVENT_SET_VALUE supports VAR-prefixed variable ids", () => {
+    const events: GBAScriptEvent[] = [
+      { command: "EVENT_SET_VALUE", args: { variable: "VAR_5", value: 42 } },
+      {
+        command: "EVENT_SET_VALUE",
+        args: { variable: "VAR_VARIABLE_6", value: 43 },
+      },
+    ];
+    const out = compileGBAScript(events, noopCtx);
+    expect(out[0]).toBe(VM_OP_SET_CONST);
+    expect(out[1]).toBe(5);
+    expect(out[2]).toBe(42);
+    expect(out[3]).toBe(VM_OP_SET_CONST);
+    expect(out[4]).toBe(6);
+    expect(out[5]).toBe(43);
+  });
+
+  it("EVENT_SET_VALUE supports constant script values", () => {
+    const events: GBAScriptEvent[] = [
+      {
+        command: "EVENT_SET_VALUE",
+        args: { variable: "1", value: { type: "number", value: 7 } },
+      },
+      {
+        command: "EVENT_SET_VALUE",
+        args: { variable: "2", value: { type: "true" } },
+      },
+      {
+        command: "EVENT_SET_VALUE",
+        args: { variable: "3", value: { type: "false" } },
+      },
+      {
+        command: "EVENT_SET_VALUE",
+        args: { variable: "4", value: "12" },
+      },
+    ];
+    const out = compileGBAScript(events, noopCtx);
+    expect(out).toEqual([
+      VM_OP_SET_CONST,
+      1,
+      7,
+      VM_OP_SET_CONST,
+      2,
+      1,
+      VM_OP_SET_CONST,
+      3,
+      0,
+      VM_OP_SET_CONST,
+      4,
+      12,
+      VM_OP_END,
+    ]);
+  });
+
+  it("EVENT_SET_VALUE clamps constants to byte range", () => {
+    const events: GBAScriptEvent[] = [
+      { command: "EVENT_SET_VALUE", args: { variable: "1", value: -1 } },
+      { command: "EVENT_SET_VALUE", args: { variable: "2", value: 256 } },
+      { command: "EVENT_SET_VALUE", args: { variable: "3", value: 1.6 } },
+    ];
+    const out = compileGBAScript(events, noopCtx);
+    expect(out).toEqual([
+      VM_OP_SET_CONST,
+      1,
+      0,
+      VM_OP_SET_CONST,
+      2,
+      255,
+      VM_OP_SET_CONST,
+      3,
+      2,
+      VM_OP_END,
+    ]);
+  });
+
+  it("EVENT_SET_VALUE skips non-constant script values", () => {
+    const ctx = makeCtx();
+    const events: GBAScriptEvent[] = [
+      {
+        command: "EVENT_SET_VALUE",
+        args: { variable: "1", value: { type: "variable", value: "2" } },
+      },
+    ];
+    const out = compileGBAScript(events, ctx);
+    expect(out).toEqual([VM_OP_END]);
+    expect(ctx.warnings).toHaveBeenCalledWith(
+      expect.stringContaining("EVENT_SET_VALUE only supports constant"),
+    );
+  });
+
   it("EVENT_WAIT emits VM_OP_WAIT with frame count", () => {
     const events: GBAScriptEvent[] = [
       { command: "EVENT_WAIT", args: { frames: 30 } },
@@ -106,7 +200,7 @@ describe("compileGBAScript", () => {
   });
 
   it("sequences multiple events in order", () => {
-    const ctx = makeCtx({ "s1": 0 });
+    const ctx = makeCtx({ s1: 0 });
     const events: GBAScriptEvent[] = [
       { command: "EVENT_SET_VALUE", args: { variable: "0", value: 10 } },
       { command: "EVENT_SWITCH_SCENE", args: { sceneId: "s1" } },
@@ -125,5 +219,11 @@ describe("emitGBAScriptC", () => {
     expect(c).toContain("static const uint8_t my_script[5]");
     expect(c).toContain("0x0F");
     expect(c).toContain("0x00");
+  });
+
+  it("throws before emitting invalid numeric bytes", () => {
+    expect(() => emitGBAScriptC("bad_script", [Number.NaN])).toThrow(
+      "Invalid GBA bytecode byte",
+    );
   });
 });

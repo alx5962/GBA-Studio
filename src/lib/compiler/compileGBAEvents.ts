@@ -6,14 +6,11 @@
 // Opcode constants mirror vm.h exactly. Any change there must be reflected
 // here and vice-versa.
 
-const VM_OP_END           = 0x00;
-const VM_OP_LOAD_SCENE    = 0x01;
-const VM_OP_SET_SCENE_TONE = 0x02;
-const VM_OP_WAIT          = 0x03;
-const VM_OP_SET_CONST     = 0x04;
-const VM_OP_ADD_CONST     = 0x06;
-const VM_OP_SUB_CONST     = 0x07;
-const VM_OP_SHOW_TEXT     = 0x0f;
+const VM_OP_END = 0x00;
+const VM_OP_LOAD_SCENE = 0x01;
+const VM_OP_WAIT = 0x03;
+const VM_OP_SET_CONST = 0x04;
+const VM_OP_SHOW_TEXT = 0x0f;
 
 // Minimal structural type for the script events we receive — matches the
 // shape of GBAScriptEvent from entitiesTypes without importing it (which would
@@ -48,7 +45,40 @@ function encodeString(s: string): number[] {
 }
 
 function clampU8(n: number): number {
+  if (!Number.isFinite(n)) {
+    return 0;
+  }
   return Math.max(0, Math.min(255, Math.round(n)));
+}
+
+function parseVariableIndex(variable: unknown): number {
+  const variableId = String(variable ?? "0");
+  const numericPart = variableId.replace(/[^0-9]/g, "");
+  return clampU8(parseInt(numericPart || "0", 10));
+}
+
+function constValueToU8(value: unknown): number | undefined {
+  if (typeof value === "number" || typeof value === "string") {
+    return clampU8(Number(value));
+  }
+
+  if (!value || typeof value !== "object" || !("type" in value)) {
+    return 0;
+  }
+
+  const scriptValue = value as { type?: unknown; value?: unknown };
+
+  if (scriptValue.type === "number") {
+    return clampU8(Number(scriptValue.value ?? 0));
+  }
+  if (scriptValue.type === "true") {
+    return 1;
+  }
+  if (scriptValue.type === "false") {
+    return 0;
+  }
+
+  return undefined;
 }
 
 // Compile one event and append bytes to `out`. Returns false if the event
@@ -91,8 +121,14 @@ function compileEvent(
     case "EVENT_SET_VALUE": {
       // args.variable is a variable id string like "0" or "VAR_0".
       // For the GBA VM, variables are 0-indexed integers 0..255.
-      const varIndex = clampU8(parseInt(String(args.variable ?? "0"), 10));
-      const value = clampU8(Number(args.value ?? 0));
+      const varIndex = parseVariableIndex(args.variable);
+      const value = constValueToU8(args.value);
+      if (value === undefined) {
+        ctx.warnings(
+          `GBA compiler: EVENT_SET_VALUE only supports constant number/boolean values — skipped`,
+        );
+        return false;
+      }
       out.push(VM_OP_SET_CONST, varIndex, value);
       return true;
     }
@@ -131,7 +167,13 @@ export function compileGBAScript(
 // symbol: C identifier for the array (e.g. "scene_1_trigger_0_script")
 export function emitGBAScriptC(symbol: string, bytecode: number[]): string {
   const bytes = bytecode
-    .map((b, i) => `${i % 16 === 0 ? "\n  " : " "}0x${b.toString(16).padStart(2, "0").toUpperCase()}`)
+    .map((b, i) => {
+      if (!Number.isFinite(b)) {
+        throw new Error(`Invalid GBA bytecode byte at ${symbol}[${i}]: ${b}`);
+      }
+      const byte = clampU8(b);
+      return `${i % 16 === 0 ? "\n  " : " "}0x${byte.toString(16).padStart(2, "0").toUpperCase()}`;
+    })
     .join(",");
   return `static const uint8_t ${symbol}[${bytecode.length}] = {${bytes}\n};`;
 }

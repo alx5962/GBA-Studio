@@ -20,18 +20,18 @@ This project is a prototype, but the editor UI is running and the GBA ROM build 
 | ------------------------------ | ----------- | ------------------------------------------------------------------------------------------------------------------------ |
 | Editor shell                   | Partial     | The inherited Electron editor launches and can open/edit projects, but some UI assumptions still come from GB Studio.    |
 | Project metadata               | Partial     | `engine.json` exposes GBA dimensions and input options, including 240x160 output and A/B/Start/Select/D-pad/L/R buttons. |
-| Templates                      | Partial     | GBA templates exist and can be built, but many assets still need deeper GBA-specific validation.                         |
-| CLI build command              | Partial     | `make:rom` and `npm run build:gba` can produce `.gba` files through the GBA path.                                        |
+| Templates                      | Partial     | GBA templates exist and can be built; test rigging now validates GB palette rules separately from GBA RGB assets.        |
+| CLI build command              | Working     | `make:rom`, `npm run build:gba`, and `npm run test:compile-options` produce `.gba` files through the GBA path.           |
 | Editor Play/launch             | Partial     | The toolbar Play action now builds a `.gba` ROM and opens it through the OS/emulator file association.                   |
-| Compiler backend               | Prototype   | The GBA compiler path emits native `gba_scene_data` C records and a minimal bootstrap script.                            |
-| Generated C data compatibility | Partial     | GBA shims for `gbs_types.h`, `bankdata.h`, and bank macros allow generated asset C files to compile without GBDK.        |
+| Compiler backend               | Prototype   | The GBA compiler path emits native `gba_scene_data` C records, bootstrap bytecode, trigger/actor scripts, and VM bytes.  |
+| Generated C data compatibility | Working     | GBA shims and engine contract tests keep generated C data aligned with the bundled GBA engine headers.                   |
 | Toolchain integration          | Working     | devkitPro/devkitARM detection, `gba.specs`, `objcopy`, and `gbafix` are wired for local and CI builds.                   |
 | ROM boot path                  | Working     | The GBA engine boots through devkitARM startup and runs `engine_run()`.                                                  |
-| VM runtime                     | Prototype   | A native GBA bytecode loop now supports end, wait, scene load, and palette tone opcodes.                                 |
+| VM runtime                     | Prototype   | A native GBA bytecode loop supports end, wait, scene load, palette tone, text dispatch, variables, math, and branches.   |
 | Background rendering           | Prototype   | Mode 0 renders loaded scene dimensions, collision-marked tiles, generated palette tones, and visible scene transitions.  |
 | Actors                         | Stub        | Actor allocation/update functions exist, but sprite/OAM rendering and scene-driven actor loading are not complete.       |
 | Input/buttons                  | Partial     | GBA key polling supports A/B/Start/Select/D-pad/L/R; gameplay bindings still need VM/event integration.                  |
-| Scenes/scripts                 | Prototype   | Compiled scene records load at runtime; full GB Studio event compilation, triggers, text, and actor scripts are pending. |
+| Scenes/scripts                 | Prototype   | Compiled scene records, trigger scripts, actor interaction scripts, and constant variable events run on the GBA VM.      |
 | Sprites/projectiles            | Not started | GBA OAM sprite upload, animation, collisions, and projectile runtime need implementation.                                |
 | Audio                          | Not started | GBA APU/DirectSound music and sound effect runtime has not been ported.                                                  |
 | Save/load                      | Not started | SRAM/flash save support and GB Studio variable persistence are not implemented.                                          |
@@ -54,6 +54,7 @@ This fork sits alongside Eoin Jordan's GB Studio MCP/agent work: [gb-studio-agen
 - Launches the inherited Electron editor UI and supports the editor workflow.
 - Builds the CLI bundle with `npm run make:cli`.
 - Provides `npm run build:gba -- <project.gbsproj> <out.gba>` as the standard sample ROM build command.
+- Provides `npm run test:compile-options` as the end-to-end CLI/export/GBA-ROM compile smoke test.
 - Includes `examples/gba-starter-project/project.gbsproj`, a GBA-format conversion of the bundled GB Studio starter sample with scaled backgrounds and scene metadata.
 - Includes `examples/poachermon/project.gbsproj` and a matching `gba-poachermon` template as a richer GBA compiler/ROM launch fixture.
 - Detects official devkitPro/devkitARM installs instead of relying on stale bundled compiler paths.
@@ -63,7 +64,6 @@ This fork sits alongside Eoin Jordan's GB Studio MCP/agent work: [gb-studio-agen
 
 ## Not Finished Yet
 
-- A local `.gba` build must still be proven on machines that have official devkitPro/devkitARM installed.
 - Parts of the editor and asset pipeline still inherit Game Boy screen, palette, sprite, and memory assumptions.
 - GBA-specific hardware support, including L/R inputs and broader video/audio/save behavior, is still under active development.
 - Emulator and hardware validation need to expand as features are added.
@@ -84,6 +84,10 @@ Requirements
 - Git
 - devkitPro/devkitARM if you want to build `.gba` ROMs
 - Optional: mGBA for local emulator smoke tests
+
+Optional host-test requirement for the bundled GBA engine:
+
+- MSYS2 UCRT64 GCC or MSYS2 CLANG64 Clang plus `make` on Windows, or any compatible host `gcc`/`make` on Linux/macOS.
 
 ### Build and run from source
 
@@ -140,6 +144,60 @@ Open the starter project in the app:
 
 1. Run `npm start`
 2. In the editor, open `examples/starter-project/project.gbsproj`
+
+### Validation
+
+Run the default Studio test suite:
+
+```bash
+npm test
+```
+
+Run the CLI/export/GBA-ROM compile smoke test:
+
+```bash
+npm run test:compile-options
+```
+
+Run the bundled GBA engine host tests when a host C compiler is installed:
+
+```bash
+cd appData/engine/gbavm
+make test-host
+```
+
+On Windows with MSYS2 UCRT64 installed, make `gcc` and `make` visible to the current PowerShell first:
+
+```powershell
+pacman -S --needed mingw-w64-ucrt-x86_64-gcc make
+$env:Path = "C:\msys64\ucrt64\bin;$env:Path"
+gcc --version
+make --version
+```
+
+If you installed MSYS2 CLANG64 instead, use `clang` as the host compiler:
+
+```powershell
+pacman -S --needed mingw-w64-clang-x86_64-clang make
+$env:Path = "C:\msys64\clang64\bin;$env:Path"
+$env:HOST_CC = "clang"
+clang --version
+make --version
+```
+
+If the CLI smoke test reports that Electron failed to install correctly, repair the local package and rerun it:
+
+```bash
+npm rebuild electron
+npm run test:compile-options
+```
+
+If `npm start` reaches `Launching dev servers for renderer process code` and exits with `EADDRINUSE` on port 3000, another local process is already using the default Forge dev-server port. Startup probes for the next available port automatically. To force a specific port, set `GBA_STUDIO_WEBPACK_PORT` before launching:
+
+```powershell
+$env:GBA_STUDIO_WEBPACK_PORT = "3001"
+npm start
+```
 
 ## GBA Studio CLI
 

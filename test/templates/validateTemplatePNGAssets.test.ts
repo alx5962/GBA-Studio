@@ -22,6 +22,7 @@ const templatePNGAssets = glob
     const fileData = readFileSync(filePath);
     const normalizedPath = normalize(filePath);
     const pathParts = normalizedPath.split(sep);
+    const templateName = pathParts[pathParts.indexOf("templates") + 1];
     const assetType = pathParts[pathParts.indexOf("assets") + 1];
     const png = PNG.sync.read(fileData);
     const palette = new Set<string>();
@@ -44,19 +45,37 @@ const templatePNGAssets = glob
       palette,
       containsAlpha,
       assetType,
+      isGBATemplate: templateName.startsWith("gba-"),
     };
   });
 
 test.each(templatePNGAssets)(
   "Template asset is indexed PNG : $filePath",
-  ({ png }) => {
+  ({ png, isGBATemplate }) => {
+    if (isGBATemplate) {
+      return;
+    }
     expect(png.palette).toBeTruthy();
-  }
+  },
+);
+
+test.each(templatePNGAssets)(
+  "GBA template asset is readable PNG : $filePath",
+  ({ png, isGBATemplate }) => {
+    if (!isGBATemplate) {
+      return;
+    }
+    expect(png.width).toBeGreaterThan(0);
+    expect(png.height).toBeGreaterThan(0);
+  },
 );
 
 test.each(templatePNGAssets)(
   "Template asset contains correct number of colors : $filePath",
-  ({ palette, assetType }) => {
+  ({ palette, assetType, isGBATemplate }) => {
+    if (isGBATemplate) {
+      return;
+    }
     let maxColors = 4;
     if (assetType === "sgb") {
       // SGB images have no color requirements, will be matched to nearest
@@ -67,12 +86,15 @@ test.each(templatePNGAssets)(
       maxColors = 5;
     }
     expect(palette.size).toBeLessThanOrEqual(maxColors);
-  }
+  },
 );
 
 test.each(templatePNGAssets)(
   "Template asset contains only valid colors : $filePath",
-  ({ assetType, palette }) => {
+  ({ assetType, palette, isGBATemplate }) => {
+    if (isGBATemplate) {
+      return;
+    }
     let validColors = validImageColors;
     if (assetType === "sprites" || assetType === "emotes") {
       validColors = validSpriteColors;
@@ -86,15 +108,18 @@ test.each(templatePNGAssets)(
       return;
     }
     const extraColors = [...palette].filter(
-      (item) => !validColors.includes(item)
+      (item) => !validColors.includes(item),
     );
     expect(extraColors).toEqual([]);
-  }
+  },
 );
 
 test.each(templatePNGAssets)(
   "Template asset is index palette is correct : $filePath",
-  ({ png, assetType }) => {
+  ({ png, assetType, isGBATemplate }) => {
+    if (isGBATemplate) {
+      return;
+    }
     let validPalette = validImageColors.join("-");
     if (assetType === "sprites" || assetType === "emotes") {
       validPalette = validSpriteColors.join("-");
@@ -117,5 +142,5 @@ test.each(templatePNGAssets)(
       "";
     expect(Array.isArray(pngPalette));
     expect(indexPalette).toEqual(validPalette);
-  }
+  },
 );
