@@ -50,6 +50,9 @@ jobs:
         run: |
           DEVKITPRO_PATH="$GITHUB_WORKSPACE/buildTools/linux-x64"
           DEVKITARM_PATH="$DEVKITPRO_PATH/devkitARM"
+          if [ ! -x "$DEVKITARM_PATH/bin/arm-none-eabi-gcc" ]; then
+            DEVKITARM_PATH="$DEVKITPRO_PATH/devkitarm"
+          fi
           echo "DEVKITPRO=$DEVKITPRO_PATH" >> "$GITHUB_ENV"
           echo "DEVKITARM=$DEVKITARM_PATH" >> "$GITHUB_ENV"
           echo "$DEVKITARM_PATH/bin" >> "$GITHUB_PATH"
