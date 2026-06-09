@@ -1295,6 +1295,12 @@ const precompile = async (
 
 // #endregion
 
+import {
+  compileGBAScript,
+  emitGBAScriptC,
+  type GBAScriptEvent,
+} from "./compileGBAEvents";
+
 const formatCByteArray = (values: number[] | Uint8Array, wrap = 16) =>
   Array.from(values)
     .map((value, index) =>
@@ -1491,6 +1497,13 @@ const compileGBA = async (
     cIdent(scene.symbol, `scene_${index}`),
   );
 
+  // Build scene-id → index map for EVENT_SWITCH_SCENE compilation.
+  const sceneIndexById = Object.fromEntries(
+    precompiled.sceneData.map((scene, index) => [scene.id, index]),
+  ) as Record<string, number>;
+
+  const gbaEventCtx = { sceneIndexById, warnings };
+
   const sceneBlocks = precompiled.sceneData
     .map((scene, index) => {
       const sceneSymbol = sceneSymbols[index];
@@ -1577,20 +1590,55 @@ const compileGBA = async (
           ? `${formatCByteArray(scene.collisions)}\n`
           : "\n  0x00\n"
       }};`;
+      // Compile trigger scripts and emit trigger array.
+      const triggerScriptBlocks: string[] = [];
+      const triggerScriptSymbols: (string | null)[] = rawTriggers.map(
+        (trigger, triggerIndex) => {
+          const scriptEvents = trigger.script as GBAScriptEvent[] | undefined;
+          if (!scriptEvents || scriptEvents.length === 0) return null;
+          if (
+            scriptEvents.length === 1 &&
+            scriptEvents[0].command === "EVENT_END"
+          )
+            return null;
+          const symbol = `${sceneSymbol}_trigger_${triggerIndex}_script`;
+          const bytecode = compileGBAScript(scriptEvents, gbaEventCtx);
+          triggerScriptBlocks.push(emitGBAScriptC(symbol, bytecode));
+          return symbol;
+        },
+      );
       const triggerArray =
         rawTriggers.length > 0
           ? `static const gba_trigger_def_t ${sceneSymbol}_triggers[${rawTriggers.length}] = {\n${rawTriggers
-              .map(
-                (trigger) =>
-                  `  { ${trigger.x}, ${trigger.y}, ${trigger.width}, ${trigger.height}, NULL }`,
-              )
+              .map((trigger, triggerIndex) => {
+                const scriptSym = triggerScriptSymbols[triggerIndex];
+                return `  { ${trigger.x}, ${trigger.y}, ${trigger.width}, ${trigger.height}, ${scriptSym ?? "NULL"} }`;
+              })
               .join(",\n")}\n};`
           : "";
+      // Compile actor interact scripts.
+      const actorScriptBlocks: string[] = [];
+      const actorScriptSymbols: (string | null)[] = scene.actors.map(
+        (actor, actorIndex) => {
+          const scriptEvents = actor.script as GBAScriptEvent[] | undefined;
+          if (!scriptEvents || scriptEvents.length === 0) return null;
+          if (
+            scriptEvents.length === 1 &&
+            scriptEvents[0].command === "EVENT_END"
+          )
+            return null;
+          const symbol = `${sceneSymbol}_actor_${actorIndex}_interact_script`;
+          const bytecode = compileGBAScript(scriptEvents, gbaEventCtx);
+          actorScriptBlocks.push(emitGBAScriptC(symbol, bytecode));
+          return symbol;
+        },
+      );
       const actorArray =
         scene.actors.length > 0
           ? `static const gba_actor_def_t ${sceneSymbol}_actors[${scene.actors.length}] = {\n${scene.actors
-              .map((actor) => {
+              .map((actor, actorIndex) => {
                 const spriteIndex = spriteIndexById[actor.spriteSheetId] ?? 0;
+                const scriptSym = actorScriptSymbols[actorIndex];
                 return `  { ${(actor.x || 0) * 8}, ${(actor.y || 0) * 8}, ${spriteIndex}, ${toGbaDirection(
                   actor.direction,
                 )}, ${actor.moveSpeed || 1}, ${ensureNumber(
@@ -1598,7 +1646,7 @@ const compileGBA = async (
                   15,
                 )}, ${actor.isPinned ? "false" : "true"}, ${
                   actor.persistent ? "true" : "false"
-                }, ${actor.isPinned ? "true" : "false"}, false }`;
+                }, ${actor.isPinned ? "true" : "false"}, false, ${scriptSym ?? "NULL"} }`;
               })
               .join(",\n")}\n};`
           : "";
@@ -1662,6 +1710,8 @@ const compileGBA = async (
         bgPaletteArray,
         spritePaletteArray,
         collisionArray,
+        ...triggerScriptBlocks,
+        ...actorScriptBlocks,
         actorArray,
         triggerArray,
         spriteBlocks,

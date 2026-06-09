@@ -508,8 +508,13 @@ test("should emit trigger tables for GBA scene data", async () => {
   expect(compiled.files["gba_scene_data.c"]).toContain(
     "static const gba_trigger_def_t scene_1_triggers[1]",
   );
+  // The trigger has an EVENT_TEXT script, so a compiled script symbol should
+  // be referenced rather than NULL.
   expect(compiled.files["gba_scene_data.c"]).toContain(
-    "{ 1, 2, 5, 1, NULL }",
+    "scene_1_trigger_0_script",
+  );
+  expect(compiled.files["gba_scene_data.c"]).toContain(
+    "0x0F", // VM_OP_SHOW_TEXT
   );
   expect(compiled.files["gba_scene_data.c"]).toContain("scene_1_triggers");
 });
