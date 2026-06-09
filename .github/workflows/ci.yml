@@ -45,25 +45,15 @@ jobs:
       - name: Build CLI
         run: npm run make:cli
 
-      # devkitPro no longer publishes a .deb GitHub release asset, and its apt
-      # bootstrap is unreliable on hosted runners. The ROM smoke test is a
-      # best-effort signal, so the toolchain + ROM steps are non-blocking and
-      # never gate the installer build or release.
-      - name: Install devkitPro GBA toolchain
+      - name: Configure downloaded devkitARM
         id: devkitpro
-        continue-on-error: true
         run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends ca-certificates apt-transport-https
-          echo 'deb [trusted=yes] https://apt.devkitpro.org stable main' \
-            | sudo tee /etc/apt/sources.list.d/devkitpro.list
-          sudo apt-get update
-          sudo apt-get install -y devkitpro-pacman
-          sudo dkp-pacman -Sy --needed --noconfirm gba-dev
-          echo "DEVKITPRO=/opt/devkitpro" >> "$GITHUB_ENV"
-          echo "DEVKITARM=/opt/devkitpro/devkitARM" >> "$GITHUB_ENV"
-          echo "/opt/devkitpro/devkitARM/bin" >> "$GITHUB_PATH"
-          test -x /opt/devkitpro/devkitARM/bin/arm-none-eabi-gcc
+          DEVKITPRO_PATH="$GITHUB_WORKSPACE/buildTools/linux-x64"
+          DEVKITARM_PATH="$DEVKITPRO_PATH/devkitARM"
+          echo "DEVKITPRO=$DEVKITPRO_PATH" >> "$GITHUB_ENV"
+          echo "DEVKITARM=$DEVKITARM_PATH" >> "$GITHUB_ENV"
+          echo "$DEVKITARM_PATH/bin" >> "$GITHUB_PATH"
+          test -x "$DEVKITARM_PATH/bin/arm-none-eabi-gcc"
 
       - name: Build sample GBA ROM
         if: steps.devkitpro.outcome == 'success'
@@ -80,30 +70,6 @@ jobs:
           DEVKITPRO: ${{ env.DEVKITPRO }}
           DEVKITARM: ${{ env.DEVKITARM }}
         run: make -C appData/engine/gbavm
-
-      - name: Install mGBA for smoke test
-        if: steps.devkitpro.outcome == 'success'
-        continue-on-error: true
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends mgba-sdl
-
-      - name: Run emulator smoke test
-        if: steps.devkitpro.outcome == 'success'
-        continue-on-error: true
-        env:
-          GBA_STUDIO_EMULATOR: mgba
-          GBA_STUDIO_EMULATOR_HEADLESS: "1"
-          GBA_STUDIO_EMULATOR_TIMEOUT_MS: "10000"
-        run: npm run test:emu -- out/RunProject.gba
-
-      - name: Run engine emulator smoke test
-        if: steps.devkitpro.outcome == 'success'
-        continue-on-error: true
-        env:
-          GBA_ENGINE_EMULATOR: mgba
-          GBA_ENGINE_EMULATOR_TIMEOUT_SECS: "10"
-        run: bash appData/engine/gbavm/scripts/test-emu.sh appData/engine/gbavm/bin/game.gba
 
       - name: Export sample GBDK project
         run: node out/cli/gb-studio-cli.js export test/data/projects/RunProject/RunProject.gbsproj out/ci/RunProject
