@@ -1,10 +1,10 @@
 {
   "_resourceType": "background",
   "id": "b9a1c0de-0000-4a00-8000-000000000001",
-  "name": "Scene 1",
-  "symbol": "bg_scene_1",
+  "name": "Iso Village",
+  "symbol": "bg_iso_village",
   "tileColors": "",
-  "filename": "placeholder.png",
+  "filename": "iso_village.png",
   "width": 30,
   "height": 20,
   "imageWidth": 240,
