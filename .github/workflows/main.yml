@@ -160,7 +160,8 @@ jobs:
           npm run fetch-deps -- --arch=win32-ia32
           npm run make:win32
           mkdir -p ./out/keep
-          mv ./out/make/zip/win32/ia32/*.zip ./out/keep/gba-studio-${GITHUB_REF_NAME}-windows_x86.zip
+          mkdir -p ./out/keep/gba-studio-${GITHUB_REF_NAME}-windows_x86-zip
+          mv ./out/make/zip/win32/ia32/*.zip ./out/keep/gba-studio-${GITHUB_REF_NAME}-windows_x86-zip/
           mv ./out/make/squirrel.windows/ia32 ./out/keep/gba-studio-${GITHUB_REF_NAME}-windows_x86-squirrel
 
       - name: Build Win64
@@ -169,7 +170,8 @@ jobs:
           npm run fetch-deps -- --arch=win32-x64
           npm run make:win
           mkdir -p ./out/keep
-          mv ./out/make/zip/win32/x64/*.zip ./out/keep/gba-studio-${GITHUB_REF_NAME}-windows_x86_64.zip
+          mkdir -p ./out/keep/gba-studio-${GITHUB_REF_NAME}-windows_x86_64-zip
+          mv ./out/make/zip/win32/x64/*.zip ./out/keep/gba-studio-${GITHUB_REF_NAME}-windows_x86_64-zip/
           mv ./out/make/squirrel.windows/x64 ./out/keep/gba-studio-${GITHUB_REF_NAME}-windows_x86_64-squirrel
 
       - uses: actions/upload-artifact@v4
