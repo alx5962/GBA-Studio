@@ -420,6 +420,25 @@ function compileEvent(
       return true;
     }
 
+    case "EVENT_GROUP": {
+      // A group is purely organisational — inline its children in order.
+      const children =
+        (args.true as GBAScriptEvent[] | undefined) ??
+        event.children?.true ??
+        [];
+      out.push(...compileNestedEvents(children, ctx));
+      return true;
+    }
+
+    case "EVENT_IF_COLOR_SUPPORTED": {
+      // The GBA always supports colour, so the "true" branch is always taken.
+      // Compile it inline and drop the "false" branch entirely.
+      const trueEvents =
+        (args.true as GBAScriptEvent[] | undefined) ?? event.children?.true;
+      out.push(...compileNestedEvents(trueEvents, ctx));
+      return true;
+    }
+
     case "EVENT_IF_VALUE": {
       const directOpcode = compareOpcode(args.operator);
       const inverseOpcode = inverseCompareOpcode(args.operator);

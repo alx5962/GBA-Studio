@@ -477,6 +477,65 @@ describe("compileGBAScript", () => {
     expect(lt[0]).toBe(VM_OP_IF_VAR_LT_CONST);
   });
 
+  it("EVENT_GROUP inlines its children in order", () => {
+    const events: GBAScriptEvent[] = [
+      {
+        command: "EVENT_GROUP",
+        args: {
+          true: [
+            { command: "EVENT_SET_VALUE", args: { variable: "1", value: 7 } },
+            { command: "EVENT_INC_VALUE", args: { variable: "2" } },
+          ],
+        },
+      },
+    ];
+    const out = compileGBAScript(events, noopCtx);
+    expect(out).toEqual([
+      VM_OP_SET_CONST,
+      1,
+      7,
+      VM_OP_ADD_CONST,
+      2,
+      1,
+      VM_OP_END,
+    ]);
+  });
+
+  it("EVENT_GROUP reads children from the children map", () => {
+    const events: GBAScriptEvent[] = [
+      {
+        command: "EVENT_GROUP",
+        children: {
+          true: [
+            { command: "EVENT_WAIT", args: { frames: 5 } },
+          ],
+        },
+      },
+    ];
+    const out = compileGBAScript(events, noopCtx);
+    expect(out).toEqual([VM_OP_WAIT, 5, VM_OP_END]);
+  });
+
+  it("EVENT_IF_COLOR_SUPPORTED always inlines the true branch (GBA has colour)", () => {
+    const ctx = makeCtx();
+    const events: GBAScriptEvent[] = [
+      {
+        command: "EVENT_IF_COLOR_SUPPORTED",
+        args: {
+          true: [
+            { command: "EVENT_SET_VALUE", args: { variable: "1", value: 1 } },
+          ],
+          false: [
+            { command: "EVENT_SET_VALUE", args: { variable: "1", value: 0 } },
+          ],
+        },
+      },
+    ];
+    const out = compileGBAScript(events, ctx);
+    expect(out).toEqual([VM_OP_SET_CONST, 1, 1, VM_OP_END]);
+    expect(ctx.warnings).not.toHaveBeenCalled();
+  });
+
   it("unsupported events are skipped with a warning", () => {
     const ctx = makeCtx();
     const events: GBAScriptEvent[] = [
