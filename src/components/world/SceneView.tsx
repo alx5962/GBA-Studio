@@ -42,6 +42,12 @@ import { ContextMenu } from "ui/menu/ContextMenu";
 import renderSceneContextMenu from "./renderSceneContextMenu";
 import SceneScrollBounds from "./SceneScrollBounds";
 import { SceneContext } from "components/script/SceneContext";
+import IsoGridOverlay from "./IsoGridOverlay";
+import { isoDepthKey } from "shared/lib/entities/isoUtils";
+import {
+  actorSelectors,
+  triggerSelectors,
+} from "store/features/entities/entitiesState";
 
 const TILE_SIZE = 8;
 
@@ -435,6 +441,26 @@ const SceneView = memo(({ id, index, editable }: SceneViewProps) => {
     [gbcEnabled, getSpritePalette],
   );
 
+  const isIsometric = scene?.type === "ISOMETRIC";
+
+  // For isometric scenes depth-sort actor IDs by (x + y + isoZ) so the
+  // editor preview matches the engine's draw order.
+  const allActors = useAppSelector((state) =>
+    actorSelectors.selectEntities(state),
+  );
+  const sortedActorIds = useMemo(() => {
+    if (!scene) return [];
+    if (!isIsometric) return scene.actors;
+    return [...scene.actors].sort((aId, bId) => {
+      const a = allActors[aId];
+      const b = allActors[bId];
+      if (!a || !b) return 0;
+      return (
+        isoDepthKey(a.x, a.y, a.isoZ) - isoDepthKey(b.x, b.y, b.isoZ)
+      );
+    });
+  }, [scene, isIsometric, allActors]);
+
   const slopePreview = useAppSelector((state) => state.editor.slopePreview);
 
   const parallaxHoverLayer = useAppSelector(
@@ -778,6 +804,15 @@ const SceneView = memo(({ id, index, editable }: SceneViewProps) => {
             />
           </div>
         )}
+        {/* Isometric diamond grid overlay */}
+        {isIsometric && (
+          <SceneOverlay $noPointerEvents>
+            <IsoGridOverlay
+              mapWidth={scene.width}
+              mapHeight={scene.height}
+            />
+          </SceneOverlay>
+        )}
         {editable && (hovered || selected) && (
           <SceneCursor
             sceneId={id}
@@ -792,19 +827,21 @@ const SceneView = memo(({ id, index, editable }: SceneViewProps) => {
               id={triggerId}
               sceneId={id}
               editable={editable}
+              isIsometric={isIsometric}
             />
           ))}
         <SceneContext.Provider
           value={{ spriteMode: scene.spriteMode ?? defaultSpriteMode }}
         >
           {showEntities &&
-            scene.actors.map((actorId) => (
+            sortedActorIds.map((actorId) => (
               <WorldActor
                 key={actorId}
                 id={actorId}
                 sceneId={id}
                 palettes={spritePalettes}
                 editable={editable}
+                isIsometric={isIsometric}
               />
             ))}
         </SceneContext.Provider>

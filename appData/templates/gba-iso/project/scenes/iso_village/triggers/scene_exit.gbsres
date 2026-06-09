@@ -1,0 +1,27 @@
+{
+  "_resourceType": "trigger",
+  "id": "5ce7e000-0000-4a00-8000-000000000t02",
+  "_index": 1,
+  "symbol": "trigger_scene_exit",
+  "prefabId": "",
+  "name": "Scene Exit",
+  "x": 0,
+  "y": 0,
+  "width": 2,
+  "height": 1,
+  "prefabScriptOverrides": {},
+  "script": [
+    {
+      "id": "5ce7e000-0000-4a00-8000-000000000e03",
+      "command": "EVENT_SWITCH_SCENE",
+      "args": {
+        "sceneId": "5ce7e000-0000-4a00-8000-000000000iso",
+        "x": { "type": "number", "value": 5 },
+        "y": { "type": "number", "value": 5 },
+        "direction": "down",
+        "fadeSpeed": "2"
+      }
+    }
+  ],
+  "leaveScript": []
+}

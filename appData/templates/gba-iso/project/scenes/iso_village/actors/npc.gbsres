@@ -1,0 +1,37 @@
+{
+  "_resourceType": "actor",
+  "id": "5ce7e000-0000-4a00-8000-000000000a02",
+  "_index": 1,
+  "symbol": "actor_npc_iso",
+  "prefabId": "",
+  "name": "NPC",
+  "x": 8,
+  "y": 4,
+  "isoZ": 0,
+  "frame": 0,
+  "animate": false,
+  "spriteSheetId": "581d34d0-9591-4e6e-a609-1d94f203b0cd",
+  "paletteId": "",
+  "direction": "down",
+  "moveSpeed": 1,
+  "animSpeed": 15,
+  "isPinned": false,
+  "persistent": false,
+  "collisionGroup": "",
+  "collisionExtraFlags": [],
+  "prefabScriptOverrides": {},
+  "script": [
+    {
+      "id": "5ce7e000-0000-4a00-8000-000000000e01",
+      "command": "EVENT_TEXT",
+      "args": {
+        "text": "Welcome to the\nisometric world!"
+      }
+    }
+  ],
+  "startScript": [],
+  "updateScript": [],
+  "hit1Script": [],
+  "hit2Script": [],
+  "hit3Script": []
+}

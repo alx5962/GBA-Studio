@@ -1880,6 +1880,8 @@
   "SPLASH_BLANK_PROJECT_DESCRIPTION": "A completely blank canvas",
   "SPLASH_GBA_PROJECT_DESCRIPTION": "The bundled GB Studio sample converted to GBA-format 240x160 scenes and scaled assets",
   "SPLASH_GBA_BLANK_PROJECT_DESCRIPTION": "A minimal GBA project sized for the 240x160 screen, with a starter scene and player ready to go",
+  "SPLASH_GBA_ISO_PROJECT": "GBA Isometric Adventure",
+  "SPLASH_GBA_ISO_PROJECT_DESCRIPTION": "A starter GBA project with an isometric scene, diamond grid editor, depth-sorted actors, and example NPC dialogue",
   "SPLASH_GBA_POACHERMON_PROJECT_DESCRIPTION": "A tongue-in-cheek GBA sample project for testing the compiler and ROM launch path",
   "SPLASH_PATH": "Path",
   "SPLASH_CREATE": "Create Project",

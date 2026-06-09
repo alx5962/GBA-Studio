@@ -2,6 +2,13 @@ import React, { memo, useCallback, useEffect, useState } from "react";
 import editorActions from "store/features/editor/editorActions";
 import { triggerSelectors } from "store/features/entities/entitiesState";
 import { MIDDLE_MOUSE, TILE_SIZE } from "consts";
+import {
+  isoToScreen,
+  isoDiamondPoints,
+  isoOriginX,
+  ISO_TILE_W,
+  ISO_TILE_H,
+} from "shared/lib/entities/isoUtils";
 import styled, { css } from "styled-components";
 import { useAppDispatch, useAppSelector } from "store/hooks";
 import { ContextMenu } from "ui/menu/ContextMenu";
@@ -11,6 +18,7 @@ interface TriggerViewProps {
   id: string;
   sceneId: string;
   editable?: boolean;
+  isIsometric?: boolean;
 }
 
 interface WrapperProps {
@@ -33,7 +41,8 @@ const Wrapper = styled.div<WrapperProps>`
       : ""}
 `;
 
-const TriggerView = memo(({ id, sceneId, editable }: TriggerViewProps) => {
+const TriggerView = memo(
+  ({ id, sceneId, editable, isIsometric }: TriggerViewProps) => {
   const dispatch = useAppDispatch();
   const trigger = useAppSelector((state) =>
     triggerSelectors.selectById(state, id),
@@ -103,8 +112,80 @@ const TriggerView = memo(({ id, sceneId, editable }: TriggerViewProps) => {
     setContextMenu(undefined);
   }, []);
 
+  const sceneWidth = useAppSelector((state) => {
+    if (!isIsometric) return 0;
+    const scene = state.project.present.scenes.find(
+      (s: { id: string }) => s.id === sceneId,
+    );
+    return scene?.width ?? 0;
+  });
+
   if (!trigger) {
     return <></>;
+  }
+
+  // Isometric triggers: render a projected diamond SVG per tile covered by the
+  // trigger bounds, overlaid on the scene canvas.
+  if (isIsometric) {
+    const polygons: JSX.Element[] = [];
+    const ox = isoOriginX(sceneWidth);
+    for (let dy = 0; dy < Math.max(trigger.height, 1); dy++) {
+      for (let dx = 0; dx < Math.max(trigger.width, 1); dx++) {
+        const { x, y } = isoToScreen(trigger.x + dx, trigger.y + dy);
+        polygons.push(
+          <polygon
+            key={`${dx}-${dy}`}
+            points={isoDiamondPoints(ox + x, y)}
+            fill={
+              selected ? "rgba(255,199,40,0.5)" : "rgba(255,120,0,0.35)"
+            }
+            stroke={selected ? "rgba(255,199,40,1)" : "rgba(255,120,0,0.9)"}
+            strokeWidth={1}
+          />,
+        );
+      }
+    }
+    const { x: ox0, y: oy0 } = isoToScreen(trigger.x, trigger.y);
+    return (
+      <>
+        <svg
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            width: "100%",
+            height: "100%",
+            overflow: "visible",
+            pointerEvents: "none",
+          }}
+        >
+          {polygons}
+        </svg>
+        {/* invisible hit-target at the first tile */}
+        <div
+          onMouseDown={onMouseDown}
+          onContextMenu={onContextMenu}
+          style={{
+            position: "absolute",
+            left: isoOriginX(sceneWidth) + ox0 - ISO_TILE_W / 2,
+            top: oy0,
+            width: ISO_TILE_W,
+            height: ISO_TILE_H,
+            cursor: "pointer",
+          }}
+        >
+          {contextMenu && (
+            <ContextMenu
+              x={contextMenu.x}
+              y={contextMenu.y}
+              onClose={onContextMenuClose}
+            >
+              {contextMenu.menu}
+            </ContextMenu>
+          )}
+        </div>
+      </>
+    );
   }
 
   return (

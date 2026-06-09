@@ -2,6 +2,12 @@ import React, { memo, useCallback, useEffect, useState } from "react";
 import SpriteSheetCanvas from "./SpriteSheetCanvas";
 import { MIDDLE_MOUSE, TILE_SIZE, TOOL_COLLISIONS } from "consts";
 import {
+  isoToScreen,
+  isoOriginX,
+  ISO_TILE_W,
+  ISO_TILE_H,
+} from "shared/lib/entities/isoUtils";
+import {
   actorPrefabSelectors,
   actorSelectors,
   spriteSheetSelectors,
@@ -19,6 +25,7 @@ interface ActorViewProps {
   sceneId: string;
   palettes?: Palette[];
   editable?: boolean;
+  isIsometric?: boolean;
 }
 
 interface WrapperProps {
@@ -68,12 +75,19 @@ const CanvasWrapper = styled.div`
 `;
 
 const ActorView = memo(
-  ({ id, sceneId, palettes, editable }: ActorViewProps) => {
+  ({ id, sceneId, palettes, editable, isIsometric }: ActorViewProps) => {
     const dispatch = useAppDispatch();
 
     const actor = useAppSelector((state) =>
       actorSelectors.selectById(state, id),
     );
+    const sceneWidth = useAppSelector((state) => {
+      if (!isIsometric) return 0;
+      const scene = state.project.present.scenes.find(
+        (s: { id: string }) => s.id === sceneId,
+      );
+      return scene?.width ?? 0;
+    });
     const prefab = useAppSelector((state) =>
       actorPrefabSelectors.selectById(state, actor?.prefabId ?? ""),
     );
@@ -175,10 +189,25 @@ const ActorView = memo(
           $halfWidth={sprite?.canvasWidth === 8}
           onMouseDown={onMouseDown}
           onContextMenu={onContextMenu}
-          style={{
-            left: actor.x * TILE_SIZE,
-            top: actor.y * TILE_SIZE,
-          }}
+          style={
+            isIsometric
+              ? (() => {
+                  const { x, y } = isoToScreen(
+                    actor.x,
+                    actor.y,
+                    actor.isoZ ?? 0,
+                  );
+                  return {
+                    left: isoOriginX(sceneWidth) + x - ISO_TILE_W / 2,
+                    top: y,
+                    zIndex: actor.x + actor.y + (actor.isoZ ?? 0) + 1,
+                  };
+                })()
+              : {
+                  left: actor.x * TILE_SIZE,
+                  top: actor.y * TILE_SIZE,
+                }
+          }
         >
           {showSprite && (
             <CanvasWrapper>

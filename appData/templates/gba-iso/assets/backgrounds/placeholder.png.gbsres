@@ -1,0 +1,13 @@
+{
+  "_resourceType": "background",
+  "id": "b9a1c0de-0000-4a00-8000-000000000001",
+  "name": "Scene 1",
+  "symbol": "bg_scene_1",
+  "tileColors": "",
+  "filename": "placeholder.png",
+  "width": 30,
+  "height": 20,
+  "imageWidth": 240,
+  "imageHeight": 160,
+  "autoColor": false
+}

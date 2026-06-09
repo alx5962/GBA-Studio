@@ -1479,7 +1479,12 @@ const compileGBA = async (
     SHMUP: 3,
     POINTNCLICK: 4,
     LOGO: 5,
+    ISOMETRIC: 6,
   };
+
+  /** Isometric tile dimensions emitted into the scene struct. */
+  const ISO_TILE_W = 32;
+  const ISO_TILE_H = 16;
 
   const cIdent = (value: string, fallback: string) => {
     const ident = (value || fallback).replace(/[^A-Za-z0-9_]/g, "_");
@@ -1503,6 +1508,44 @@ const compileGBA = async (
   ) as Record<string, number>;
 
   const gbaEventCtx = { sceneIndexById, warnings };
+
+  // Task 11 — Validation: warn on invalid isometric scene configurations.
+  precompiled.sceneData.forEach((scene) => {
+    if (scene.type === "ISOMETRIC") {
+      scene.actors.forEach((actor, i) => {
+        if (actor.x < 0 || actor.x >= scene.width) {
+          warnings(
+            `GBA compiler: isometric scene "${scene.name}" actor ${i} x=${actor.x} is outside map width ${scene.width}`,
+          );
+        }
+        if (actor.y < 0 || actor.y >= scene.height) {
+          warnings(
+            `GBA compiler: isometric scene "${scene.name}" actor ${i} y=${actor.y} is outside map height ${scene.height}`,
+          );
+        }
+      });
+      scene.triggers.forEach((trigger, i) => {
+        if (trigger.x < 0 || trigger.x + trigger.width > scene.width) {
+          warnings(
+            `GBA compiler: isometric scene "${scene.name}" trigger ${i} x bounds [${trigger.x}, ${trigger.x + trigger.width}) exceed map width ${scene.width}`,
+          );
+        }
+        if (trigger.y < 0 || trigger.y + trigger.height > scene.height) {
+          warnings(
+            `GBA compiler: isometric scene "${scene.name}" trigger ${i} y bounds [${trigger.y}, ${trigger.y + trigger.height}) exceed map height ${scene.height}`,
+          );
+        }
+      });
+      if (scene.collisions.length > 0) {
+        const expectedCollisionLen = scene.width * scene.height;
+        if (scene.collisions.length !== expectedCollisionLen) {
+          warnings(
+            `GBA compiler: isometric scene "${scene.name}" collision map length ${scene.collisions.length} does not match scene dimensions ${scene.width}×${scene.height}=${expectedCollisionLen}`,
+          );
+        }
+      }
+    }
+  });
 
   const sceneBlocks = precompiled.sceneData
     .map((scene, index) => {
@@ -1639,7 +1682,16 @@ const compileGBA = async (
               .map((actor, actorIndex) => {
                 const spriteIndex = spriteIndexById[actor.spriteSheetId] ?? 0;
                 const scriptSym = actorScriptSymbols[actorIndex];
-                return `  { ${(actor.x || 0) * 8}, ${(actor.y || 0) * 8}, ${spriteIndex}, ${toGbaDirection(
+                // Isometric actors store tile-grid coordinates directly;
+                // top-down actors use pixel position (tile * 8).
+                const isIso = scene.type === "ISOMETRIC";
+                const actorX = isIso
+                  ? actor.x || 0
+                  : (actor.x || 0) * 8;
+                const actorY = isIso
+                  ? actor.y || 0
+                  : (actor.y || 0) * 8;
+                return `  { ${actorX}, ${actorY}, ${spriteIndex}, ${toGbaDirection(
                   actor.direction,
                 )}, ${actor.moveSpeed || 1}, ${ensureNumber(
                   actor.animSpeed,
@@ -1677,7 +1729,34 @@ const compileGBA = async (
       const playerSpriteIndex = scene.playerSprite
         ? spriteIndexById[scene.playerSprite.id] ?? 0
         : 0;
-      const sceneDef = `static const gba_scene_def_t ${sceneSymbol} = {
+      const isIsoScene = scene.type === "ISOMETRIC";
+      const sceneDef = isIsoScene
+        ? `/* Isometric scene: actors/triggers use tile-grid coordinates.
+ * iso_tile_w=${ISO_TILE_W} iso_tile_h=${ISO_TILE_H} */
+static const gba_iso_scene_def_t ${sceneSymbol} = {
+  .base = {
+    .width          = ${scene.width},
+    .height         = ${scene.height},
+    .type           = ${sceneTypeIds.ISOMETRIC},
+    .player_sprite_index = ${playerSpriteIndex},
+    .actor_count    = ${scene.actors.length},
+    .trigger_count  = ${rawTriggers.length},
+    .tileset_len    = ${bgTileset.length},
+    .tileset        = ${sceneSymbol}_tileset,
+    .tilemap        = ${sceneSymbol}_tilemap,
+    .tilemap_attr   = ${bgTilemapAttr.length > 0 ? `${sceneSymbol}_tilemap_attr` : "NULL"},
+    .bg_palette     = ${sceneSymbol}_bg_palette,
+    .sprite_palette = ${sceneSymbol}_sprite_palette,
+    .collisions     = ${sceneSymbol}_collisions,
+    .actors         = ${scene.actors.length > 0 ? `${sceneSymbol}_actors` : "NULL"},
+    .sprite_count   = ${localSprites.length},
+    .sprites        = ${sceneSymbol}_sprites,
+    .triggers       = ${rawTriggers.length > 0 ? `${sceneSymbol}_triggers` : "NULL"},
+  },
+  .iso_tile_w = ${ISO_TILE_W},
+  .iso_tile_h = ${ISO_TILE_H},
+};`
+        : `static const gba_scene_def_t ${sceneSymbol} = {
   ${scene.width},
   ${scene.height},
   ${sceneTypeIds[scene.type] ?? 0},

@@ -100,6 +100,8 @@ export type Actor = {
   notes?: string;
   x: number;
   y: number;
+  /** Isometric scenes only: height layer for depth sorting (0 = ground). */
+  isoZ?: number;
   prefabId: string;
   spriteSheetId: string;
   paletteId: string;

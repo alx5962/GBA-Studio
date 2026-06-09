@@ -1,0 +1,23 @@
+{
+  "_resourceType": "trigger",
+  "id": "5ce7e000-0000-4a00-8000-000000000t01",
+  "_index": 0,
+  "symbol": "trigger_dialogue_zone",
+  "prefabId": "",
+  "name": "Dialogue Zone",
+  "x": 7,
+  "y": 3,
+  "width": 3,
+  "height": 3,
+  "prefabScriptOverrides": {},
+  "script": [
+    {
+      "id": "5ce7e000-0000-4a00-8000-000000000e02",
+      "command": "EVENT_TEXT",
+      "args": {
+        "text": "You entered the\nNPC's area."
+      }
+    }
+  ],
+  "leaveScript": []
+}

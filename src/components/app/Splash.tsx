@@ -40,6 +40,7 @@ import blankPreview from "assets/templatePreview/blank.png";
 import gbaPreview from "assets/templatePreview/gba.png";
 import gbaStarterPreview from "assets/templatePreview/gba-starter-project.png";
 import gbaPoachermonPreview from "assets/templatePreview/gba-poachermon.png";
+import gbaIsoPreview from "assets/templatePreview/gba-iso.png";
 import useWindowFocus from "ui/hooks/use-window-focus";
 import l10n from "shared/lib/lang/l10n";
 import API from "renderer/lib/api";
@@ -169,6 +170,13 @@ const Splash = () => {
         preview: gbaStarterPreview,
         videoPreview: false,
         description: l10n("SPLASH_GBA_PROJECT_DESCRIPTION"),
+      },
+      {
+        id: "gba-iso",
+        name: l10n("SPLASH_GBA_ISO_PROJECT"),
+        preview: gbaIsoPreview,
+        videoPreview: false,
+        description: l10n("SPLASH_GBA_ISO_PROJECT_DESCRIPTION"),
       },
       {
         id: "gba-blank",

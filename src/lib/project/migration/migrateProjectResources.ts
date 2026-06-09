@@ -8,12 +8,15 @@ import {
   migrate420r1To420r2,
   migrate420r2To420r3,
 } from "./versions/410to420";
+import { migrate420r3To431r1 } from "./versions/420to431";
 
 const migrations: ProjectResourcesMigration[] = [
   // 4.1.0 to 4.2.0
   migrate410r1To420r1,
   migrate420r1To420r2,
   migrate420r2To420r3,
+  // 4.2.0 to 4.3.1 — adds isoZ field to actors
+  migrate420r3To431r1,
 ];
 
 const lastMigration = migrations[migrations.length - 1];
