@@ -6,8 +6,19 @@ import {
 
 const VM_OP_END = 0x00;
 const VM_OP_LOAD_SCENE = 0x01;
+const VM_OP_SET_SCENE_TONE = 0x02;
 const VM_OP_WAIT = 0x03;
 const VM_OP_SET_CONST = 0x04;
+const VM_OP_COPY_VAR = 0x05;
+const VM_OP_ADD_CONST = 0x06;
+const VM_OP_SUB_CONST = 0x07;
+const VM_OP_ADD_VAR = 0x08;
+const VM_OP_SUB_VAR = 0x09;
+const VM_OP_RANDOM = 0x0a;
+const VM_OP_JUMP = 0x0b;
+const VM_OP_IF_VAR_EQ_CONST = 0x0c;
+const VM_OP_IF_VAR_GT_CONST = 0x0d;
+const VM_OP_IF_VAR_LT_CONST = 0x0e;
 const VM_OP_SHOW_TEXT = 0x0f;
 
 const noopCtx = {
@@ -163,18 +174,141 @@ describe("compileGBAScript", () => {
     ]);
   });
 
-  it("EVENT_SET_VALUE skips non-constant script values", () => {
+  it("EVENT_SET_VALUE skips unsupported expression script values", () => {
     const ctx = makeCtx();
     const events: GBAScriptEvent[] = [
       {
         command: "EVENT_SET_VALUE",
-        args: { variable: "1", value: { type: "variable", value: "2" } },
+        args: { variable: "1", value: { type: "expression", value: "$1 + 2" } },
       },
     ];
     const out = compileGBAScript(events, ctx);
     expect(out).toEqual([VM_OP_END]);
     expect(ctx.warnings).toHaveBeenCalledWith(
       expect.stringContaining("EVENT_SET_VALUE only supports constant"),
+    );
+  });
+
+  it("EVENT_SET_VALUE copies variable script values", () => {
+    const events: GBAScriptEvent[] = [
+      {
+        command: "EVENT_SET_VALUE",
+        args: {
+          variable: "VAR_1",
+          value: { type: "variable", value: "VAR_2" },
+        },
+      },
+    ];
+    const out = compileGBAScript(events, noopCtx);
+    expect(out).toEqual([VM_OP_COPY_VAR, 1, 2, VM_OP_END]);
+  });
+
+  it("EVENT_INC_VALUE and EVENT_DEC_VALUE map to add/sub one", () => {
+    const events: GBAScriptEvent[] = [
+      { command: "EVENT_INC_VALUE", args: { variable: "VAR_3" } },
+      { command: "EVENT_DEC_VALUE", args: { variable: "VAR_4" } },
+    ];
+    const out = compileGBAScript(events, noopCtx);
+    expect(out).toEqual([
+      VM_OP_ADD_CONST,
+      3,
+      1,
+      VM_OP_SUB_CONST,
+      4,
+      1,
+      VM_OP_END,
+    ]);
+  });
+
+  it("EVENT_VARIABLE_MATH supports set/copy/random/add/sub", () => {
+    const events: GBAScriptEvent[] = [
+      {
+        command: "EVENT_VARIABLE_MATH",
+        args: { vectorX: "VAR_1", operation: "set", other: "val", value: 9 },
+      },
+      {
+        command: "EVENT_VARIABLE_MATH",
+        args: {
+          vectorX: "VAR_2",
+          operation: "set",
+          other: "var",
+          vectorY: "VAR_1",
+        },
+      },
+      {
+        command: "EVENT_VARIABLE_MATH",
+        args: {
+          vectorX: "VAR_3",
+          operation: "set",
+          other: "rnd",
+          minValue: 4,
+          maxValue: 8,
+        },
+      },
+      {
+        command: "EVENT_VARIABLE_MATH",
+        args: { vectorX: "VAR_4", operation: "add", other: "val", value: 5 },
+      },
+      {
+        command: "EVENT_VARIABLE_MATH",
+        args: {
+          vectorX: "VAR_5",
+          operation: "sub",
+          other: "var",
+          vectorY: "VAR_4",
+        },
+      },
+    ];
+    const out = compileGBAScript(events, noopCtx);
+    expect(out).toEqual([
+      VM_OP_SET_CONST,
+      1,
+      9,
+      VM_OP_COPY_VAR,
+      2,
+      1,
+      VM_OP_RANDOM,
+      3,
+      4,
+      8,
+      VM_OP_ADD_CONST,
+      4,
+      5,
+      VM_OP_SUB_VAR,
+      5,
+      4,
+      VM_OP_END,
+    ]);
+  });
+
+  it("EVENT_VARIABLE_MATH supports variable add", () => {
+    const events: GBAScriptEvent[] = [
+      {
+        command: "EVENT_VARIABLE_MATH",
+        args: {
+          vectorX: "VAR_6",
+          operation: "add",
+          other: "var",
+          vectorY: "VAR_7",
+        },
+      },
+    ];
+    const out = compileGBAScript(events, noopCtx);
+    expect(out).toEqual([VM_OP_ADD_VAR, 6, 7, VM_OP_END]);
+  });
+
+  it("EVENT_VARIABLE_MATH warns for unsupported VM operations", () => {
+    const ctx = makeCtx();
+    const events: GBAScriptEvent[] = [
+      {
+        command: "EVENT_VARIABLE_MATH",
+        args: { vectorX: "VAR_1", operation: "mul", other: "val", value: 2 },
+      },
+    ];
+    const out = compileGBAScript(events, ctx);
+    expect(out).toEqual([VM_OP_END]);
+    expect(ctx.warnings).toHaveBeenCalledWith(
+      expect.stringContaining('EVENT_VARIABLE_MATH operation "mul"'),
     );
   });
 
@@ -185,6 +319,162 @@ describe("compileGBAScript", () => {
     const out = compileGBAScript(events, noopCtx);
     expect(out[0]).toBe(VM_OP_WAIT);
     expect(out[1]).toBe(30);
+  });
+
+  it("EVENT_PALETTE_SET_BACKGROUND maps to scene tone", () => {
+    const events: GBAScriptEvent[] = [
+      { command: "EVENT_PALETTE_SET_BACKGROUND", args: { tone: 3 } },
+    ];
+    const out = compileGBAScript(events, noopCtx);
+    expect(out).toEqual([VM_OP_SET_SCENE_TONE, 3, VM_OP_END]);
+  });
+
+  it("EVENT_IF_TRUE compiles true and false branches", () => {
+    const events: GBAScriptEvent[] = [
+      {
+        command: "EVENT_IF_TRUE",
+        args: {
+          variable: "VAR_1",
+          true: [
+            {
+              command: "EVENT_SET_VALUE",
+              args: { variable: "VAR_2", value: 10 },
+            },
+          ],
+          false: [
+            {
+              command: "EVENT_SET_VALUE",
+              args: { variable: "VAR_2", value: 20 },
+            },
+          ],
+        },
+      },
+    ];
+    const out = compileGBAScript(events, noopCtx);
+    expect(out).toEqual([
+      VM_OP_IF_VAR_GT_CONST,
+      1,
+      0,
+      3,
+      0,
+      VM_OP_JUMP,
+      6,
+      0,
+      VM_OP_SET_CONST,
+      2,
+      10,
+      VM_OP_JUMP,
+      3,
+      0,
+      VM_OP_SET_CONST,
+      2,
+      20,
+      VM_OP_END,
+    ]);
+  });
+
+  it("EVENT_IF_FALSE inverts branch payloads", () => {
+    const events: GBAScriptEvent[] = [
+      {
+        command: "EVENT_IF_FALSE",
+        args: {
+          variable: "VAR_1",
+          true: [
+            {
+              command: "EVENT_SET_VALUE",
+              args: { variable: "VAR_2", value: 10 },
+            },
+          ],
+          false: [
+            {
+              command: "EVENT_SET_VALUE",
+              args: { variable: "VAR_2", value: 20 },
+            },
+          ],
+        },
+      },
+    ];
+    const out = compileGBAScript(events, noopCtx);
+    expect(out.slice(8, 11)).toEqual([VM_OP_SET_CONST, 2, 20]);
+    expect(out.slice(14, 17)).toEqual([VM_OP_SET_CONST, 2, 10]);
+  });
+
+  it("EVENT_IF supports script-value variable comparisons", () => {
+    const events: GBAScriptEvent[] = [
+      {
+        command: "EVENT_IF",
+        args: {
+          condition: {
+            type: "eq",
+            valueA: { type: "variable", value: "VAR_1" },
+            valueB: { type: "number", value: 5 },
+          },
+          true: [
+            {
+              command: "EVENT_SET_VALUE",
+              args: { variable: "VAR_2", value: 1 },
+            },
+          ],
+        },
+      },
+    ];
+    const out = compileGBAScript(events, noopCtx);
+    expect(out[0]).toBe(VM_OP_IF_VAR_EQ_CONST);
+    expect(out[1]).toBe(1);
+    expect(out[2]).toBe(5);
+    expect(out).toContain(VM_OP_SET_CONST);
+  });
+
+  it("EVENT_IF_VALUE supports inverse comparisons", () => {
+    const events: GBAScriptEvent[] = [
+      {
+        command: "EVENT_IF_VALUE",
+        args: {
+          variable: "VAR_1",
+          operator: "!=",
+          comparator: 5,
+          true: [
+            {
+              command: "EVENT_SET_VALUE",
+              args: { variable: "VAR_2", value: 1 },
+            },
+          ],
+          false: [
+            {
+              command: "EVENT_SET_VALUE",
+              args: { variable: "VAR_2", value: 0 },
+            },
+          ],
+        },
+      },
+    ];
+    const out = compileGBAScript(events, noopCtx);
+    expect(out[0]).toBe(VM_OP_IF_VAR_EQ_CONST);
+    expect(out.slice(8, 11)).toEqual([VM_OP_SET_CONST, 2, 0]);
+    expect(out.slice(14, 17)).toEqual([VM_OP_SET_CONST, 2, 1]);
+  });
+
+  it("EVENT_IF_VALUE supports greater-than and less-than comparisons", () => {
+    const gt = compileGBAScript(
+      [
+        {
+          command: "EVENT_IF_VALUE",
+          args: { variable: "VAR_1", operator: ">", comparator: 5 },
+        },
+      ],
+      noopCtx,
+    );
+    const lt = compileGBAScript(
+      [
+        {
+          command: "EVENT_IF_VALUE",
+          args: { variable: "VAR_1", operator: "<", comparator: 5 },
+        },
+      ],
+      noopCtx,
+    );
+    expect(gt[0]).toBe(VM_OP_IF_VAR_GT_CONST);
+    expect(lt[0]).toBe(VM_OP_IF_VAR_LT_CONST);
   });
 
   it("unsupported events are skipped with a warning", () => {

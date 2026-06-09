@@ -146,7 +146,7 @@ jobs:
         run: |
           npm run fetch-deps -- --arch=linux-arm64
           cd buildTools/linux-arm64/mod2gbt
-          sh build_linux.sh
+          gcc -o mod2gbt ./mod2gbt.c
           cd ../../..          
           npm run make:linux-arm64
           mkdir -p ./out/keep

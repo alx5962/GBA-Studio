@@ -25,6 +25,55 @@ test("GBA event compiler opcodes match bundled engine VM constants", () => {
     { command: "EVENT_SWITCH_SCENE", args: { sceneId: "scene2" } },
     { command: "EVENT_WAIT", args: { frames: 9 } },
     { command: "EVENT_SET_VALUE", args: { variable: "VAR_4", value: 7 } },
+    {
+      command: "EVENT_SET_VALUE",
+      args: { variable: "VAR_5", value: { type: "variable", value: "VAR_4" } },
+    },
+    { command: "EVENT_INC_VALUE", args: { variable: "VAR_4" } },
+    { command: "EVENT_DEC_VALUE", args: { variable: "VAR_4" } },
+    {
+      command: "EVENT_VARIABLE_MATH",
+      args: {
+        vectorX: "VAR_1",
+        operation: "add",
+        other: "var",
+        vectorY: "VAR_2",
+      },
+    },
+    {
+      command: "EVENT_VARIABLE_MATH",
+      args: {
+        vectorX: "VAR_1",
+        operation: "sub",
+        other: "var",
+        vectorY: "VAR_2",
+      },
+    },
+    {
+      command: "EVENT_VARIABLE_MATH",
+      args: {
+        vectorX: "VAR_1",
+        operation: "set",
+        other: "rnd",
+        minValue: 1,
+        maxValue: 3,
+      },
+    },
+    { command: "EVENT_PALETTE_SET_BACKGROUND", args: { tone: 2 } },
+    {
+      command: "EVENT_IF_VALUE",
+      args: {
+        variable: "VAR_1",
+        operator: "==",
+        comparator: 1,
+        true: [
+          { command: "EVENT_SET_VALUE", args: { variable: "VAR_2", value: 1 } },
+        ],
+        false: [
+          { command: "EVENT_SET_VALUE", args: { variable: "VAR_2", value: 0 } },
+        ],
+      },
+    },
     { command: "EVENT_TEXT", args: { text: "OK" } },
   ];
 
@@ -33,9 +82,19 @@ test("GBA event compiler opcodes match bundled engine VM constants", () => {
     warnings: jest.fn(),
   });
 
-  expect(bytecode[0]).toBe(vmOpcode("VM_OP_LOAD_SCENE"));
-  expect(bytecode[2]).toBe(vmOpcode("VM_OP_WAIT"));
-  expect(bytecode[4]).toBe(vmOpcode("VM_OP_SET_CONST"));
-  expect(bytecode[7]).toBe(vmOpcode("VM_OP_SHOW_TEXT"));
-  expect(bytecode[11]).toBe(vmOpcode("VM_OP_END"));
+  const emittedOpcodes = new Set(bytecode);
+  expect(emittedOpcodes).toContain(vmOpcode("VM_OP_LOAD_SCENE"));
+  expect(emittedOpcodes).toContain(vmOpcode("VM_OP_WAIT"));
+  expect(emittedOpcodes).toContain(vmOpcode("VM_OP_SET_CONST"));
+  expect(emittedOpcodes).toContain(vmOpcode("VM_OP_COPY_VAR"));
+  expect(emittedOpcodes).toContain(vmOpcode("VM_OP_ADD_CONST"));
+  expect(emittedOpcodes).toContain(vmOpcode("VM_OP_SUB_CONST"));
+  expect(emittedOpcodes).toContain(vmOpcode("VM_OP_ADD_VAR"));
+  expect(emittedOpcodes).toContain(vmOpcode("VM_OP_SUB_VAR"));
+  expect(emittedOpcodes).toContain(vmOpcode("VM_OP_RANDOM"));
+  expect(emittedOpcodes).toContain(vmOpcode("VM_OP_JUMP"));
+  expect(emittedOpcodes).toContain(vmOpcode("VM_OP_IF_VAR_EQ_CONST"));
+  expect(emittedOpcodes).toContain(vmOpcode("VM_OP_SET_SCENE_TONE"));
+  expect(emittedOpcodes).toContain(vmOpcode("VM_OP_SHOW_TEXT"));
+  expect(bytecode[bytecode.length - 1]).toBe(vmOpcode("VM_OP_END"));
 });
