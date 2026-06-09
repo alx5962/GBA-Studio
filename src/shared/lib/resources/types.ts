@@ -393,6 +393,11 @@ export const SpriteAnimationType = Type.Union([
   Type.Literal("horizontal_movement"),
   Type.Literal("platform_player"),
   Type.Literal("cursor"),
+  // Isometric sprite types:
+  //   iso_fixed    — one animation, single facing (static objects, trees, etc.)
+  //   iso_movement — four animations, one per diagonal: NE / SE / SW / NW
+  Type.Literal("iso_fixed"),
+  Type.Literal("iso_movement"),
 ]);
 
 export type SpriteAnimationType = Static<typeof SpriteAnimationType>;

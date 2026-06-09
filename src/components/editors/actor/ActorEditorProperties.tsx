@@ -11,6 +11,7 @@ import { SpriteSheetSelectButton } from "components/forms/SpriteSheetSelectButto
 import { AnimationSpeedSelect } from "components/forms/AnimationSpeedSelect";
 import { MovementSpeedSelect } from "components/forms/MovementSpeedSelect";
 import CollisionMaskPicker from "components/forms/CollisionMaskPicker";
+import { NumberInput } from "ui/form/NumberInput";
 import l10n from "shared/lib/lang/l10n";
 import { useAppDispatch, useAppSelector } from "store/hooks";
 import { ActorEditorExtraCollisionFlags } from "./ActorEditorExtraCollisionFlags";
@@ -35,6 +36,7 @@ export const ActorEditorProperties: FC<ActorEditorPropertiesProps> = ({
   );
 
   const sceneSpriteMode = scene?.spriteMode ?? defaultSpriteMode;
+  const isIsometric = scene?.type === "ISOMETRIC";
 
   const onChangeActorProp = useCallback(
     <K extends keyof ActorNormalized>(key: K, value: ActorNormalized[K]) => {
@@ -62,6 +64,12 @@ export const ActorEditorProperties: FC<ActorEditorPropertiesProps> = ({
 
   const onChangeAnimSpeed = useCallback(
     (e: number) => onChangeActorProp("animSpeed", e),
+    [onChangeActorProp],
+  );
+
+  const onChangeIsoZ = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) =>
+      onChangeActorProp("isoZ", Math.max(0, parseInt(e.currentTarget.value, 10) || 0)),
     [onChangeActorProp],
   );
 
@@ -104,6 +112,29 @@ export const ActorEditorProperties: FC<ActorEditorPropertiesProps> = ({
           </FormRow>
         </FormContainer>
       </SidebarColumn>
+      {isIsometric && (
+        <SidebarColumn>
+          <FormContainer>
+            <FormRow>
+              <FormField
+                name="actorIsoZ"
+                label={l10n("FIELD_ISO_Z")}
+                title={l10n("FIELD_ISO_Z_DESC")}
+              >
+                <NumberInput
+                  name="actorIsoZ"
+                  type="number"
+                  value={actor.isoZ ?? 0}
+                  min={0}
+                  max={31}
+                  placeholder="0"
+                  onChange={onChangeIsoZ}
+                />
+              </FormField>
+            </FormRow>
+          </FormContainer>
+        </SidebarColumn>
+      )}
       <SidebarColumn>
         <FormContainer>
           <FormRow>

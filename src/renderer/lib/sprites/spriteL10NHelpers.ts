@@ -48,6 +48,18 @@ const getAnimationNameByIndex = (
   flipLeft: boolean,
   animationIndex: number,
 ) => {
+  if (type === "iso_fixed") {
+    return l10n("FIELD_IDLE");
+  }
+  if (type === "iso_movement") {
+    const isoDirNames = [
+      l10n("FIELD_DIRECTION_NE"),
+      l10n("FIELD_DIRECTION_SE"),
+      l10n("FIELD_DIRECTION_SW"),
+      l10n("FIELD_DIRECTION_NW"),
+    ];
+    return isoDirNames[animationIndex] ?? l10n("FIELD_IDLE");
+  }
   if (type === "fixed" || type === "fixed_movement") {
     const fixedAnimationNames = [l10n("FIELD_IDLE"), l10n("FIELD_MOVING")];
     return fixedAnimationNames[animationIndex];

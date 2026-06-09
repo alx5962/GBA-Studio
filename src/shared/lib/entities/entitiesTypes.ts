@@ -20,7 +20,9 @@ export type SpriteAnimationType =
   | "horizontal"
   | "horizontal_movement"
   | "platform_player"
-  | "cursor";
+  | "cursor"
+  | "iso_fixed"
+  | "iso_movement";
 export type ObjPalette = "OBP0" | "OBP1";
 
 export type UnionVariableValue = {

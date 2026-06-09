@@ -67,6 +67,13 @@ export const AnimationTypeSelect: FC<AnimationTypeSelectProps> = ({
         label: l10n("GAMETYPE_POINT_N_CLICK"),
         options: [{ label: l10n("FIELD_CURSOR"), value: "cursor" }],
       },
+      {
+        label: l10n("GAMETYPE_ISOMETRIC"),
+        options: [
+          { label: l10n("FIELD_ISO_FIXED"), value: "iso_fixed" },
+          { label: l10n("FIELD_ISO_MOVEMENT"), value: "iso_movement" },
+        ],
+      },
     ],
     [],
   );

@@ -48,11 +48,26 @@ const platformAnimationTypes: AnimationType[] = [
 
 const cursorAnimationTypes: AnimationType[] = ["idle", "hover"];
 
+// Iso diagonal directions reuse existing AnimationType slots for simplicity:
+// NE → idleRight, SE → idleDown, SW → idleLeft, NW → idleUp
+const isoMovementAnimationTypes: AnimationType[] = [
+  "idleRight",  // NE
+  "idleDown",   // SE
+  "idleLeft",   // SW
+  "idleUp",     // NW
+];
+
 export const getAnimationTypeByIndex = (
   type: SpriteAnimationType,
   flipLeft: boolean,
   animationIndex: number,
 ): AnimationType => {
+  if (type === "iso_fixed") {
+    return "idle";
+  }
+  if (type === "iso_movement") {
+    return isoMovementAnimationTypes[animationIndex] ?? "idle";
+  }
   if (type === "fixed" || type === "fixed_movement") {
     return fixedAnimationTypes[animationIndex];
   }
@@ -100,11 +115,23 @@ const platformFlipIndexes = [0, 4, 2, 6];
 const flipIndexes = [0, 2, 3, 4, 6, 7];
 const cursorIndexes = [0, 1];
 
+// Isometric: slot 0 = NE, 1 = SE, 2 = SW, 3 = NW
+// iso_fixed    → single animation (all directions share slot 0)
+// iso_movement → 4 animations, one per diagonal direction
+const isoFixedIndexes = [0];
+const isoMovementIndexes = [0, 1, 2, 3];
+
 export const filterAnimationsBySpriteType = <T>(
   animationIds: T[],
   type: SpriteAnimationType,
   flipLeft: boolean,
 ): T[] => {
+  if (type === "iso_fixed") {
+    return isoFixedIndexes.map((i) => animationIds[i]);
+  }
+  if (type === "iso_movement") {
+    return isoMovementIndexes.map((i) => animationIds[i]);
+  }
   if (type === "fixed") {
     return fixedIndexes.map((i) => animationIds[i]);
   }
@@ -151,6 +178,13 @@ export const animationMapBySpriteType = <T, U>(
   fn: (item: T | undefined, flip: boolean) => U,
 ): U[] => {
   return Array.from(Array(8)).map((_item, index) => {
+    if (type === "iso_fixed") {
+      return fn(items[0], false);
+    }
+    if (type === "iso_movement") {
+      // 4 directions; clamp index to 0-3
+      return fn(items[index % 4], false);
+    }
     if (type === "fixed") {
       // All animations map to 0
       return fn(items[0], false);
