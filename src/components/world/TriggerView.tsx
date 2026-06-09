@@ -1,6 +1,9 @@
 import React, { memo, useCallback, useEffect, useState } from "react";
 import editorActions from "store/features/editor/editorActions";
-import { triggerSelectors } from "store/features/entities/entitiesState";
+import {
+  triggerSelectors,
+  sceneSelectors,
+} from "store/features/entities/entitiesState";
 import { MIDDLE_MOUSE, TILE_SIZE } from "consts";
 import {
   isoToScreen,
@@ -114,10 +117,7 @@ const TriggerView = memo(
 
   const sceneWidth = useAppSelector((state) => {
     if (!isIsometric) return 0;
-    const scene = state.project.present.scenes.find(
-      (s: { id: string }) => s.id === sceneId,
-    );
-    return scene?.width ?? 0;
+    return sceneSelectors.selectById(state, sceneId)?.width ?? 0;
   });
 
   if (!trigger) {

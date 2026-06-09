@@ -10,6 +10,7 @@ import {
 import {
   actorPrefabSelectors,
   actorSelectors,
+  sceneSelectors,
   spriteSheetSelectors,
 } from "store/features/entities/entitiesState";
 import editorActions from "store/features/editor/editorActions";
@@ -83,10 +84,7 @@ const ActorView = memo(
     );
     const sceneWidth = useAppSelector((state) => {
       if (!isIsometric) return 0;
-      const scene = state.project.present.scenes.find(
-        (s: { id: string }) => s.id === sceneId,
-      );
-      return scene?.width ?? 0;
+      return sceneSelectors.selectById(state, sceneId)?.width ?? 0;
     });
     const prefab = useAppSelector((state) =>
       actorPrefabSelectors.selectById(state, actor?.prefabId ?? ""),

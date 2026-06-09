@@ -7,6 +7,7 @@
  *   existing projects open cleanly after the 4.3.1 upgrade.
  */
 
+import { CompressedProjectResources } from "shared/lib/resources/types";
 import {
   ProjectResourcesMigration,
   ProjectResourcesMigrationFn,
@@ -28,7 +29,7 @@ export const migrateFrom420r3To431r1Actors: ProjectResourcesMigrationFn = (
     return { ...scene, actors };
   });
 
-  return { ...resources, scenes };
+  return { ...resources, scenes } as unknown as CompressedProjectResources;
 };
 
 export const migrate420r3To431r1: ProjectResourcesMigration = {
