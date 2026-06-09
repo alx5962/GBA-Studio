@@ -1802,7 +1802,11 @@ static const gba_iso_scene_def_t ${sceneSymbol} = {
     })
     .join("\n\n");
 
-  const sceneTable = sceneSymbols.map((symbol) => `  &${symbol},`).join("\n");
+  // Iso scenes are declared as gba_iso_scene_def_t; cast to the base type for
+  // the scene table. The cast is safe because base is the first struct member.
+  const sceneTable = sceneSymbols
+    .map((symbol) => `  (const gba_scene_def_t *)&${symbol},`)
+    .join("\n");
 
   output["gba_scene_data.h"] = `#ifndef GBA_SCENE_DATA_H
 #define GBA_SCENE_DATA_H

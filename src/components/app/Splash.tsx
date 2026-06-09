@@ -8,15 +8,10 @@ import {
   SplashCreateButton,
   SplashEasterEggButton,
   SplashForm,
-  SplashGBADevice,
-  SplashGBADPad,
-  SplashGBAFaceButtons,
-  SplashGBAScreen,
-  SplashGBAShoulder,
-  SplashGBASystemButtons,
   SplashInfoMessage,
   SplashLoading,
   SplashLogo,
+  SplashLogoImage,
   SplashOpenButton,
   SplashProject,
   SplashProjectClearButton,
@@ -34,6 +29,7 @@ import { DotsIcon, LoadingIcon } from "ui/icons/Icons";
 import { Button } from "ui/buttons/Button";
 import contributors from "contributors.json";
 import contributorsExternal from "contributors-external.json";
+import gbaLogo from "assets/app/splash/gba-logo.png";
 import gbs2Preview from "assets/templatePreview/gbs2.png";
 import gbhtmlPreview from "assets/templatePreview/gbhtml.png";
 import blankPreview from "assets/templatePreview/blank.png";
@@ -320,17 +316,7 @@ const Splash = () => {
       <SplashWindow focus={windowFocus}>
         <SplashSidebar>
           <SplashLogo aria-label="GBA Studio">
-            <SplashGBADevice>
-              <SplashGBAShoulder $side="left">L</SplashGBAShoulder>
-              <SplashGBAShoulder $side="right">R</SplashGBAShoulder>
-              <SplashGBADPad />
-              <SplashGBAScreen>GBA Studio</SplashGBAScreen>
-              <SplashGBAFaceButtons />
-              <SplashGBASystemButtons>
-                <span />
-                <span />
-              </SplashGBASystemButtons>
-            </SplashGBADevice>
+            <SplashLogoImage src={gbaLogo} alt="GBA Studio" draggable={false} />
             <SplashEasterEggButton
               onClick={() => setOpenCredits(true)}
               tabIndex={-1}
