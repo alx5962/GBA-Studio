@@ -78,6 +78,7 @@ const buildProject = async ({
   await ejectBuild({
     projectRoot,
     tmpPath,
+    buildType,
     projectData: project,
     engineSchema,
     outputRoot,

@@ -1295,6 +1295,54 @@ const precompile = async (
 
 // #endregion
 
+const formatCByteArray = (values: number[] | Uint8Array, wrap = 16) =>
+  Array.from(values)
+    .map((value, index) =>
+      `${index % wrap === 0 ? "\n  " : " "}0x${(value & 0xff)
+        .toString(16)
+        .toUpperCase()
+        .padStart(2, "0")}`,
+    )
+    .join(",");
+
+const convertGbTileToGba4bpp = (tile: number[] | Uint8Array): number[] => {
+  const bytes = Array.from(tile);
+  if (bytes.length === 32) {
+    return bytes.map((value) => value & 0xff);
+  }
+  if (bytes.length !== 16) {
+    throw new Error(`Unexpected tile length ${bytes.length} in GBA compiler`);
+  }
+
+  const output: number[] = [];
+  for (let row = 0; row < 8; row++) {
+    const lo = bytes[row * 2] ?? 0;
+    const hi = bytes[row * 2 + 1] ?? 0;
+    for (let column = 0; column < 8; column += 2) {
+      const leftShift = 7 - column;
+      const rightShift = 6 - column;
+      const left =
+        ((lo >> leftShift) & 0x01) | (((hi >> leftShift) & 0x01) << 1);
+      const right =
+        ((lo >> rightShift) & 0x01) | (((hi >> rightShift) & 0x01) << 1);
+      output.push(left | (right << 4));
+    }
+  }
+
+  return output;
+};
+
+const convertGbTilesetToGba4bpp = (
+  tileset: number[] | Uint8Array,
+): Uint8Array => {
+  const source = Array.from(tileset);
+  const output: number[] = [];
+  for (let offset = 0; offset < source.length; offset += 16) {
+    output.push(...convertGbTileToGba4bpp(source.slice(offset, offset + 16)));
+  }
+  return Uint8Array.from(output);
+};
+
 // Simplified GBA compilation flow
 const compileGBA = async (
   rawProjectData: ProjectResources,
@@ -1336,6 +1384,42 @@ const compileGBA = async (
     "GBA VM runtime is minimal: scene records load, full GB Studio script events are still pending.",
   );
 
+  const projectColorMode = rawProjectData.settings.colorMode ?? "mono";
+  const sceneColorMode = (scene: Scene) =>
+    scene.colorModeOverride === "none" || projectColorMode === "mono"
+      ? projectColorMode
+      : scene.colorModeOverride;
+  const backgroundsLookup = keyBy(rawProjectData.backgrounds || [], "id");
+  const referencedBackgrounds = Object.values(
+    rawProjectData.scenes.reduce(
+      (memo, scene) => {
+        const background = backgroundsLookup[scene.backgroundId];
+        if (!background || memo[background.id]) {
+          return memo;
+        }
+        memo[background.id] = {
+          ...background,
+          is360: false,
+          colorMode: sceneColorMode(scene),
+          forceTilesetGeneration: true,
+        };
+        return memo;
+      },
+      {} as Record<string, ReferencedBackground>,
+    ),
+  );
+  const { backgroundLookup } =
+    referencedBackgrounds.length > 0
+      ? await precompileBackgrounds(
+          referencedBackgrounds,
+          rawProjectData.scenes,
+          rawProjectData.tilesets || [],
+          rawProjectData.settings.colorCorrection ?? "default",
+          projectRoot,
+          { warnings },
+        )
+      : { backgroundLookup: {} as Record<string, PrecompiledBackground> };
+
   const sceneTypeIds: Record<string, number> = {
     TOPDOWN: 0,
     PLATFORM: 1,
@@ -1357,6 +1441,22 @@ const compileGBA = async (
   const sceneSymbols = rawProjectData.scenes.map((scene, index) =>
     cIdent(scene.symbol, `scene_${index}`),
   );
+  const sceneBackgroundArrays = rawProjectData.scenes
+    .map((scene, index) => {
+      const background = backgroundLookup[scene.backgroundId];
+      if (!background?.tileset || !background?.tilemap) {
+        return "";
+      }
+
+      const tilesetData = convertGbTilesetToGba4bpp(background.tileset.data);
+      const tilemapData = Uint8Array.from(background.tilemap.data);
+
+      return `static const uint8_t ${sceneSymbols[index]}_tileset[${tilesetData.length}] = {${formatCByteArray(tilesetData)}\n};
+
+static const uint8_t ${sceneSymbols[index]}_tilemap[${tilemapData.length}] = {${formatCByteArray(tilemapData)}\n};`;
+    })
+    .filter(Boolean)
+    .join("\n\n");
   const sceneCollisionArrays = rawProjectData.scenes
     .map((scene, index) => {
       const width = Math.max(1, Math.min(255, Math.round(scene.width || 30)));
@@ -1407,8 +1507,16 @@ const compileGBA = async (
       const actors = scene.actors?.length ?? 0;
       const triggers = scene.triggers?.length ?? 0;
       const tone = index % 4;
+      const background = backgroundLookup[scene.backgroundId];
+      const hasBackground = !!background?.tileset && !!background?.tilemap;
+      const tilesetLength = hasBackground
+        ? convertGbTilesetToGba4bpp(background.tileset.data).length
+        : 0;
       return `static const gba_scene_def_t ${sceneSymbols[index]} = {
   ${width}, ${height}, ${type}, ${actors}, ${triggers}, ${tone},
+  ${tilesetLength},
+  ${hasBackground ? `${sceneSymbols[index]}_tileset` : "NULL"},
+  ${hasBackground ? `${sceneSymbols[index]}_tilemap` : "NULL"},
   ${sceneSymbols[index]}_collisions,
   ${sceneSymbols[index]}_init_script,
   ${triggers > 0 ? `${sceneSymbols[index]}_triggers` : "NULL"},
@@ -1431,6 +1539,8 @@ extern const gba_game_data_t gba_game_data;
 #include "gba_scene.h"
 #include "vm.h"
 #include "data/gba_scene_data.h"
+
+${sceneBackgroundArrays}
 
 ${sceneCollisionArrays}
 

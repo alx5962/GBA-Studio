@@ -43,7 +43,7 @@ const makeBuild = async ({
   romFilename,
   data,
   debug = false,
-  buildType = "gba", // Force GBA for now
+  buildType = "rom",
   progress = (_msg) => {},
   warnings = (_msg) => {},
 }: MakeOptions) => {
@@ -53,7 +53,8 @@ const makeBuild = async ({
   const colorEnabled = settings.colorMode !== "mono";
   const sgbEnabled = settings.sgbEnabled && settings.colorMode !== "color";
   const colorOnly = settings.colorMode === "color";
-  const targetPlatform = "gba"; // Force GBA for now
+  const targetPlatform =
+    buildType === "gba" ? "gba" : buildType === "pocket" ? "pocket" : "gb";
   const batterylessEnabled = settings.batterylessEnabled && buildType !== "web";
 
   const buildToolsPath = await ensureBuildTools(tmpPath);
@@ -62,8 +63,7 @@ const makeBuild = async ({
     "utf8",
   );
 
-  // Check if we're building for GBA
-  const isGBA = true; // For now, always use GBA
+  const isGBA = targetPlatform === "gba";
 
   if (isGBA) {
     // GBA build setup - prefer system devkitPro, but fall back to bundled

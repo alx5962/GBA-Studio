@@ -35,6 +35,7 @@ const rmdir = promisify(rimraf);
 type EjectOptions = {
   engineSchema: EngineSchema;
   projectData: ProjectResources;
+  buildType?: "rom" | "web" | "pocket" | "gba";
   outputRoot: string;
   projectRoot: string;
   tmpPath: string;
@@ -49,6 +50,7 @@ type EjectOptions = {
 const ejectBuild = async ({
   engineSchema,
   projectData,
+  buildType = "rom",
   outputRoot = "/tmp",
   projectRoot = "/tmp",
   tmpPath = "/tmp",
@@ -270,6 +272,15 @@ const ejectBuild = async ({
         `${outputRoot}/src/data/${filename}`,
         compiledData.files[filename],
       );
+    }
+  }
+
+  if (buildType === "gba") {
+    const generatedGbvmScriptFiles = glob.sync(`${outputRoot}/src/data/**/*.s`);
+    for (const filename of generatedGbvmScriptFiles) {
+      if (isFilePathWithinFolder(filename, outputRoot)) {
+        await fs.remove(filename);
+      }
     }
   }
 

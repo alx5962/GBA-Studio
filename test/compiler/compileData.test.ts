@@ -482,6 +482,85 @@ test("should emit trigger tables for GBA scene data", async () => {
   expect(compiled.files["gba_scene_data.c"]).toContain("scene_1_triggers");
 });
 
+test("should emit GBA tilesets and tilemaps for scene backgrounds", async () => {
+  const scriptEventHandlers = await getTestScriptHandlers();
+  const project = {
+    settings: {
+      startSceneId: "1",
+      startX: 0,
+      startY: 0,
+      colorCorrection: "default",
+      colorMode: "mono",
+      defaultPlayerSprites: {},
+    },
+    scenes: [
+      {
+        id: "1",
+        name: "first_scene",
+        symbol: "scene_1",
+        type: "TOPDOWN",
+        backgroundId: "bg1",
+        tilesetId: "",
+        colorModeOverride: "none",
+        width: 20,
+        height: 18,
+        collisions: new Array(20 * 18).fill(0),
+        actors: [],
+        triggers: [],
+        script: [],
+        playerHit1Script: [],
+        playerHit2Script: [],
+        playerHit3Script: [],
+      },
+    ],
+    backgrounds: [
+      {
+        id: "bg1",
+        name: "forest_clearing",
+        symbol: "bg_1",
+        width: 20,
+        height: 18,
+        imageWidth: 160,
+        imageHeight: 144,
+        filename: "forest_clearing.png",
+        tileColors: [],
+      },
+    ],
+    tilesets: [],
+    variables: {
+      variables: [],
+      constants: [],
+    },
+    engineFieldValues: {
+      engineFieldValues: [],
+    },
+  } as unknown as ProjectResources;
+
+  const compiled = await compile(project, {
+    projectRoot: `${__dirname}/_files`,
+    scriptEventHandlers,
+    engineSchema: {
+      fields: [],
+      sceneTypes: [],
+      consts: {},
+    },
+    tmpPath: os.tmpdir(),
+    debugEnabled: false,
+    progress: (_msg: string) => {},
+    warnings: (_msg: string) => {},
+    buildType: "gba",
+  });
+
+  expect(compiled.files["gba_scene_data.c"]).toContain(
+    "static const uint8_t scene_1_tileset[",
+  );
+  expect(compiled.files["gba_scene_data.c"]).toContain(
+    "static const uint8_t scene_1_tilemap[",
+  );
+  expect(compiled.files["gba_scene_data.c"]).toContain("scene_1_tileset");
+  expect(compiled.files["gba_scene_data.c"]).toContain("scene_1_tilemap");
+});
+
 test("should precompile image data", async () => {
   const backgrounds = [
     {
