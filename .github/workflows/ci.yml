@@ -218,4 +218,7 @@ jobs:
       - name: Attach artifacts to GitHub release
         uses: softprops/action-gh-release@v2
         with:
-          files: release-artifacts/**
+          files: |
+            release-artifacts/gba-studio-windows-installer/**
+            release-artifacts/gba-studio-linux-installers/**
+            release-artifacts/gba-studio-macos-installers/**

@@ -32,6 +32,32 @@ const engineIgnore = [
 
 const rmdir = promisify(rimraf);
 
+const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+export const removeBuildFolder = async (path: string) => {
+  const maxAttempts = 8;
+  let lastError: unknown;
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      await rmdir(path);
+      return;
+    } catch (error) {
+      const code = (error as NodeJS.ErrnoException)?.code;
+      if (
+        attempt === maxAttempts ||
+        (code !== "EBUSY" && code !== "EPERM" && code !== "ENOTEMPTY")
+      ) {
+        throw error;
+      }
+      lastError = error;
+      await delay(100 * attempt);
+    }
+  }
+
+  throw lastError;
+};
+
 type EjectOptions = {
   engineSchema: EngineSchema;
   projectData: ProjectResources;
@@ -66,7 +92,7 @@ const ejectBuild = async ({
   const { fields: engineFields, sceneTypes } = engineSchema;
 
   progress(`${l10n("COMPILER_REMOVING_FOLDER")} ${Path.basename(outputRoot)}`);
-  await rmdir(outputRoot);
+  await removeBuildFolder(outputRoot);
   await fs.ensureDir(outputRoot);
   progress(l10n("COMPILER_COPY_DEFAULT_ENGINE"));
 
