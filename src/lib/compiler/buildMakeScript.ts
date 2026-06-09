@@ -64,8 +64,15 @@ export const getBuildCommands = async (
   }
 
   for (const file of buildFiles) {
-    if (isGBA && file.replace(/\\/g, "/").endsWith("/src/startup.s")) {
-      continue;
+    if (isGBA) {
+      const normalizedFile = file.replace(/\\/g, "/");
+      if (
+        normalizedFile.endsWith("/src/startup.s") ||
+        (normalizedFile.includes("/src/data/") &&
+          normalizedFile.endsWith(".s"))
+      ) {
+        continue;
+      }
     }
 
     if (musicDriver === "huge" && file.indexOf("GBT_PLAYER") !== -1) {
@@ -178,11 +185,15 @@ export const buildLinkFile = async (
   const srcRoot = `${buildRoot}/src/**/*.@(c|s)`;
   const buildFiles = await globAsync(srcRoot);
   for (const file of buildFiles) {
-    if (
-      targetPlatform === "gba" &&
-      file.replace(/\\/g, "/").endsWith("/src/startup.s")
-    ) {
-      continue;
+    if (targetPlatform === "gba") {
+      const normalizedFile = file.replace(/\\/g, "/");
+      if (
+        normalizedFile.endsWith("/src/startup.s") ||
+        (normalizedFile.includes("/src/data/") &&
+          normalizedFile.endsWith(".s"))
+      ) {
+        continue;
+      }
     }
 
     const objFile = objectPathForSource(buildRoot, file);

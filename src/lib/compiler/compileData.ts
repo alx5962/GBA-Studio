@@ -1295,6 +1295,118 @@ const precompile = async (
 
 // #endregion
 
+const formatCByteArray = (values: number[] | Uint8Array, wrap = 16) =>
+  Array.from(values)
+    .map((value, index) =>
+      `${index % wrap === 0 ? "\n  " : " "}0x${(value & 0xff)
+        .toString(16)
+        .toUpperCase()
+        .padStart(2, "0")}`,
+    )
+    .join(",");
+
+const convertGbTileToGba4bpp = (tile: number[] | Uint8Array): number[] => {
+  const bytes = Array.from(tile);
+  if (bytes.length === 32) {
+    return bytes.map((value) => value & 0xff);
+  }
+  if (bytes.length !== 16) {
+    throw new Error(`Unexpected tile length ${bytes.length} in GBA compiler`);
+  }
+
+  const output: number[] = [];
+  for (let row = 0; row < 8; row++) {
+    const lo = bytes[row * 2] ?? 0;
+    const hi = bytes[row * 2 + 1] ?? 0;
+    for (let column = 0; column < 8; column += 2) {
+      const leftShift = 7 - column;
+      const rightShift = 6 - column;
+      const left =
+        ((lo >> leftShift) & 0x01) | (((hi >> leftShift) & 0x01) << 1);
+      const right =
+        ((lo >> rightShift) & 0x01) | (((hi >> rightShift) & 0x01) << 1);
+      output.push(left | (right << 4));
+    }
+  }
+
+  return output;
+};
+
+const convertGbTilesetToGba4bpp = (
+  tileset: number[] | Uint8Array,
+): Uint8Array => {
+  const source = Array.from(tileset);
+  const output: number[] = [];
+  for (let offset = 0; offset < source.length; offset += 16) {
+    output.push(...convertGbTileToGba4bpp(source.slice(offset, offset + 16)));
+  }
+  return Uint8Array.from(output);
+};
+
+const formatCWordArray = (values: number[], wrap = 8) =>
+  values
+    .map((value, index) =>
+      `${index % wrap === 0 ? "\n  " : " "}0x${(value & 0xffff)
+        .toString(16)
+        .toUpperCase()
+        .padStart(4, "0")}`,
+    )
+    .join(",");
+
+const hexColorToGba = (hex: string): number => {
+  const sanitized = hex.replace("#", "").padEnd(6, "0").substring(0, 6);
+  const r = Math.floor(parseInt(sanitized.substring(0, 2), 16) * (32 / 256));
+  const g = Math.floor(parseInt(sanitized.substring(2, 4), 16) * (32 / 256));
+  const b = Math.floor(parseInt(sanitized.substring(4, 6), 16) * (32 / 256));
+  return (r & 0x1f) | ((g & 0x1f) << 5) | ((b & 0x1f) << 10);
+};
+
+const toGbaPaletteData = (palette?: PrecompiledPalette): number[] => {
+  const output = new Array(8 * 16).fill(0);
+  const colors = palette?.colors ?? [];
+  for (let bank = 0; bank < Math.min(8, colors.length); bank++) {
+    for (let color = 0; color < Math.min(4, colors[bank].length); color++) {
+      output[bank * 16 + color] = hexColorToGba(colors[bank][color]);
+    }
+  }
+  return output;
+};
+
+const toGbaDirection = (direction?: string): number => {
+  switch (direction) {
+    case "up":
+      return 0;
+    case "down":
+      return 1;
+    case "left":
+      return 2;
+    case "right":
+      return 3;
+    default:
+      return 1;
+  }
+};
+
+const collectUniqueSprites = (
+  scene: PrecompiledScene,
+  usedSprites: PrecompiledSprite[],
+): PrecompiledSprite[] => {
+  const sprites: PrecompiledSprite[] = [];
+  const add = (sprite?: PrecompiledSprite) => {
+    if (sprite && !sprites.find((item) => item.id === sprite.id)) {
+      sprites.push(sprite);
+    }
+  };
+
+  add(scene.playerSprite);
+  scene.sprites.forEach(add);
+  scene.actors.forEach((actor) => {
+    add(usedSprites.find((item) => item.id === actor.spriteSheetId));
+  });
+
+  return sprites;
+};
+
 // Simplified GBA compilation flow
 const compileGBA = async (
   rawProjectData: ProjectResources,
@@ -1324,8 +1436,18 @@ const compileGBA = async (
   const output: Record<string, string> = {};
   const sceneMap: Record<string, SceneMapData> = {};
   const variableMap: Record<string, VariableMapData> = {};
+  const projectData = applyPrefabs(rawProjectData);
+  projectData.backgrounds = projectData.backgrounds || [];
+  projectData.tilesets = projectData.tilesets || [];
+  projectData.sprites = projectData.sprites || [];
+  projectData.music = projectData.music || [];
+  projectData.sounds = projectData.sounds || [];
+  projectData.fonts = projectData.fonts || [];
+  projectData.avatars = projectData.avatars || [];
+  projectData.emotes = projectData.emotes || [];
+  projectData.palettes = projectData.palettes || [];
 
-  if (rawProjectData.scenes.length === 0) {
+  if (projectData.scenes.length === 0) {
     throw new Error(
       "No scenes are included in your project. Add some scenes in the Game World editor and try again.",
     );
@@ -1333,7 +1455,15 @@ const compileGBA = async (
 
   progress("Compiling for GBA...");
   warnings(
-    "GBA VM runtime is minimal: scene records load, full GB Studio script events are still pending.",
+    "GBA VM runtime is minimal: background, palette, player movement, and actor rendering are wired; full GB Studio script events are still pending.",
+  );
+
+  const precompiled = await precompile(
+    projectData,
+    projectRoot,
+    scriptEventHandlers,
+    tmpPath,
+    { progress, warnings },
   );
 
   const sceneTypeIds: Record<string, number> = {
@@ -1344,60 +1474,205 @@ const compileGBA = async (
     POINTNCLICK: 4,
     LOGO: 5,
   };
+
   const cIdent = (value: string, fallback: string) => {
     const ident = (value || fallback).replace(/[^A-Za-z0-9_]/g, "_");
     return /^[A-Za-z_]/.test(ident) ? ident : `_${ident}`;
   };
+
   const firstStartSceneIndex = Math.max(
     0,
-    rawProjectData.scenes.findIndex(
-      (scene) => scene.id === rawProjectData.settings.startSceneId,
+    precompiled.sceneData.findIndex(
+      (scene) => scene.id === projectData.settings.startSceneId,
     ),
   );
-  const sceneSymbols = rawProjectData.scenes.map((scene, index) =>
+
+  const sceneSymbols = precompiled.sceneData.map((scene, index) =>
     cIdent(scene.symbol, `scene_${index}`),
   );
-  const sceneCollisionArrays = rawProjectData.scenes
+
+  const sceneBlocks = precompiled.sceneData
     .map((scene, index) => {
-      const width = Math.max(1, Math.min(255, Math.round(scene.width || 30)));
-      const height = Math.max(1, Math.min(255, Math.round(scene.height || 20)));
-      const tileCount = width * height;
-      const collisions = Array.from({ length: tileCount }, (_, tileIndex) =>
-        scene.collisions?.[tileIndex] ? 1 : 0,
+      const sceneSymbol = sceneSymbols[index];
+      const rawScene = projectData.scenes.find((item) => item.id === scene.id);
+      const rawTriggers = rawScene?.triggers ?? scene.triggers;
+      const background = scene.background;
+      const bgTileset = background?.tileset
+        ? convertGbTilesetToGba4bpp(background.tileset.data)
+        : new Uint8Array();
+      const bgTilemap = background?.tilemap
+        ? Uint8Array.from(background.tilemap.data)
+        : new Uint8Array();
+      const bgTilemapAttr = background?.tilemapAttr
+        ? Uint8Array.from(background.tilemapAttr.data)
+        : new Uint8Array();
+      const bgPalette = toGbaPaletteData(
+        precompiled.usedPalettes[precompiled.scenePaletteIndexes[scene.id] || 0],
       );
-      const values = collisions
-        .map((value, tileIndex) =>
-          tileIndex % 30 === 0 ? `\n  ${value}` : ` ${value}`,
-        )
-        .join(",");
-      return `static const uint8_t ${sceneSymbols[index]}_collisions[${tileCount}] = {${values}\n};`;
-    })
-    .join("\n\n");
-  const sceneInitScripts = rawProjectData.scenes
-    .map((scene, index) => {
-      const tone = index % 4;
-      return `static const uint8_t ${sceneSymbols[index]}_init_script[] = {
-  VM_OP_SET_SCENE_TONE, ${tone},
-  VM_OP_WAIT, 4,
-  VM_OP_END,
+      const spritePalette = toGbaPaletteData(
+        precompiled.usedPalettes[
+          precompiled.sceneActorPaletteIndexes[scene.id] || 0
+        ],
+      );
+      const localSprites = collectUniqueSprites(scene, precompiled.usedSprites);
+      const spriteIndexById = Object.fromEntries(
+        localSprites.map((sprite, spriteIndex) => [sprite.id, spriteIndex]),
+      ) as Record<string, number>;
+
+      const spriteBlocks = localSprites
+        .map((sprite, spriteIndex) => {
+          const spriteSymbol = `${sceneSymbol}_sprite_${spriteIndex}`;
+          const tileset = convertGbTilesetToGba4bpp(sprite.tileset.data);
+          const metaspriteIndex = sprite.metaspritesOrder[0] ?? 0;
+          const metasprite =
+            sprite.metasprites[metaspriteIndex] ?? sprite.metasprites[0] ?? [];
+          const metaspriteLines =
+            metasprite.length > 0
+              ? metasprite
+                  .map(
+                    (tile) =>
+                      `  { ${tile.x}, ${tile.y}, ${tile.tile}, ${
+                        tile.props & 0x07
+                      }, ${(tile.props & 0x20) !== 0}, ${(tile.props & 0x40) !== 0} }`,
+                  )
+                  .join(",\n")
+              : "  { 0, 0, 0, 0, false, false }";
+          const metaspriteArray = `static const gba_metasprite_tile_t ${spriteSymbol}_metasprite[${Math.max(
+            1,
+            metasprite.length,
+          )}] = {\n${metaspriteLines}\n};`;
+          const tilesetArray = `static const uint8_t ${spriteSymbol}_tileset[${Math.max(
+            1,
+            tileset.length,
+          )}] = {${
+            tileset.length > 0 ? `${formatCByteArray(tileset)}\n` : "\n  0x00\n"
+          }};`;
+          const def = `static const gba_sprite_def_t ${spriteSymbol} = {
+  ${tileset.length},
+  ${spriteSymbol}_tileset,
+  ${Math.ceil(tileset.length / 32)},
+  ${metasprite.length},
+  ${spriteSymbol}_metasprite,
 };`;
-    })
-    .join("\n\n");
-  const sceneDefs = rawProjectData.scenes
-    .map((scene, index) => {
-      const width = Math.max(1, Math.min(255, Math.round(scene.width || 30)));
-      const height = Math.max(1, Math.min(255, Math.round(scene.height || 20)));
-      const type = sceneTypeIds[scene.type] ?? 0;
-      const actors = scene.actors?.length ?? 0;
-      const triggers = scene.triggers?.length ?? 0;
-      const tone = index % 4;
-      return `static const gba_scene_def_t ${sceneSymbols[index]} = {
-  ${width}, ${height}, ${type}, ${actors}, ${triggers}, ${tone},
-  ${sceneSymbols[index]}_collisions,
-  ${sceneSymbols[index]}_init_script,
+          return [metaspriteArray, tilesetArray, def].join("\n\n");
+        })
+        .join("\n\n");
+
+      const spriteTableLines =
+        localSprites.length > 0
+          ? localSprites
+              .map((_, spriteIndex) => `  &${sceneSymbol}_sprite_${spriteIndex}`)
+              .join(",\n")
+          : "  NULL";
+      const spriteTable = `static const gba_sprite_def_t *const ${sceneSymbol}_sprites[${Math.max(
+        1,
+        localSprites.length,
+      )}] = {\n${spriteTableLines}\n};`;
+
+      const collisionArray = `static const uint8_t ${sceneSymbol}_collisions[${Math.max(
+        1,
+        scene.collisions.length,
+      )}] = {${
+        scene.collisions.length > 0
+          ? `${formatCByteArray(scene.collisions)}\n`
+          : "\n  0x00\n"
+      }};`;
+      const triggerArray =
+        rawTriggers.length > 0
+          ? `static const gba_trigger_def_t ${sceneSymbol}_triggers[${rawTriggers.length}] = {\n${rawTriggers
+              .map(
+                (trigger) =>
+                  `  { ${trigger.x}, ${trigger.y}, ${trigger.width}, ${trigger.height}, NULL }`,
+              )
+              .join(",\n")}\n};`
+          : "";
+      const actorArray =
+        scene.actors.length > 0
+          ? `static const gba_actor_def_t ${sceneSymbol}_actors[${scene.actors.length}] = {\n${scene.actors
+              .map((actor) => {
+                const spriteIndex = spriteIndexById[actor.spriteSheetId] ?? 0;
+                return `  { ${(actor.x || 0) * 8}, ${(actor.y || 0) * 8}, ${spriteIndex}, ${toGbaDirection(
+                  actor.direction,
+                )}, ${actor.moveSpeed || 1}, ${ensureNumber(
+                  actor.animSpeed,
+                  15,
+                )}, ${actor.isPinned ? "false" : "true"}, ${
+                  actor.persistent ? "true" : "false"
+                }, ${actor.isPinned ? "true" : "false"}, false }`;
+              })
+              .join(",\n")}\n};`
+          : "";
+      const bgTilesetArray = `static const uint8_t ${sceneSymbol}_tileset[${Math.max(
+        1,
+        bgTileset.length,
+      )}] = {${
+        bgTileset.length > 0 ? `${formatCByteArray(bgTileset)}\n` : "\n  0x00\n"
+      }};`;
+      const bgTilemapArray = `static const uint8_t ${sceneSymbol}_tilemap[${Math.max(
+        1,
+        bgTilemap.length,
+      )}] = {${
+        bgTilemap.length > 0 ? `${formatCByteArray(bgTilemap)}\n` : "\n  0x00\n"
+      }};`;
+      const bgTilemapAttrArray =
+        bgTilemapAttr.length > 0
+          ? `static const uint8_t ${sceneSymbol}_tilemap_attr[${bgTilemapAttr.length}] = {${formatCByteArray(
+              bgTilemapAttr,
+            )}\n};`
+          : "";
+      const bgPaletteArray = `static const uint16_t ${sceneSymbol}_bg_palette[128] = {${formatCWordArray(
+        bgPalette,
+      )}\n};`;
+      const spritePaletteArray = `static const uint16_t ${sceneSymbol}_sprite_palette[128] = {${formatCWordArray(
+        spritePalette,
+      )}\n};`;
+      const playerSpriteIndex = scene.playerSprite
+        ? spriteIndexById[scene.playerSprite.id] ?? 0
+        : 0;
+      const sceneDef = `static const gba_scene_def_t ${sceneSymbol} = {
+  ${scene.width},
+  ${scene.height},
+  ${sceneTypeIds[scene.type] ?? 0},
+  ${playerSpriteIndex},
+  ${scene.actors.length},
+  ${rawTriggers.length},
+  ${bgTileset.length},
+  ${sceneSymbol}_tileset,
+  ${sceneSymbol}_tilemap,
+  ${bgTilemapAttr.length > 0 ? `${sceneSymbol}_tilemap_attr` : "NULL"},
+  ${sceneSymbol}_bg_palette,
+  ${sceneSymbol}_sprite_palette,
+  ${sceneSymbol}_collisions,
+  ${scene.actors.length > 0 ? `${sceneSymbol}_actors` : "NULL"},
+  ${localSprites.length},
+  ${sceneSymbol}_sprites,
+  ${rawTriggers.length > 0 ? `${sceneSymbol}_triggers` : "NULL"},
 };`;
+
+      sceneMap[scene.symbol] = {
+        id: scene.id,
+        name: scene.name || `Scene ${index + 1}`,
+        symbol: scene.symbol,
+      };
+
+      return [
+        bgTilesetArray,
+        bgTilemapArray,
+        bgTilemapAttrArray,
+        bgPaletteArray,
+        spritePaletteArray,
+        collisionArray,
+        actorArray,
+        triggerArray,
+        spriteBlocks,
+        spriteTable,
+        sceneDef,
+      ]
+        .filter(Boolean)
+        .join("\n\n");
     })
     .join("\n\n");
+
   const sceneTable = sceneSymbols.map((symbol) => `  &${symbol},`).join("\n");
 
   output["gba_scene_data.h"] = `#ifndef GBA_SCENE_DATA_H
@@ -1410,15 +1685,12 @@ extern const gba_game_data_t gba_game_data;
 #endif
 `;
   output["gba_scene_data.c"] = `#include <stdint.h>
+#include <stddef.h>
 #include "gba_scene.h"
 #include "vm.h"
 #include "data/gba_scene_data.h"
 
-${sceneCollisionArrays}
-
-${sceneInitScripts}
-
-${sceneDefs}
+${sceneBlocks}
 
 static const gba_scene_def_t *const gba_scene_table[] = {
 ${sceneTable}
@@ -1430,16 +1702,24 @@ static const uint8_t gba_bootstrap_script[] = {
 };
 
 const gba_game_data_t gba_game_data = {
-  ${rawProjectData.scenes.length},
+  ${precompiled.sceneData.length},
   ${firstStartSceneIndex},
-  ${Math.max(0, Math.min(255, Math.round(rawProjectData.settings.startX || 0)))},
-  ${Math.max(0, Math.min(255, Math.round(rawProjectData.settings.startY || 0)))},
+  ${Math.max(0, Math.min(255, Math.round(projectData.settings.startX || 0)))},
+  ${Math.max(0, Math.min(255, Math.round(projectData.settings.startY || 0)))},
+  ${toGbaDirection(projectData.settings.startDirection)},
+  ${Math.max(
+    1,
+    Math.min(255, Math.round(projectData.settings.startMoveSpeed || 1)),
+  )},
+  ${Math.max(
+    0,
+    Math.min(255, Math.round(ensureNumber(projectData.settings.startAnimSpeed, 15))),
+  )},
   gba_scene_table,
   gba_bootstrap_script,
 };
 `;
 
-  // Provide the minimal required game globals files for GBA builds
   output["game_globals.i"] = compileGameGlobalsInclude(
     {},
     [],
@@ -1453,21 +1733,15 @@ const gba_game_data_t gba_game_data = {
     [],
   );
 
-  rawProjectData.scenes.forEach((scene, index) => {
-    sceneMap[scene.symbol || `scene_${index}`] = {
-      id: scene.id,
-      name: scene.name || `Scene ${index + 1}`,
-      symbol: scene.symbol || `scene_${index}`,
-    };
-  });
-
   progress("GBA compilation complete");
 
   return {
     files: output,
     sceneMap,
     variableMap,
-    usedSceneTypeIds: ["TOPDOWN"],
+    usedSceneTypeIds: uniq(
+      ["LOGO"].concat(precompiled.sceneData.map((scene) => scene.type)),
+    ),
   };
 };
 
@@ -2214,3 +2488,4 @@ const compile = async (
 };
 
 export default compile;
+
