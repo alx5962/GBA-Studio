@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>GBA Studio — Discord Activity</title>
+  <meta name="discord-app-id" content="1514002263012675604" />
   <style>
     :root {
       --purple: #7c3aed;
@@ -113,7 +114,7 @@
       );
       // Replace with your own Application ID from the Developer Portal
       const APP_ID = document.querySelector("meta[name=discord-app-id]")?.content
-                     || "YOUR_DISCORD_APP_ID_HERE";
+                     || "1514002263012675604";
       sdk = new DiscordSDK(APP_ID);
       STATUS.textContent = "Waiting for Discord…";
       await sdk.ready();
