@@ -1507,7 +1507,15 @@ const compileGBA = async (
     precompiled.sceneData.map((scene, index) => [scene.id, index]),
   ) as Record<string, number>;
 
-  const gbaEventCtx = { sceneIndexById, warnings };
+  // Custom-event scripts by id, for inlining EVENT_CALL_CUSTOM_EVENT.
+  const customEventsById = Object.fromEntries(
+    (projectData.scripts ?? []).map((script) => [
+      script.id,
+      { script: script.script as GBAScriptEvent[] | undefined },
+    ]),
+  ) as Record<string, { script?: GBAScriptEvent[] }>;
+
+  const gbaEventCtx = { sceneIndexById, customEventsById, warnings };
 
   // Task 11 — Validation: warn on invalid isometric scene configurations.
   precompiled.sceneData.forEach((scene) => {
@@ -1633,6 +1641,12 @@ const compileGBA = async (
           ? `${formatCByteArray(scene.collisions)}\n`
           : "\n  0x00\n"
       }};`;
+      // Runtime actor indices: 0 is the player, scene actors follow in order.
+      const actorIndexById = Object.fromEntries(
+        scene.actors.map((actor, actorIndex) => [actor.id, actorIndex + 1]),
+      ) as Record<string, number>;
+      const sceneEventCtx = { ...gbaEventCtx, actorIndexById };
+
       // Compile trigger scripts and emit trigger array.
       const triggerScriptBlocks: string[] = [];
       const triggerScriptSymbols: (string | null)[] = rawTriggers.map(
@@ -1645,7 +1659,7 @@ const compileGBA = async (
           )
             return null;
           const symbol = `${sceneSymbol}_trigger_${triggerIndex}_script`;
-          const bytecode = compileGBAScript(scriptEvents, gbaEventCtx);
+          const bytecode = compileGBAScript(scriptEvents, sceneEventCtx);
           triggerScriptBlocks.push(emitGBAScriptC(symbol, bytecode));
           return symbol;
         },
@@ -1671,7 +1685,10 @@ const compileGBA = async (
           )
             return null;
           const symbol = `${sceneSymbol}_actor_${actorIndex}_interact_script`;
-          const bytecode = compileGBAScript(scriptEvents, gbaEventCtx);
+          const bytecode = compileGBAScript(scriptEvents, {
+            ...sceneEventCtx,
+            selfActorIndex: actorIndex + 1,
+          });
           actorScriptBlocks.push(emitGBAScriptC(symbol, bytecode));
           return symbol;
         },

@@ -20,6 +20,11 @@ const VM_OP_IF_VAR_EQ_CONST = 0x0c;
 const VM_OP_IF_VAR_GT_CONST = 0x0d;
 const VM_OP_IF_VAR_LT_CONST = 0x0e;
 const VM_OP_SHOW_TEXT = 0x0f;
+const VM_OP_IF_INPUT = 0x10;
+const VM_OP_ACTOR_SET_POS = 0x11;
+const VM_OP_ACTOR_MOVE_REL = 0x12;
+const VM_OP_ACTOR_SET_DIR = 0x13;
+const VM_OP_ACTOR_SET_HIDDEN = 0x14;
 
 const noopCtx = {
   sceneIndexById: {} as Record<string, number>,
@@ -534,6 +539,167 @@ describe("compileGBAScript", () => {
     const out = compileGBAScript(events, ctx);
     expect(out).toEqual([VM_OP_SET_CONST, 1, 1, VM_OP_END]);
     expect(ctx.warnings).not.toHaveBeenCalled();
+  });
+
+  it("EVENT_IF_INPUT branches on a key mask (A = 0x0001)", () => {
+    const events: GBAScriptEvent[] = [
+      {
+        command: "EVENT_IF_INPUT",
+        args: {
+          input: ["a"],
+          true: [
+            { command: "EVENT_SET_VALUE", args: { variable: "1", value: 1 } },
+          ],
+          false: [
+            { command: "EVENT_SET_VALUE", args: { variable: "1", value: 0 } },
+          ],
+        },
+      },
+    ];
+    const out = compileGBAScript(events, noopCtx);
+    expect(out[0]).toBe(VM_OP_IF_INPUT);
+    expect(out[1]).toBe(0x01); // mask lo (A)
+    expect(out[2]).toBe(0x00); // mask hi
+    expect(out).toContain(VM_OP_SET_CONST);
+  });
+
+  it("EVENT_IF_INPUT combines multiple keys into one mask", () => {
+    const events: GBAScriptEvent[] = [
+      { command: "EVENT_IF_INPUT", args: { input: ["b", "up"] } },
+    ];
+    const out = compileGBAScript(events, noopCtx);
+    // B=0x02 | UP=0x40 = 0x42
+    expect(out[0]).toBe(VM_OP_IF_INPUT);
+    expect(out[1]).toBe(0x42);
+    expect(out[2]).toBe(0x00);
+  });
+
+  it("EVENT_ACTOR_SET_POSITION resolves player to index 0", () => {
+    const events: GBAScriptEvent[] = [
+      {
+        command: "EVENT_ACTOR_SET_POSITION",
+        args: { actorId: "player", x: 5, y: 7 },
+      },
+    ];
+    const out = compileGBAScript(events, noopCtx);
+    expect(out).toEqual([VM_OP_ACTOR_SET_POS, 0, 5, 7, VM_OP_END]);
+  });
+
+  it("EVENT_ACTOR_SET_POSITION resolves a scene actor via actorIndexById", () => {
+    const ctx = {
+      sceneIndexById: {},
+      actorIndexById: { "npc-1": 2 },
+      warnings: jest.fn(),
+    };
+    const events: GBAScriptEvent[] = [
+      {
+        command: "EVENT_ACTOR_SET_POSITION",
+        args: { actorId: "npc-1", x: 3, y: 4 },
+      },
+    ];
+    const out = compileGBAScript(events, ctx);
+    expect(out).toEqual([VM_OP_ACTOR_SET_POS, 2, 3, 4, VM_OP_END]);
+  });
+
+  it("EVENT_ACTOR_MOVE_RELATIVE encodes negative deltas as signed bytes", () => {
+    const events: GBAScriptEvent[] = [
+      {
+        command: "EVENT_ACTOR_MOVE_RELATIVE",
+        args: { actorId: "player", x: -1, y: 2 },
+      },
+    ];
+    const out = compileGBAScript(events, noopCtx);
+    expect(out).toEqual([VM_OP_ACTOR_MOVE_REL, 0, 0xff, 2, VM_OP_END]);
+  });
+
+  it("EVENT_ACTOR_SET_DIRECTION maps direction names (up=3)", () => {
+    const events: GBAScriptEvent[] = [
+      {
+        command: "EVENT_ACTOR_SET_DIRECTION",
+        args: { actorId: "player", direction: "up" },
+      },
+    ];
+    const out = compileGBAScript(events, noopCtx);
+    expect(out).toEqual([VM_OP_ACTOR_SET_DIR, 0, 3, VM_OP_END]);
+  });
+
+  it("EVENT_ACTOR_ACTIVATE / DEACTIVATE toggle hidden", () => {
+    const out = compileGBAScript(
+      [
+        { command: "EVENT_ACTOR_DEACTIVATE", args: { actorId: "player" } },
+        { command: "EVENT_ACTOR_ACTIVATE", args: { actorId: "player" } },
+      ],
+      noopCtx,
+    );
+    expect(out).toEqual([
+      VM_OP_ACTOR_SET_HIDDEN,
+      0,
+      1,
+      VM_OP_ACTOR_SET_HIDDEN,
+      0,
+      0,
+      VM_OP_END,
+    ]);
+  });
+
+  it("$self$ resolves to the enclosing actor index", () => {
+    const ctx = {
+      sceneIndexById: {},
+      selfActorIndex: 3,
+      warnings: jest.fn(),
+    };
+    const events: GBAScriptEvent[] = [
+      {
+        command: "EVENT_ACTOR_SET_DIRECTION",
+        args: { actorId: "$self$", direction: "down" },
+      },
+    ];
+    const out = compileGBAScript(events, ctx);
+    expect(out).toEqual([VM_OP_ACTOR_SET_DIR, 3, 0, VM_OP_END]);
+  });
+
+  it("EVENT_CALL_CUSTOM_EVENT inlines the referenced script", () => {
+    const ctx = {
+      sceneIndexById: {},
+      customEventsById: {
+        "ce-1": {
+          script: [
+            { command: "EVENT_SET_VALUE", args: { variable: "9", value: 1 } },
+          ],
+        },
+      },
+      warnings: jest.fn(),
+    };
+    const events: GBAScriptEvent[] = [
+      { command: "EVENT_CALL_CUSTOM_EVENT", args: { customEventId: "ce-1" } },
+    ];
+    const out = compileGBAScript(events, ctx);
+    expect(out).toEqual([VM_OP_SET_CONST, 9, 1, VM_OP_END]);
+  });
+
+  it("EVENT_CALL_CUSTOM_EVENT guards against recursion", () => {
+    const ctx: {
+      sceneIndexById: Record<string, number>;
+      customEventsById: Record<string, { script?: GBAScriptEvent[] }>;
+      warnings: jest.Mock;
+    } = {
+      sceneIndexById: {},
+      customEventsById: {},
+      warnings: jest.fn(),
+    };
+    ctx.customEventsById["ce-loop"] = {
+      script: [
+        { command: "EVENT_CALL_CUSTOM_EVENT", args: { customEventId: "ce-loop" } },
+      ],
+    };
+    const out = compileGBAScript(
+      [{ command: "EVENT_CALL_CUSTOM_EVENT", args: { customEventId: "ce-loop" } }],
+      ctx,
+    );
+    expect(out).toEqual([VM_OP_END]);
+    expect(ctx.warnings).toHaveBeenCalledWith(
+      expect.stringContaining("recursive"),
+    );
   });
 
   it("unsupported events are skipped with a warning", () => {

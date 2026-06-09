@@ -22,6 +22,33 @@ const VM_OP_IF_VAR_EQ_CONST = 0x0c;
 const VM_OP_IF_VAR_GT_CONST = 0x0d;
 const VM_OP_IF_VAR_LT_CONST = 0x0e;
 const VM_OP_SHOW_TEXT = 0x0f;
+const VM_OP_IF_INPUT = 0x10;
+const VM_OP_ACTOR_SET_POS = 0x11;
+const VM_OP_ACTOR_MOVE_REL = 0x12;
+const VM_OP_ACTOR_SET_DIR = 0x13;
+const VM_OP_ACTOR_SET_HIDDEN = 0x14;
+
+// GBA key bit masks (mirror gba_system.h).
+const GBA_KEYS: Record<string, number> = {
+  a: 0x0001,
+  b: 0x0002,
+  select: 0x0004,
+  start: 0x0008,
+  right: 0x0010,
+  left: 0x0020,
+  up: 0x0040,
+  down: 0x0080,
+  r: 0x0100,
+  l: 0x0200,
+};
+
+// GB Studio direction_e order: 0=down, 1=left, 2=right, 3=up.
+const GBA_DIRECTIONS: Record<string, number> = {
+  down: 0,
+  left: 1,
+  right: 2,
+  up: 3,
+};
 
 // Minimal structural type for the script events we receive — matches the
 // shape of GBAScriptEvent from entitiesTypes without importing it (which would
@@ -35,8 +62,40 @@ export type GBAScriptEvent = {
 export type GBACompileContext = {
   // Map from scene id → scene index (0-based) used for LOAD_SCENE operand.
   sceneIndexById: Record<string, number>;
+  // Map from actor id → runtime actor index for the scene being compiled.
+  // Runtime index 0 is the player; scene actors follow. Set per-scene.
+  actorIndexById?: Record<string, number>;
+  // Runtime index substituted for the "$self$" actor id (the actor whose
+  // own script is being compiled). Undefined outside an actor script.
+  selfActorIndex?: number;
+  // Custom-event scripts by id, for inlining EVENT_CALL_CUSTOM_EVENT.
+  customEventsById?: Record<string, { script?: GBAScriptEvent[] }>;
+  // Recursion guard for nested custom-event calls.
+  customEventCallStack?: string[];
   warnings: (msg: string) => void;
 };
+
+// Resolve a GB Studio actorId to a runtime actor index.
+// "player" → 0; "$self$" → the enclosing actor; otherwise the per-scene map.
+function resolveActorIndex(actorId: unknown, ctx: GBACompileContext): number {
+  const id = String(actorId ?? "player");
+  if (id === "player" || id === "$player$") {
+    return 0;
+  }
+  if (id === "$self$") {
+    return ctx.selfActorIndex ?? 0;
+  }
+  return ctx.actorIndexById?.[id] ?? 0;
+}
+
+// Signed byte (-128..127) encoded as u8 for delta operands.
+function clampS8ToU8(n: number): number {
+  if (!Number.isFinite(n)) {
+    return 0;
+  }
+  const v = Math.max(-128, Math.min(127, Math.round(n)));
+  return v < 0 ? 256 + v : v;
+}
 
 // Encode a NUL-terminated string as UTF-8 bytes (ASCII subset only on GBA).
 // Replaces any non-ASCII byte with '?' to stay safe.
@@ -103,6 +162,47 @@ function constValueToU8(value: unknown): number | undefined {
   }
 
   return undefined;
+}
+
+// Best-effort numeric value from a ScriptValue/number/string (signed).
+function scriptValueToNumber(value: unknown): number {
+  if (typeof value === "number") {
+    return value;
+  }
+  if (typeof value === "string") {
+    const n = Number(value);
+    return Number.isFinite(n) ? n : 0;
+  }
+  if (value && typeof value === "object" && "type" in value) {
+    const sv = value as { type?: unknown; value?: unknown };
+    if (sv.type === "number") {
+      return Number(sv.value ?? 0);
+    }
+  }
+  return 0;
+}
+
+// Build a 16-bit GBA key mask from an EVENT_IF_INPUT `input` arg, which may be
+// a single key name or an array of them.
+function inputMask(input: unknown): number {
+  const names = Array.isArray(input) ? input : [input];
+  let mask = 0;
+  for (const name of names) {
+    const key = String(name ?? "").toLowerCase();
+    mask |= GBA_KEYS[key] ?? 0;
+  }
+  return mask & 0xffff;
+}
+
+// Extract a direction name from a string or {type:"direction"} union.
+function directionValue(value: unknown): number {
+  let name = "";
+  if (typeof value === "string") {
+    name = value;
+  } else if (value && typeof value === "object" && "value" in value) {
+    name = String((value as { value?: unknown }).value ?? "");
+  }
+  return GBA_DIRECTIONS[name.toLowerCase()] ?? 0;
 }
 
 function pushS16(out: number[], value: number): void {
@@ -417,6 +517,96 @@ function compileEvent(
         (args.false as GBAScriptEvent[] | undefined) ?? event.children?.false,
         ctx,
       );
+      return true;
+    }
+
+    case "EVENT_IF_INPUT": {
+      const mask = inputMask(args.input);
+      if (mask === 0) {
+        return false;
+      }
+      const trueEvents =
+        (args.true as GBAScriptEvent[] | undefined) ?? event.children?.true;
+      const falseEvents =
+        (args.false as GBAScriptEvent[] | undefined) ?? event.children?.false;
+      const trueBytes = compileNestedEvents(trueEvents, ctx);
+      const falseBytes = compileNestedEvents(falseEvents, ctx);
+
+      // VM_OP_IF_INPUT mask_lo mask_hi offset(branch over the skip-jump)
+      out.push(VM_OP_IF_INPUT, mask & 0xff, (mask >> 8) & 0xff);
+      pushS16(out, 3); // if pressed, skip the jump-to-false below
+      const jumpToFalseIndex = out.length + 1;
+      pushJump(out, 0);
+      out.push(...trueBytes);
+      const jumpToEndIndex = out.length + 1;
+      pushJump(out, 0);
+      out.push(...falseBytes);
+      patchS16(out, jumpToFalseIndex, trueBytes.length + 3);
+      patchS16(out, jumpToEndIndex, falseBytes.length);
+      return true;
+    }
+
+    case "EVENT_ACTOR_SET_POSITION": {
+      const actor = resolveActorIndex(args.actorId, ctx);
+      out.push(
+        VM_OP_ACTOR_SET_POS,
+        actor,
+        clampU8(scriptValueToNumber(args.x)),
+        clampU8(scriptValueToNumber(args.y)),
+      );
+      return true;
+    }
+
+    case "EVENT_ACTOR_MOVE_RELATIVE": {
+      const actor = resolveActorIndex(args.actorId, ctx);
+      out.push(
+        VM_OP_ACTOR_MOVE_REL,
+        actor,
+        clampS8ToU8(scriptValueToNumber(args.x)),
+        clampS8ToU8(scriptValueToNumber(args.y)),
+      );
+      return true;
+    }
+
+    case "EVENT_ACTOR_SET_DIRECTION": {
+      const actor = resolveActorIndex(args.actorId, ctx);
+      out.push(VM_OP_ACTOR_SET_DIR, actor, directionValue(args.direction));
+      return true;
+    }
+
+    case "EVENT_ACTOR_ACTIVATE": {
+      out.push(VM_OP_ACTOR_SET_HIDDEN, resolveActorIndex(args.actorId, ctx), 0);
+      return true;
+    }
+
+    case "EVENT_ACTOR_DEACTIVATE": {
+      out.push(VM_OP_ACTOR_SET_HIDDEN, resolveActorIndex(args.actorId, ctx), 1);
+      return true;
+    }
+
+    case "EVENT_CALL_CUSTOM_EVENT": {
+      const customEventId = String(args.customEventId ?? "");
+      const customEvent = ctx.customEventsById?.[customEventId];
+      if (!customEvent) {
+        ctx.warnings(
+          `GBA compiler: EVENT_CALL_CUSTOM_EVENT references unknown custom event "${customEventId}" — skipped`,
+        );
+        return false;
+      }
+      const stack = ctx.customEventCallStack ?? [];
+      if (stack.includes(customEventId)) {
+        ctx.warnings(
+          `GBA compiler: EVENT_CALL_CUSTOM_EVENT "${customEventId}" is recursive — skipped to avoid infinite inline`,
+        );
+        return false;
+      }
+      // Inline the custom event's script. Parameter (variable/actor) remapping
+      // is not yet supported — calls to parameterless custom events work fully.
+      const nestedCtx: GBACompileContext = {
+        ...ctx,
+        customEventCallStack: [...stack, customEventId],
+      };
+      out.push(...compileNestedEvents(customEvent.script ?? [], nestedCtx));
       return true;
     }
 

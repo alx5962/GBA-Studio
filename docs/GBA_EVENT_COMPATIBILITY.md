@@ -40,6 +40,13 @@ compatibility effort.
 | EVENT_IF_VALUE | ✅ | ✅ `VM_OP_IF_VAR_{EQ,GT,LT}_CONST` | ✅ | ✅ | eq/ne/gt/lt/gte/lte via direct+inverse opcodes |
 | EVENT_GROUP | ✅ | n/a | n/a | ✅ | Inlines child events; purely organisational, no opcode |
 | EVENT_IF_COLOR_SUPPORTED | ✅ | n/a | n/a | ✅ | GBA always has colour; true branch inlined at compile time |
+| EVENT_IF_INPUT | ✅ | ✅ `VM_OP_IF_INPUT` | ✅ | ✅ | 16-bit key mask; branches on held buttons |
+| EVENT_ACTOR_SET_POSITION | ✅ | ✅ `VM_OP_ACTOR_SET_POS` | ✅ | ✅ | u8 coords (tile for iso, pixel for top-down) |
+| EVENT_ACTOR_MOVE_RELATIVE | ✅ | ✅ `VM_OP_ACTOR_MOVE_REL` | ✅ | ✅ | signed-byte deltas; instant (non-animated) move |
+| EVENT_ACTOR_SET_DIRECTION | 🟡 | ✅ `VM_OP_ACTOR_SET_DIR` | 🟡 | ✅ | Stored on actor; renderer doesn't use it yet |
+| EVENT_ACTOR_ACTIVATE | 🟡 | ✅ `VM_OP_ACTOR_SET_HIDDEN` | ✅ | ✅ | Mapped to show (hidden=0) |
+| EVENT_ACTOR_DEACTIVATE | 🟡 | ✅ `VM_OP_ACTOR_SET_HIDDEN` | ✅ | ✅ | Mapped to hide (hidden=1) |
+| EVENT_CALL_CUSTOM_EVENT | 🟡 | n/a | n/a | ✅ | Inlined at compile time; no parameter remapping yet |
 
 ## Missing events (skipped with warning)
 
@@ -51,19 +58,13 @@ by the phase that will address them.
 | Event | Notes |
 |-------|-------|
 | EVENT_CHOICE | Player menu / yes-no; needs textbox cursor + input + branch |
-| EVENT_CALL_CUSTOM_EVENT | Invoke reusable script with parameter passing (also Phase 7) |
-| EVENT_IF_INPUT | Branch on held/pressed buttons |
 
-### Phase 3 — actor system
+### Phase 3 — actor system (remaining)
 
 | Event | Notes |
 |-------|-------|
-| EVENT_ACTOR_SET_POSITION | Set actor x/y (tile or pixel) |
-| EVENT_ACTOR_MOVE_TO | Move actor to target, optionally blocking |
-| EVENT_ACTOR_MOVE_RELATIVE | Move by delta |
-| EVENT_ACTOR_SET_DIRECTION | Face up/down/left/right |
+| EVENT_ACTOR_MOVE_TO | Move actor to target over time, optionally blocking |
 | EVENT_ACTOR_SET_STATE | Switch sprite animation state |
-| EVENT_ACTOR_ACTIVATE | Enable/disable actor |
 | EVENT_ACTOR_PUSH | Push actor in facing direction |
 | EVENT_ACTOR_EMOTE | Show emote bubble above actor |
 | EVENT_PLATFORMER_STATE_SET | Platformer-specific; lower priority |
@@ -91,10 +92,13 @@ by the phase that will address them.
 
 ## Summary
 
-- **15** events compile today (10 fully ✅, 5 partial 🟡).
-- **~18** distinct events are still skipped.
-- Highest-leverage features for playability: **EVENT_CHOICE**,
-  **EVENT_CALL_CUSTOM_EVENT**, and the **actor** events (Phase 3), since the
-  Adventure/Dialogue templates lean on them heavily.
+- **23** events compile today (13 fully ✅, 10 partial 🟡).
+- **~10** distinct events are still skipped.
+- With input, variables, branching, text, scene changes, and actor
+  position/visibility/direction now wired, a basic interactive game (move,
+  talk, trigger scripts, branch on input/variables, call shared scripts) is
+  buildable end-to-end.
+- Remaining high-value gaps: **EVENT_CHOICE** (menus), **EVENT_ACTOR_MOVE_TO**
+  (timed movement), **save** (Phase 5), and **audio** (Phase 6).
 
 _Last audited against the build log on 2026-06-09._
