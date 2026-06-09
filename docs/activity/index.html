@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GBA Studio — Discord Activity</title>
+  <style>
+    :root {
+      --purple: #7c3aed;
+      --purple-light: #a78bfa;
+      --bg: #0f0f0f;
+      --surface: #1a1a2e;
+      --border: #2d2d4e;
+      --text: #e2e8f0;
+      --muted: #94a3b8;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: system-ui, -apple-system, sans-serif;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #loading {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .logo-icon {
+      width: 72px;
+      height: 72px;
+      border-radius: 16px;
+      filter: drop-shadow(0 8px 20px rgba(124,58,237,0.4));
+    }
+
+    .spinner {
+      width: 28px; height: 28px;
+      border: 3px solid var(--border);
+      border-top-color: var(--purple-light);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    #loading p { color: var(--muted); font-size: 0.9rem; }
+
+    #game {
+      width: 100%;
+      height: 100%;
+      display: none;
+    }
+
+    #game.visible { display: block; }
+  </style>
+</head>
+<body>
+
+<div id="loading">
+  <img class="logo-icon" src="../player/gba-logo.png" onerror="this.style.display='none'" alt="GBA Studio" />
+  <div class="spinner"></div>
+  <p id="status-text">Connecting to Discord…</p>
+</div>
+
+<div id="game"></div>
+
+<!-- Discord Embedded App SDK (CDN for development; bundle it for production) -->
+<script type="module">
+  /**
+   * Discord Activity wrapper for GBA Studio ROM player.
+   *
+   * How it works:
+   *  1. We initialise the Discord Embedded App SDK so Discord knows the
+   *     activity is ready and can pass us metadata (guild, channel, user).
+   *  2. We resolve the ROM URL — either from a ?rom= query param set by the
+   *     Discord bot/command that launched the activity, or from a hard-coded
+   *     demo ROM path.
+   *  3. Inside a Discord Activity all outbound fetches MUST go through the
+   *     Discord asset proxy:  /.proxy/<original-url>
+   *     We patch window.fetch and XHR before loading EmulatorJS so the
+   *     emulator core download is proxied automatically.
+   *  4. Once the SDK reports ready we swap the loading spinner for the game.
+   *
+   * Developer Portal setup (do this once):
+   *   https://discord.com/developers/applications
+   *   → New Application → URL Mapping → add your tunnel domain
+   *   → Activities → enable "Activities"
+   *
+   * Local development:
+   *   npx cloudflared tunnel --url http://localhost:5500
+   *   then set the tunnel URL as your Activity's Root Mapping.
+   */
+
+  const STATUS = document.getElementById("status-text");
+  const LOADING = document.getElementById("loading");
+  const GAME = document.getElementById("game");
+
+  // ── 1. Discord SDK init ───────────────────────────────────────────────────
+  async function initDiscord() {
+    // Try to load the SDK. In a browser outside Discord this will fail or
+    // return a mock, which is fine for development.
+    let sdk = null;
+    try {
+      // CDN build of the Discord Embedded App SDK
+      const { DiscordSDK } = await import(
+        "https://cdn.jsdelivr.net/npm/@discord/embedded-app-sdk@1/dist/index.min.mjs"
+      );
+      // Replace with your own Application ID from the Developer Portal
+      const APP_ID = document.querySelector("meta[name=discord-app-id]")?.content
+                     || "YOUR_DISCORD_APP_ID_HERE";
+      sdk = new DiscordSDK(APP_ID);
+      STATUS.textContent = "Waiting for Discord…";
+      await sdk.ready();
+      STATUS.textContent = "Authenticating…";
+      // Minimal auth — just mark ready so Discord shows the activity frame
+      await sdk.commands.authorize({
+        client_id: APP_ID,
+        response_type: "code",
+        state: "",
+        prompt: "none",
+        scope: ["identify"],
+      }).catch(() => { /* ignore if not in a real activity frame */ });
+    } catch (err) {
+      console.warn("Discord SDK unavailable (running outside Discord?):", err);
+    }
+    return sdk;
+  }
+
+  // ── 2. Asset proxy patch ──────────────────────────────────────────────────
+  // Discord requires all external assets inside an Activity to go through
+  // https://discord.com/assets/<proxied-url> which is served as /.proxy/<url>
+  function patchForDiscordProxy() {
+    const origFetch = window.fetch;
+    window.fetch = function(input, init) {
+      const url = typeof input === "string" ? input : input.url;
+      if (url && url.startsWith("http") && !url.includes(location.hostname)) {
+        const proxied = "/.proxy/" + url;
+        if (typeof input === "string") input = proxied;
+        else input = new Request(proxied, input);
+      }
+      return origFetch.call(this, input, init);
+    };
+
+    const origXHR = XMLHttpRequest.prototype.open;
+    XMLHttpRequest.prototype.open = function(method, url, ...rest) {
+      if (typeof url === "string" && url.startsWith("http") && !url.includes(location.hostname)) {
+        url = "/.proxy/" + url;
+      }
+      return origXHR.call(this, method, url, ...rest);
+    };
+  }
+
+  // ── 3. Launch EmulatorJS ──────────────────────────────────────────────────
+  function launchEmulator(romUrl) {
+    window.EJS_player      = "#game";
+    window.EJS_core        = "gba";
+    window.EJS_gameUrl     = romUrl;
+    window.EJS_color       = "#7c3aed";
+    window.EJS_startOnLoaded = true;
+    window.EJS_adUrl       = "";
+    // Point EmulatorJS data at the proxied CDN
+    window.EJS_pathtodata  = "https://cdn.emulatorjs.org/stable/data/";
+
+    const s = document.createElement("script");
+    s.src = "https://cdn.emulatorjs.org/stable/data/loader.js";
+    document.body.appendChild(s);
+
+    LOADING.style.display = "none";
+    GAME.classList.add("visible");
+  }
+
+  // ── 4. Resolve ROM ────────────────────────────────────────────────────────
+  function resolveRomUrl() {
+    const params = new URLSearchParams(location.search);
+    if (params.has("rom")) return decodeURIComponent(params.get("rom"));
+    // Fallback: first demo ROM in the player directory
+    // Update this path when you commit a built demo ROM.
+    return "../player/roms/demo.gba";
+  }
+
+  // ── Main ──────────────────────────────────────────────────────────────────
+  (async () => {
+    const sdk = await initDiscord();
+    STATUS.textContent = "Loading emulator…";
+
+    // Only proxy assets inside a real Discord Activity frame
+    const inActivity = window.location.hostname.endsWith(".discordsays.com");
+    if (inActivity) patchForDiscordProxy();
+
+    launchEmulator(resolveRomUrl());
+  })();
+</script>
+
+</body>
+</html>
