@@ -76,7 +76,7 @@ type EjectOptions = {
 const ejectBuild = async ({
   engineSchema,
   projectData,
-  buildType = "rom",
+  buildType = "gba",
   outputRoot = "/tmp",
   projectRoot = "/tmp",
   tmpPath = "/tmp",

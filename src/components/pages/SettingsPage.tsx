@@ -112,7 +112,7 @@ const SettingsPage: FC = () => {
     "",
     projectName,
     colorMode === "color",
-    "rom",
+    "gba",
   );
 
   const onSearch = (e: React.ChangeEvent<HTMLInputElement>) => {

@@ -34,7 +34,7 @@ const buildTypeForCommand = (
     return "pocket";
   }
   if (command === "make:rom") {
-    return destination.toLowerCase().endsWith(".gba") ? "gba" : "rom";
+    return "gba";
   }
   return "rom";
 };

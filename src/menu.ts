@@ -251,7 +251,7 @@ const buildMenu = async ({ themeManager, l10nManager }: BuildMenuProps) => {
               label: l10n("MENU_EXPORT_ROM"),
               accelerator: "CommandOrControl+Shift+B",
               click() {
-                notifyListeners("build", "rom");
+                notifyListeners("build", "gba");
               },
             },
             {

@@ -85,5 +85,6 @@ module.exports = {
     "about-window": "about-window",
     acorn: "acorn",
     "acorn-walk": "acorn-walk",
+    fsevents: "fsevents",
   },
 };

@@ -24,7 +24,7 @@ let cancelFunction: (() => void) | undefined;
 const buildProject = async (
   project: ProjectResources,
   {
-    buildType = "rom",
+    buildType = "gba",
     projectRoot = "/tmp",
     tmpPath = "/tmp",
     engineSchema,
