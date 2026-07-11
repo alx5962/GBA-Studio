@@ -1614,27 +1614,48 @@ const compileGBA = async (
           const metaspriteIndex = sprite.metaspritesOrder[0] ?? 0;
           const metasprite =
             sprite.metasprites[metaspriteIndex] ?? sprite.metasprites[0] ?? [];
-          // GB Studio metasprites store tile positions as cumulative deltas
-          // (each tile's x/y is relative to the previous tile's position).
-          // The GBA engine expects absolute offsets from the sprite base, so
-          // we accumulate the deltas here.
+          const spriteMode = sprite.spriteMode ?? "8x16";
+
+          // GB Studio metasprites store tile positions as cumulative GBDK deltas
+          // (each tile's x/y is relative to the previous tile's position, processed
+          // bottom-to-top with initial currentY=-8). Accumulating these deltas gives
+          // accumY=0 for bottom tiles and accumY=8 for top tiles (for a 16px sprite).
+          // The GBA engine uses 8x8 OAM mode. For 8x16 sprites, VRAM stores each
+          // canvas tile as two consecutive 8x8 VRAM tiles (top half then bottom half),
+          // so we expand each metasprite entry into two 8x8 OAM sub-entries.
           let accumX = 0;
           let accumY = 0;
-          const metaspriteLines =
-            metasprite.length > 0
-              ? metasprite
-                  .map((tile) => {
-                    accumX += tile.x;
-                    accumY += tile.y;
-                    return `  { ${accumX}, ${accumY}, ${tile.tile}, ${
-                      tile.props & 0x07
-                    }, ${(tile.props & 0x20) !== 0}, ${(tile.props & 0x40) !== 0} }`;
-                  })
-                  .join(",\n")
-              : "  { 0, 0, 0, 0, false, false }";
+          const expandedTiles: string[] = [];
+          if (metasprite.length > 0) {
+            for (const tile of metasprite) {
+              accumX += tile.x;
+              accumY += tile.y;
+              const screenY = accumY - 8;
+              const palette = tile.props & 0x07;
+              const hflip = (tile.props & 0x20) !== 0;
+              const vflip = (tile.props & 0x40) !== 0;
+              if (spriteMode === "8x16") {
+                // Each canvas tile → two 8x8 VRAM tiles (top then bottom)
+                expandedTiles.push(
+                  `  { ${accumX}, ${screenY}, ${tile.tile}, ${palette}, ${hflip}, ${vflip} }`,
+                );
+                expandedTiles.push(
+                  `  { ${accumX}, ${screenY + 8}, ${tile.tile + 1}, ${palette}, ${hflip}, ${vflip} }`,
+                );
+              } else {
+                expandedTiles.push(
+                  `  { ${accumX}, ${screenY}, ${tile.tile}, ${palette}, ${hflip}, ${vflip} }`,
+                );
+              }
+            }
+          } else {
+            expandedTiles.push("  { 0, 0, 0, 0, false, false }");
+          }
+          const expandedLen = expandedTiles.length;
+          const metaspriteLines = expandedTiles.join(",\n");
           const metaspriteArray = `static const gba_metasprite_tile_t ${spriteSymbol}_metasprite[${Math.max(
             1,
-            metasprite.length,
+            expandedLen,
           )}] = {\n${metaspriteLines}\n};`;
           const tilesetArray = `static const uint8_t ${spriteSymbol}_tileset[${Math.max(
             1,
@@ -1646,7 +1667,7 @@ const compileGBA = async (
   ${tileset.length},
   ${spriteSymbol}_tileset,
   ${Math.ceil(tileset.length / 32)},
-  ${metasprite.length},
+  ${expandedLen},
   ${spriteSymbol}_metasprite,
 };`;
           return [metaspriteArray, tilesetArray, def].join("\n\n");
