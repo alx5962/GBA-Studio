@@ -359,36 +359,36 @@ const toStructData = <T extends Record<string, unknown>>(
       if (Array.isArray(object[key])) {
         return `${" ".repeat(indent)}.${String(key)} = {
 ${chunk(object[key] as unknown as Record<string, unknown>[], perLine)
-  .map(
-    (r) =>
-      " ".repeat(indent + INDENT_SPACES) +
-      r
-        .map((v) => {
-          if (v instanceof Object) {
-            return `{\n${toStructData(
-              v,
-              indent + 2 * INDENT_SPACES,
-              perLine,
-            )}\n${" ".repeat(indent + INDENT_SPACES)}}`;
-          }
-          return v;
-        })
-        .join(
-          r[0] && r[0] instanceof Object
-            ? `,\n${" ".repeat(indent + INDENT_SPACES)}`
-            : ", ",
-        ),
-  )
-  .join(",\n")}
+            .map(
+              (r) =>
+                " ".repeat(indent + INDENT_SPACES) +
+                r
+                  .map((v) => {
+                    if (v instanceof Object) {
+                      return `{\n${toStructData(
+                        v,
+                        indent + 2 * INDENT_SPACES,
+                        perLine,
+                      )}\n${" ".repeat(indent + INDENT_SPACES)}}`;
+                    }
+                    return v;
+                  })
+                  .join(
+                    r[0] && r[0] instanceof Object
+                      ? `,\n${" ".repeat(indent + INDENT_SPACES)}`
+                      : ", ",
+                  ),
+            )
+            .join(",\n")}
 ${" ".repeat(indent)}}`;
       }
       if (object[key] instanceof Object) {
         return `${" ".repeat(indent)}.${String(key)} = {
 ${toStructData(
-  object[key] as Record<string, unknown>,
-  indent + INDENT_SPACES,
-  perLine,
-)}
+          object[key] as Record<string, unknown>,
+          indent + INDENT_SPACES,
+          perLine,
+        )}
 ${" ".repeat(indent)}}`;
       }
       return `${" ".repeat(indent)}.${String(key)} = ${object[key]}`;
@@ -406,14 +406,13 @@ const toStructDataFile = <T extends Record<string, unknown>>(
 ) => `#pragma bank 255
 ${comment ? "\n" + comment : ""}
 
-#include "gbs_types.h"${
-  dependencies
+#include "gbs_types.h"${dependencies
     ? "\n" +
-      dependencies
-        .map((dependency) => `#include "data/${dependency}.h"`)
-        .join("\n")
+    dependencies
+      .map((dependency) => `#include "data/${dependency}.h"`)
+      .join("\n")
     : ""
-}
+  }
 
 ${bankRef(symbol)}
 
@@ -431,25 +430,24 @@ const toStructArrayDataFile = <T extends Record<string, unknown>>(
 ) => `#pragma bank 255
 ${comment ? "\n" + comment : ""}
 
-#include "gbs_types.h"${
-  dependencies
+#include "gbs_types.h"${dependencies
     ? "\n" +
-      dependencies
-        .map((dependency) => `#include "data/${dependency}.h"`)
-        .join("\n")
+    dependencies
+      .map((dependency) => `#include "data/${dependency}.h"`)
+      .join("\n")
     : ""
-}
+  }
 
 ${bankRef(symbol)}
 
 ${type} ${symbol}[] = {
 ${array
-  .map(
-    (object) => `${" ".repeat(INDENT_SPACES)}{
+    .map(
+      (object) => `${" ".repeat(INDENT_SPACES)}{
 ${toStructData(object, 2 * INDENT_SPACES)}
 ${" ".repeat(INDENT_SPACES)}}`,
-  )
-  .join(",\n")}
+    )
+    .join(",\n")}
 };
 `;
 
@@ -463,21 +461,20 @@ const toArrayDataFile = (
 ) => `#pragma bank 255
 ${comment ? "\n" + comment : ""}
 
-#include "gbs_types.h"${
-  dependencies
+#include "gbs_types.h"${dependencies
     ? "\n" +
-      dependencies
-        .map((dependency) => `#include "data/${dependency}.h"`)
-        .join("\n")
+    dependencies
+      .map((dependency) => `#include "data/${dependency}.h"`)
+      .join("\n")
     : ""
-}
+  }
 
 ${bankRef(symbol)}
 
 ${type} ${symbol}[] = {
 ${chunk(array, perLine)
-  .map((r) => " ".repeat(INDENT_SPACES) + r.join(", "))
-  .join(",\n")}
+    .map((r) => " ".repeat(INDENT_SPACES) + r.join(", "))
+    .join(",\n")}
 };
 `;
 
@@ -954,78 +951,75 @@ export const compileSpriteSheet = (
 
 #include "gbs_types.h"
 ${spriteSheet.tileset ? `#include "data/${spriteSheet.tileset?.symbol}.h"` : ""}
-${
-  spriteSheet.cgbTileset
-    ? `#include "data/${spriteSheet.cgbTileset?.symbol}.h"`
-    : ""
-}
+${spriteSheet.cgbTileset
+      ? `#include "data/${spriteSheet.cgbTileset?.symbol}.h"`
+      : ""
+    }
 
 ${bankRef(spriteSheet.symbol)}
 
 ${stateReferences
-  .map(
-    (state, n) =>
-      `#define SPRITE_${spriteSheetIndex}_${state} ${
-        Math.max(0, stateNames.indexOf(statesOrder[n])) * 8
-      }`,
-  )
-  .join("\n")}
+      .map(
+        (state, n) =>
+          `#define SPRITE_${spriteSheetIndex}_${state} ${Math.max(0, stateNames.indexOf(statesOrder[n])) * 8
+          }`,
+      )
+      .join("\n")}
 
 ${spriteSheet.metasprites
-  .map((metasprite, metaspriteIndex) => {
-    return `const metasprite_t ${
-      spriteSheet.symbol
-    }_metasprite_${metaspriteIndex}[]  = {
+      .map((metasprite, metaspriteIndex) => {
+        return `const metasprite_t ${spriteSheet.symbol
+          }_metasprite_${metaspriteIndex}[]  = {
     ${metasprite
-      .map((tile) => {
-        return `{ ${tile.y}, ${tile.x}, ${tile.tile}, ${tile.props} }`;
-      })
-      .join(", ")}${metasprite.length > 0 ? ",\n    " : ""}{metasprite_end}
+            .map((tile) => {
+              return `{ ${tile.y}, ${tile.x}, ${tile.tile}, ${tile.props} }`;
+            })
+            .join(", ")}${metasprite.length > 0 ? ",\n    " : ""}{metasprite_end, 0, 0, 0}
 };`;
-  })
-  .join("\n\n")}
+      })
+      .join("\n\n")}
 
 const metasprite_t * const ${spriteSheet.symbol}_metasprites[] = {
 ${spriteSheet.metaspritesOrder
-  .map((index) => `    ${spriteSheet.symbol}_metasprite_${index}`)
-  .join(",\n")}
+      .map((index) => `    ${spriteSheet.symbol}_metasprite_${index}`)
+      .join(",\n")}
 };
 
 const struct animation_t ${spriteSheet.symbol}_animations[] = {
 ${spriteSheet.animationOffsets
-  .map(
-    (object) => `${" ".repeat(INDENT_SPACES)}{
+      .map(
+        (object) => `${" ".repeat(INDENT_SPACES)}{
 ${toStructData(object as unknown as Record<string, unknown>, 2 * INDENT_SPACES)}
 ${" ".repeat(INDENT_SPACES)}}`,
-  )
-  .join(",\n")}
+      )
+      .join(",\n")}
 };
 
 const UWORD ${spriteSheet.symbol}_animations_lookup[] = {
 ${Array.from(Array(maxState + 1).keys())
-  .map((n) => `    SPRITE_${spriteSheetIndex}_${stateReferences[n]}`)
-  .join(",\n")}
+      .map((n) => `    SPRITE_${spriteSheetIndex}_${stateReferences[n]}`)
+      .join(",\n")}
 };
 
 ${SPRITESHEET_TYPE} ${spriteSheet.symbol} = {
 ${toStructData(
-  {
-    n_metasprites: spriteSheet.metaspritesOrder.length,
-    emote_origin: { x: 0, y: -spriteSheet.canvasHeight },
-    metasprites: `${spriteSheet.symbol}_metasprites`,
-    animations: `${spriteSheet.symbol}_animations`,
-    animations_lookup: `${spriteSheet.symbol}_animations_lookup`,
-    bounds: compileBounds(spriteSheet),
-    tileset: spriteSheet.tileset
-      ? toFarPtr(spriteSheet.tileset.symbol)
-      : "{ NULL, NULL }",
-    cgb_tileset: spriteSheet.cgbTileset
-      ? toFarPtr(spriteSheet.cgbTileset.symbol)
-      : "{ NULL, NULL }",
-  },
+        {
+          n_metasprites: spriteSheet.metaspritesOrder.length,
+          emote_origin: { x: 0, y: -spriteSheet.canvasHeight },
+          metasprites: `${spriteSheet.symbol}_metasprites`,
+          animations: `${spriteSheet.symbol}_animations`,
+          animations_lookup: `${spriteSheet.symbol}_animations_lookup`,
+          bounds: compileBounds(spriteSheet),
+          tileset: spriteSheet.tileset
+            ? toFarPtr(spriteSheet.tileset.symbol)
+            : "{ 0, NULL }",
+          cgb_tileset: spriteSheet.cgbTileset
+            ? toFarPtr(spriteSheet.cgbTileset.symbol)
+            : "{ 0, NULL }",
+        },
 
-  INDENT_SPACES,
-)}
+        INDENT_SPACES,
+      )}
 };
 `;
 };
@@ -1048,15 +1042,15 @@ export const compileBackground = (background: PrecompiledBackground) => {
       height: background.height,
       tileset: background.tileset
         ? toFarPtr(background.tileset.symbol)
-        : "{ NULL, NULL }",
+        : "{ 0, NULL }",
       cgb_tileset:
         isColor && background.cgbTileset
           ? toFarPtr(background.cgbTileset.symbol)
-          : "{ NULL, NULL }",
+          : "{ 0, NULL }",
       tilemap: toFarPtr(background.tilemap.symbol),
       cgb_tilemap_attr: isColor
         ? toFarPtr(background.tilemapAttr.symbol)
-        : "{ NULL, NULL }",
+        : "{ 0, NULL }",
     },
     ([] as string[]).concat(
       background.tileset?.symbol ?? [],
@@ -1125,24 +1119,23 @@ ${PALETTE_TYPE} ${paletteSymbol(paletteIndex)} = {
     .mask = 0xFF,
     .palette = {
 ${palette.dmg
-  .map(
-    (paletteColors: string[]) =>
-      `        DMG_PALETTE(${paletteColors.join(", ")})`,
-  )
-  .join(",\n")}
-    }${
-      palette.colors
-        ? `,
+    .map(
+      (paletteColors: string[]) =>
+        `        DMG_PALETTE(${paletteColors.join(", ")})`,
+    )
+    .join(",\n")}
+    }${palette.colors
+    ? `,
     .cgb_palette = {
 ${palette.colors
-  .map(
-    (paletteColors: string[]) =>
-      `        CGB_PALETTE(${paletteColors.map(compileColor).join(", ")})`,
-  )
-  .join(",\n")}
+      .map(
+        (paletteColors: string[]) =>
+          `        CGB_PALETTE(${paletteColors.map(compileColor).join(", ")})`,
+      )
+      .join(",\n")}
     }`
-        : ""
-    }
+    : ""
+  }
 };
 `;
 
@@ -1164,24 +1157,23 @@ export const compileFont = (font: PrecompiledFontData) => `#pragma bank 255
 
 static const UBYTE ${font.symbol}_table[] = {
 ${chunk(Array.from(font.table.map(toHex)), 16)
-  .map((r) => " ".repeat(INDENT_SPACES) + r.join(", "))
-  .join(",\n")}
+    .map((r) => " ".repeat(INDENT_SPACES) + r.join(", "))
+    .join(",\n")}
 };
 
-${
-  font.isVariableWidth
+${font.isVariableWidth
     ? `static const UBYTE ${font.symbol}_widths[] = {
 ${chunk(Array.from(font.widths), 16)
-  .map((r) => " ".repeat(INDENT_SPACES) + r.join(", "))
-  .join(",\n")}
+      .map((r) => " ".repeat(INDENT_SPACES) + r.join(", "))
+      .join(",\n")}
 };
 
 `
     : ""
-}static const UBYTE ${font.symbol}_bitmaps[] = {
+  }static const UBYTE ${font.symbol}_bitmaps[] = {
 ${chunk(Array.from(Array.from(font.data).map(toHex)), 16)
-  .map((r) => " ".repeat(INDENT_SPACES) + r.join(", "))
-  .join(",\n")}
+    .map((r) => " ".repeat(INDENT_SPACES) + r.join(", "))
+    .join(",\n")}
 };
 
 ${bankRef(font.symbol)}
@@ -1215,14 +1207,14 @@ ${chunk(
   Array.from(Array(4 * avatars.length)).map((_, i) => toHex(i)),
   16,
 )
-  .map((r) => " ".repeat(INDENT_SPACES) + r.join(", "))
-  .join(",\n")}
+    .map((r) => " ".repeat(INDENT_SPACES) + r.join(", "))
+    .join(",\n")}
 };
 
 static const UBYTE ${avatarFontSymbol(avatarFontIndex)}_bitmaps[] = {
 ${chunk(avatars.map((a) => Array.from(a.data).map(toHex)).flat(), 16)
-  .map((r) => " ".repeat(INDENT_SPACES) + r.join(", "))
-  .join(",\n")}
+    .map((r) => " ".repeat(INDENT_SPACES) + r.join(", "))
+    .join(",\n")}
 };
 
 ${bankRef(avatarFontSymbol(avatarFontIndex))}
@@ -1345,9 +1337,8 @@ export const compileGameGlobalsHeader = (
     constants
       .filter((constant) => constant.symbol)
       .map((constant) => {
-        return `#define ${constant.symbol.toLocaleUpperCase()} ${
-          constant.value
-        }\n`;
+        return `#define ${constant.symbol.toLocaleUpperCase()} ${constant.value
+          }\n`;
       })
       .join("") +
     Object.entries(engineConstants)
@@ -1457,9 +1448,8 @@ export const compileStateDefines = (
           }
           return "";
         }
-        return `#define ${String(engineField.key).padEnd(32, " ")} ${value}${
-          defineIndex === defineFields.length - 1 ? "\n\n" : "\n"
-        }`;
+        return `#define ${String(engineField.key).padEnd(32, " ")} ${value}${defineIndex === defineFields.length - 1 ? "\n\n" : "\n"
+          }`;
       })
       .join("") +
     `#endif\n`
@@ -1472,10 +1462,10 @@ export const emptySpriteSheet = `#pragma bank 255
 
 #include "gbs_types.h"
 
-const void __at(255) __bank_spritesheet_none;
+BANKREF(spritesheet_none)
 
 const metasprite_t spritesheet_none_metasprite[]  = {
-    {metasprite_end}
+    {metasprite_end, 0, 0, 0}
 };
 
 const metasprite_t * const spritesheet_none_metasprites[] = {
@@ -1495,7 +1485,7 @@ export const emptySpriteSheetHeader = `#ifndef SPRITESHEET_NONE_H
 
 #include "gbs_types.h"
 
-extern const void __bank_spritesheet_none;
+BANKREF_EXTERN(spritesheet_none)
 extern const struct spritesheet_t spritesheet_none;
 
 #endif

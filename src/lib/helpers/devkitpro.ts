@@ -24,8 +24,49 @@ export const isUsableGcc = (gccPath: string): boolean => {
 
 export function getDevKitProPaths(): DevKitProPaths {
   // Check environment variables first
-  const devkitPro = process.env.DEVKITPRO;
-  const devkitArm = process.env.DEVKITARM;
+  let devkitPro = process.env.DEVKITPRO;
+  let devkitArm = process.env.DEVKITARM;
+
+  if (process.platform === "win32") {
+    const driveLetterRegex = /^\/([a-zA-Z])\/(.*)$/;
+    if (devkitPro && driveLetterRegex.test(devkitPro)) {
+      devkitPro = devkitPro.replace(driveLetterRegex, "$1:\\$2");
+    }
+    if (devkitArm && driveLetterRegex.test(devkitArm)) {
+      devkitArm = devkitArm.replace(driveLetterRegex, "$1:\\$2");
+    }
+
+    const optPathRegex = /^\/opt\/devkitpro/i;
+    if (devkitPro && optPathRegex.test(devkitPro)) {
+      const drives = ["C:", "D:", "E:", "F:", "G:"];
+      for (const drive of drives) {
+        const potentialPath = devkitPro.replace(optPathRegex, `${drive}\\devkitPro`);
+        const normalizedPotential = potentialPath.replace(/\//g, "\\");
+        if (existsSync(normalizedPotential)) {
+          devkitPro = normalizedPotential;
+          break;
+        }
+      }
+    }
+    if (devkitArm && optPathRegex.test(devkitArm)) {
+      const drives = ["C:", "D:", "E:", "F:", "G:"];
+      for (const drive of drives) {
+        const potentialPath = devkitArm.replace(optPathRegex, `${drive}\\devkitPro`);
+        const normalizedPotential = potentialPath.replace(/\//g, "\\");
+        if (existsSync(normalizedPotential)) {
+          devkitArm = normalizedPotential;
+          break;
+        }
+      }
+    }
+
+    if (devkitPro) {
+      devkitPro = devkitPro.replace(/\//g, "\\");
+    }
+    if (devkitArm) {
+      devkitArm = devkitArm.replace(/\//g, "\\");
+    }
+  }
 
   if (devkitPro && devkitArm) {
     const gccPath = join(
@@ -76,7 +117,6 @@ export function getDevKitProPaths(): DevKitProPaths {
       };
     }
   }
-
   // Return invalid state
   return {
     devkitPro: "",

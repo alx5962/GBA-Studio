@@ -1311,9 +1311,22 @@ const formatCByteArray = (values: number[] | Uint8Array, wrap = 16) =>
     )
     .join(",");
 
-const convertGbTileToGba4bpp = (tile: number[] | Uint8Array): number[] => {
+// bgMode=true shifts every nibble value from 0-3 → 1-4, ensuring no pixel
+// maps to GBA palette index 0 (which is transparent in 4bpp BG mode). Sprite
+// tiles keep bgMode=false so index 0 stays transparent as intended.
+const convertGbTileToGba4bpp = (
+  tile: number[] | Uint8Array,
+  bgMode = false,
+): number[] => {
   const bytes = Array.from(tile);
   if (bytes.length === 32) {
+    if (bgMode) {
+      return bytes.map((b) => {
+        const lo = b & 0x0f;
+        const hi = (b >> 4) & 0x0f;
+        return ((lo === 0 ? 1 : lo) | ((hi === 0 ? 1 : hi) << 4)) & 0xff;
+      });
+    }
     return bytes.map((value) => value & 0xff);
   }
   if (bytes.length !== 16) {
@@ -1322,15 +1335,23 @@ const convertGbTileToGba4bpp = (tile: number[] | Uint8Array): number[] => {
 
   const output: number[] = [];
   for (let row = 0; row < 8; row++) {
+    // indexedImageTo2bppTileData stores bit0-plane first, bit1-plane second:
+    //   bytes[row*2]   = lo-plane (bit 0 of each pixel's 2-bit palette index)
+    //   bytes[row*2+1] = hi-plane (bit 1 of each pixel's 2-bit palette index)
     const lo = bytes[row * 2] ?? 0;
     const hi = bytes[row * 2 + 1] ?? 0;
     for (let column = 0; column < 8; column += 2) {
       const leftShift = 7 - column;
       const rightShift = 6 - column;
-      const left =
+      let left =
         ((lo >> leftShift) & 0x01) | (((hi >> leftShift) & 0x01) << 1);
-      const right =
+      let right =
         ((lo >> rightShift) & 0x01) | (((hi >> rightShift) & 0x01) << 1);
+      // In BG mode shift 0→1 so no pixel is transparent
+      if (bgMode) {
+        if (left === 0) left = 1;
+        if (right === 0) right = 1;
+      }
       output.push(left | (right << 4));
     }
   }
@@ -1340,11 +1361,14 @@ const convertGbTileToGba4bpp = (tile: number[] | Uint8Array): number[] => {
 
 const convertGbTilesetToGba4bpp = (
   tileset: number[] | Uint8Array,
+  bgMode = false,
 ): Uint8Array => {
   const source = Array.from(tileset);
   const output: number[] = [];
   for (let offset = 0; offset < source.length; offset += 16) {
-    output.push(...convertGbTileToGba4bpp(source.slice(offset, offset + 16)));
+    output.push(
+      ...convertGbTileToGba4bpp(source.slice(offset, offset + 16), bgMode),
+    );
   }
   return Uint8Array.from(output);
 };
@@ -1562,7 +1586,7 @@ const compileGBA = async (
       const rawTriggers = rawScene?.triggers ?? scene.triggers;
       const background = scene.background;
       const bgTileset = background?.tileset
-        ? convertGbTilesetToGba4bpp(background.tileset.data)
+        ? convertGbTilesetToGba4bpp(background.tileset.data, true /* bgMode */)
         : new Uint8Array();
       const bgTilemap = background?.tilemap
         ? Uint8Array.from(background.tilemap.data)
@@ -1590,15 +1614,22 @@ const compileGBA = async (
           const metaspriteIndex = sprite.metaspritesOrder[0] ?? 0;
           const metasprite =
             sprite.metasprites[metaspriteIndex] ?? sprite.metasprites[0] ?? [];
+          // GB Studio metasprites store tile positions as cumulative deltas
+          // (each tile's x/y is relative to the previous tile's position).
+          // The GBA engine expects absolute offsets from the sprite base, so
+          // we accumulate the deltas here.
+          let accumX = 0;
+          let accumY = 0;
           const metaspriteLines =
             metasprite.length > 0
               ? metasprite
-                  .map(
-                    (tile) =>
-                      `  { ${tile.x}, ${tile.y}, ${tile.tile}, ${
-                        tile.props & 0x07
-                      }, ${(tile.props & 0x20) !== 0}, ${(tile.props & 0x40) !== 0} }`,
-                  )
+                  .map((tile) => {
+                    accumX += tile.x;
+                    accumY += tile.y;
+                    return `  { ${accumX}, ${accumY}, ${tile.tile}, ${
+                      tile.props & 0x07
+                    }, ${(tile.props & 0x20) !== 0}, ${(tile.props & 0x40) !== 0} }`;
+                  })
                   .join(",\n")
               : "  { 0, 0, 0, 0, false, false }";
           const metaspriteArray = `static const gba_metasprite_tile_t ${spriteSymbol}_metasprite[${Math.max(

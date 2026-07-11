@@ -7,7 +7,7 @@ const buildGame = createAction(
   "buildGame/build",
   (
     {
-      buildType = "web",
+      buildType = "gba",
       exportBuild = false,
       debugEnabled = false,
       startSceneId,
@@ -23,7 +23,7 @@ const buildGame = createAction(
       startY?: number;
       onlySelection?: boolean;
     } = {
-      buildType: "web",
+      buildType: "gba",
       exportBuild: false,
       debugEnabled: false,
     },

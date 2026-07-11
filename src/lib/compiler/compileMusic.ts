@@ -51,8 +51,8 @@ const compileModTrack = async (
     buildToolsPath,
     buildToolsVersion,
     cacheRoot,
-    progress = (_msg) => {},
-    warnings = (_msg) => {},
+    progress = (_msg) => { },
+    warnings = (_msg) => { },
   }: CompileModTrackOptions,
 ): Promise<string> => {
   const env = { ...process.env };
@@ -137,8 +137,8 @@ const compileModTracks = async (
     tmpPath,
     projectRoot,
     output,
-    progress = (_msg) => {},
-    warnings = (_msg) => {},
+    progress = (_msg) => { },
+    warnings = (_msg) => { },
   }: CompileMusicOptions,
 ): Promise<void> => {
   const buildToolsPath = await ensureBuildTools(tmpPath);
@@ -185,8 +185,8 @@ const compileUgeTracks = async (
     tmpPath,
     projectRoot,
     output,
-    progress = (_msg) => {},
-    warnings = (_msg) => {},
+    progress = (_msg) => { },
+    warnings = (_msg) => { },
   }: CompileMusicOptions,
 ): Promise<void> => {
   const buildToolsPath = await ensureBuildTools(tmpPath);
@@ -214,11 +214,11 @@ export const compileMusicHeader = (tracks: PrecompiledMusicTrack[]) => {
 #define MUSIC_DATA_H
 
 ${tracks
-  .map(
-    (track) => `extern const void __bank_${track.dataName}_Data;
+      .map(
+        (track) => `extern const void __bank_${track.dataName}_Data;
 extern const void ${track.dataName}_Data;`,
-  )
-  .join("\n")}
+      )
+      .join("\n")}
 
 #endif
 `;

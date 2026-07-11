@@ -43,9 +43,9 @@ const makeBuild = async ({
   romFilename,
   data,
   debug = false,
-  buildType = "rom",
-  progress = (_msg) => {},
-  warnings = (_msg) => {},
+  buildType = "gba",
+  progress = (_msg) => { },
+  warnings = (_msg) => { },
 }: MakeOptions) => {
   cancelling = false;
   const env = { ...process.env };
@@ -64,13 +64,16 @@ const makeBuild = async ({
   );
 
   const isGBA = targetPlatform === "gba";
+  progress(`isGBA: ${isGBA}`);
 
   if (isGBA) {
     // GBA build setup - prefer system devkitPro, but fall back to bundled
     // buildTools/devkitARM if devkitPro is not installed on the host.
     const devkitPaths = getDevKitProPaths();
     if (devkitPaths.isValid) {
-      env.PATH = envWith([Path.join(devkitPaths.devkitArm, "bin")]);
+      const gbaPath = envWith([Path.join(devkitPaths.devkitArm, "bin")]);
+      env.PATH = gbaPath;
+      env.Path = gbaPath;
       env.DEVKITPRO = devkitPaths.devkitPro;
       env.DEVKITARM = devkitPaths.devkitArm;
       // Ensure process.env also contains these for helpers that read it
@@ -87,15 +90,17 @@ const makeBuild = async ({
           : "";
       const bundledGcc = devkitArmPath
         ? Path.join(
-            devkitArmPath,
-            "bin",
-            process.platform === "win32"
-              ? "arm-none-eabi-gcc.exe"
-              : "arm-none-eabi-gcc",
-          )
+          devkitArmPath,
+          "bin",
+          process.platform === "win32"
+            ? "arm-none-eabi-gcc.exe"
+            : "arm-none-eabi-gcc",
+        )
         : "";
       if (devkitArmPath && isUsableGcc(bundledGcc)) {
-        env.PATH = envWith([Path.join(devkitArmPath, "bin")]);
+        const bundledGbaPath = envWith([Path.join(devkitArmPath, "bin")]);
+        env.PATH = bundledGbaPath;
+        env.Path = bundledGbaPath;
         env.DEVKITPRO = buildToolsPath;
         env.DEVKITARM = devkitArmPath;
         // Also set process.env so getBuildCommands can detect the fallback toolchain
@@ -112,7 +117,9 @@ const makeBuild = async ({
     env.TARGET_PLATFORM = "gba";
   } else {
     // Original GB build setup
-    env.PATH = envWith([Path.join(buildToolsPath, "gbdk", "bin")]);
+    const gbPath = envWith([Path.join(buildToolsPath, "gbdk", "bin")]);
+    env.PATH = gbPath;
+    env.Path = gbPath;
     env.GBDKDIR = `${buildToolsPath}/gbdk/`;
     env.TARGET_PLATFORM = targetPlatform;
   }
@@ -326,11 +333,11 @@ export const cancelBuildCommandsInProgress = async () => {
     for (const childChild of spawnedChildren) {
       try {
         process.kill(Number(childChild.PID));
-      } catch (e) {}
+      } catch (e) { }
     }
     try {
       child.kill();
-    } catch (e) {}
+    } catch (e) { }
   }
 };
 
