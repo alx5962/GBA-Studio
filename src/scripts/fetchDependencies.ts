@@ -1,4 +1,4 @@
-import { remove, writeFile, ensureDir } from "fs-extra";
+import { remove, writeFile, ensureDir, pathExists } from "fs-extra";
 import Path from "path";
 import AdmZip from "adm-zip";
 import spawn from "../../src/lib/helpers/cli/spawn";
@@ -63,7 +63,17 @@ const extractTarXz = async (
   outputDir: string,
 ): Promise<void> => {
   console.log(`Extract tar.xz to "${outputDir}"`);
-  const res = spawn("tar", ["-Jxf", archivePath, "-C", outputDir], {}, {});
+  const relArchivePath = Path.relative(process.cwd(), archivePath).replace(/\\/g, "/");
+  const relOutputDir = Path.relative(process.cwd(), outputDir).replace(/\\/g, "/");
+  const res = spawn(
+    "tar",
+    ["-Jxf", relArchivePath, "-C", relOutputDir],
+    {},
+    {
+      onLog: (msg) => console.log(msg),
+      onError: (msg) => console.error(msg),
+    },
+  );
   await res.completed;
   console.log("✅ Done");
 };
@@ -73,7 +83,17 @@ const extractTarGz = async (
   outputDir: string,
 ): Promise<void> => {
   console.log(`Extract tar to "${outputDir}"`);
-  const res = spawn("tar", ["-zxf", archivePath, "-C", outputDir], {}, {});
+  const relArchivePath = Path.relative(process.cwd(), archivePath).replace(/\\/g, "/");
+  const relOutputDir = Path.relative(process.cwd(), outputDir).replace(/\\/g, "/");
+  const res = spawn(
+    "tar",
+    ["-zxf", relArchivePath, "-C", relOutputDir],
+    {},
+    {
+      onLog: (msg) => console.log(msg),
+      onError: (msg) => console.error(msg),
+    },
+  );
   await res.completed;
   console.log("✅ Done");
 };
@@ -93,25 +113,43 @@ export const fetchGBADevDependency = async (arch: Arch) => {
   const { url, type } = dependencies[arch].gbadev;
   console.log(`URL=${url}`);
 
-  const response = await fetch(url);
-  const buffer = await response.arrayBuffer(); // Get a Buffer from the response
-  const data = Buffer.from(buffer);
+  const filename = Path.basename(url);
+  const localFilePath = Path.join(
+    Path.normalize(`${__dirname}../../../buildTools/files`),
+    filename,
+  );
+  console.log('localFilePath', localFilePath);
+
   const tmpPath = Path.join(buildToolsRoot, "tmp.data");
-  await writeFile(tmpPath, data);
-  console.log(`Written to "${tmpPath}"`);
+  let archivePath = tmpPath;
+  let isLocal = false;
+
+  if (await pathExists(localFilePath)) {
+    console.log(`Found local file at "${localFilePath}". Skipping download.`);
+    archivePath = localFilePath;
+    isLocal = true;
+  } else {
+    const response = await fetch(url);
+    const buffer = await response.arrayBuffer(); // Get a Buffer from the response
+    const data = Buffer.from(buffer);
+    await writeFile(tmpPath, data);
+    console.log(`Written to "${tmpPath}"`);
+  }
 
   const gbadevArchPath = Path.join(buildToolsRoot, arch);
   await ensureDir(gbadevArchPath);
 
   if (type === "tarxz") {
-    await extractTarXz(tmpPath, gbadevArchPath);
+    await extractTarXz(archivePath, gbadevArchPath);
   } else if (type === "targz") {
-    await extractTarGz(tmpPath, gbadevArchPath);
+    await extractTarGz(archivePath, gbadevArchPath);
   } else {
-    await extractZip(tmpPath, gbadevArchPath);
+    await extractZip(archivePath, gbadevArchPath);
   }
 
-  await remove(tmpPath);
+  if (!isLocal) {
+    await remove(tmpPath);
+  }
 };
 
 const main = async () => {
