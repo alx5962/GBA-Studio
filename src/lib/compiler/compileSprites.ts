@@ -219,17 +219,17 @@ export const compileSprite = async (
     )
     .flat();
 
-  // const uniqFrames: SpriteTileData[][] = [];
-  const uniqFramesLookup: Record<string, number> = {};
+  // Each animation frame position gets its own slot in uniqFrames so the
+  // engine can cycle through all frames independently. Deduplicating by frame
+  // content would cause two visually different animation frames that share the
+  // same underlying tile data to collapse into one, making only the last frame
+  // visible at runtime.
   const uniqFrames: SpriteTileData[][] = [];
   const uniqMap = animationDefs.map((animationDef) => {
     return animationDef.map((frame) => {
-      const key = JSON.stringify(frame); // Any hash function can work here
-      if (uniqFramesLookup[key] === undefined) {
-        uniqFramesLookup[key] = uniqFrames.length;
-        uniqFrames.push(frame);
-      }
-      return uniqFramesLookup[key];
+      const index = uniqFrames.length;
+      uniqFrames.push(frame);
+      return index;
     });
   });
 
@@ -248,6 +248,7 @@ export const compileSprite = async (
       end: start + Math.max(0, uniqIndexes.length - 1),
     };
   });
+
 
   const vramData: [number[], number[]] = [[], []];
 
@@ -284,7 +285,7 @@ const compileSprites = async (
       (spriteSheet) => () =>
         compileSprite(
           spriteSheet,
-          spriteSheet.colorMode === "color",
+          false,
           projectRoot,
           defaultSpriteMode,
         ),

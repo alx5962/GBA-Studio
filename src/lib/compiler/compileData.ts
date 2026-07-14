@@ -438,55 +438,55 @@ const precompilePalettes = async (
       ],
       colors: isColor
         ? [
-            getBackgroundPalette(
-              0,
-              sceneBackgroundPaletteIds,
-              defaultBackgroundPaletteIds,
-              background?.autoPalettes,
-            ),
-            getBackgroundPalette(
-              1,
-              sceneBackgroundPaletteIds,
-              defaultBackgroundPaletteIds,
-              background?.autoPalettes,
-            ),
-            getBackgroundPalette(
-              2,
-              sceneBackgroundPaletteIds,
-              defaultBackgroundPaletteIds,
-              background?.autoPalettes,
-            ),
-            getBackgroundPalette(
-              3,
-              sceneBackgroundPaletteIds,
-              defaultBackgroundPaletteIds,
-              background?.autoPalettes,
-            ),
-            getBackgroundPalette(
-              4,
-              sceneBackgroundPaletteIds,
-              defaultBackgroundPaletteIds,
-              background?.autoPalettes,
-            ),
-            getBackgroundPalette(
-              5,
-              sceneBackgroundPaletteIds,
-              defaultBackgroundPaletteIds,
-              background?.autoPalettes,
-            ),
-            getBackgroundPalette(
-              6,
-              sceneBackgroundPaletteIds,
-              defaultBackgroundPaletteIds,
-              background?.autoPalettes,
-            ),
-            getBackgroundPalette(
-              7,
-              sceneBackgroundPaletteIds,
-              defaultBackgroundPaletteIds,
-              background?.autoPalettes,
-            ),
-          ].map((p) => p.colors)
+          getBackgroundPalette(
+            0,
+            sceneBackgroundPaletteIds,
+            defaultBackgroundPaletteIds,
+            background?.autoPalettes,
+          ),
+          getBackgroundPalette(
+            1,
+            sceneBackgroundPaletteIds,
+            defaultBackgroundPaletteIds,
+            background?.autoPalettes,
+          ),
+          getBackgroundPalette(
+            2,
+            sceneBackgroundPaletteIds,
+            defaultBackgroundPaletteIds,
+            background?.autoPalettes,
+          ),
+          getBackgroundPalette(
+            3,
+            sceneBackgroundPaletteIds,
+            defaultBackgroundPaletteIds,
+            background?.autoPalettes,
+          ),
+          getBackgroundPalette(
+            4,
+            sceneBackgroundPaletteIds,
+            defaultBackgroundPaletteIds,
+            background?.autoPalettes,
+          ),
+          getBackgroundPalette(
+            5,
+            sceneBackgroundPaletteIds,
+            defaultBackgroundPaletteIds,
+            background?.autoPalettes,
+          ),
+          getBackgroundPalette(
+            6,
+            sceneBackgroundPaletteIds,
+            defaultBackgroundPaletteIds,
+            background?.autoPalettes,
+          ),
+          getBackgroundPalette(
+            7,
+            sceneBackgroundPaletteIds,
+            defaultBackgroundPaletteIds,
+            background?.autoPalettes,
+          ),
+        ].map((p) => p.colors)
         : undefined,
     };
 
@@ -526,39 +526,39 @@ const precompilePalettes = async (
       ],
       colors: isColor
         ? [
-            getSpritePalette(
-              sceneSpritePaletteIds[0],
-              defaultSpritePaletteIds[0],
-            ),
-            getSpritePalette(
-              sceneSpritePaletteIds[1],
-              defaultSpritePaletteIds[1],
-            ),
-            getSpritePalette(
-              sceneSpritePaletteIds[2],
-              defaultSpritePaletteIds[2],
-            ),
-            getSpritePalette(
-              sceneSpritePaletteIds[3],
-              defaultSpritePaletteIds[3],
-            ),
-            getSpritePalette(
-              sceneSpritePaletteIds[4],
-              defaultSpritePaletteIds[4],
-            ),
-            getSpritePalette(
-              sceneSpritePaletteIds[5],
-              defaultSpritePaletteIds[5],
-            ),
-            getSpritePalette(
-              sceneSpritePaletteIds[6],
-              defaultSpritePaletteIds[6],
-            ),
-            getSpritePalette(
-              sceneSpritePaletteIds[7],
-              defaultSpritePaletteIds[7],
-            ),
-          ].map((p) => p.colors)
+          getSpritePalette(
+            sceneSpritePaletteIds[0],
+            defaultSpritePaletteIds[0],
+          ),
+          getSpritePalette(
+            sceneSpritePaletteIds[1],
+            defaultSpritePaletteIds[1],
+          ),
+          getSpritePalette(
+            sceneSpritePaletteIds[2],
+            defaultSpritePaletteIds[2],
+          ),
+          getSpritePalette(
+            sceneSpritePaletteIds[3],
+            defaultSpritePaletteIds[3],
+          ),
+          getSpritePalette(
+            sceneSpritePaletteIds[4],
+            defaultSpritePaletteIds[4],
+          ),
+          getSpritePalette(
+            sceneSpritePaletteIds[5],
+            defaultSpritePaletteIds[5],
+          ),
+          getSpritePalette(
+            sceneSpritePaletteIds[6],
+            defaultSpritePaletteIds[6],
+          ),
+          getSpritePalette(
+            sceneSpritePaletteIds[7],
+            defaultSpritePaletteIds[7],
+          ),
+        ].map((p) => p.colors)
         : undefined,
     };
 
@@ -860,16 +860,14 @@ export const precompileScenes = (
 
     if (!background) {
       throw new Error(
-        `Error in scene '${scene.symbol}' : ${
-          scene.name ? `'${scene.name}'` : ""
+        `Error in scene '${scene.symbol}' : ${scene.name ? `'${scene.name}'` : ""
         } has missing or no background assigned.`,
       );
     }
 
     if (!backgroundWithCommonTileset) {
       warnings(
-        `Error in scene '${scene.symbol}' : ${
-          scene.name ? `'${scene.name}'` : ""
+        `Error in scene '${scene.symbol}' : ${scene.name ? `'${scene.name}'` : ""
         } includes a common tileset that can't be located.`,
       );
     }
@@ -880,20 +878,16 @@ export const precompileScenes = (
 
     if (scene.actors.length > MAX_ACTORS) {
       warnings(
-        `Error in scene '${scene.symbol}' : ${
-          scene.name ? `'${scene.name}'` : ""
-        } contains ${
-          scene.actors.length
+        `Error in scene '${scene.symbol}' : ${scene.name ? `'${scene.name}'` : ""
+        } contains ${scene.actors.length
         } actors when maximum is ${MAX_ACTORS}. Some actors will be removed.`,
       );
     }
 
     if (scene.triggers.length > MAX_TRIGGERS) {
       warnings(
-        `Error in scene '${scene.symbol}' : ${
-          scene.name ? `'${scene.name}'` : ""
-        } contains ${
-          scene.triggers.length
+        `Error in scene '${scene.symbol}' : ${scene.name ? `'${scene.name}'` : ""
+        } contains ${scene.triggers.length
         } triggers when maximum is ${MAX_TRIGGERS}. Some triggers will be removed.`,
       );
     }
@@ -1084,16 +1078,16 @@ export const precompileScenes = (
     // called scripts to be generated with different content
     const hash = SparkMD5.hash(
       projectiles.map((p) => p.hash).join("-") +
-        "_" +
-        !scene.parallax +
-        "_" +
-        scene.type +
-        "_" +
-        scene.paletteIds +
-        "_" +
-        scene.spritePaletteIds +
-        "_" +
-        background.autoPalettes,
+      "_" +
+      !scene.parallax +
+      "_" +
+      scene.type +
+      "_" +
+      scene.paletteIds +
+      "_" +
+      scene.spritePaletteIds +
+      "_" +
+      background.autoPalettes,
     );
 
     return {
@@ -1404,16 +1398,16 @@ const toGbaPaletteData = (palette?: PrecompiledPalette): number[] => {
 
 const toGbaDirection = (direction?: string): number => {
   switch (direction) {
-    case "up":
-      return 0;
     case "down":
-      return 1;
-    case "left":
-      return 2;
+      return 0; // DIR_DOWN
     case "right":
-      return 3;
+      return 1; // DIR_RIGHT
+    case "up":
+      return 2; // DIR_UP
+    case "left":
+      return 3; // DIR_LEFT
     default:
-      return 1;
+      return 0; // DIR_DOWN
   }
 };
 
@@ -1446,8 +1440,8 @@ const compileGBA = async (
     engineSchema,
     tmpPath = "/tmp",
     debugEnabled = false,
-    progress = (_msg: string) => {},
-    warnings = (_msg: string) => {},
+    progress = (_msg: string) => { },
+    warnings = (_msg: string) => { },
   }: {
     projectRoot: string;
     scriptEventHandlers: ScriptEventHandlers;
@@ -1599,7 +1593,7 @@ const compileGBA = async (
       );
       const spritePalette = toGbaPaletteData(
         precompiled.usedPalettes[
-          precompiled.sceneActorPaletteIndexes[scene.id] || 0
+        precompiled.sceneActorPaletteIndexes[scene.id] || 0
         ],
       );
       const localSprites = collectUniqueSprites(scene, precompiled.usedSprites);
@@ -1611,9 +1605,6 @@ const compileGBA = async (
         .map((sprite, spriteIndex) => {
           const spriteSymbol = `${sceneSymbol}_sprite_${spriteIndex}`;
           const tileset = convertGbTilesetToGba4bpp(sprite.tileset.data);
-          const metaspriteIndex = sprite.metaspritesOrder[0] ?? 0;
-          const metasprite =
-            sprite.metasprites[metaspriteIndex] ?? sprite.metasprites[0] ?? [];
           const spriteMode = sprite.spriteMode ?? "8x16";
 
           // GB Studio metasprites store tile positions as cumulative GBDK deltas
@@ -1623,62 +1614,94 @@ const compileGBA = async (
           // The GBA engine uses 8x8 OAM mode. For 8x16 sprites, VRAM stores each
           // canvas tile as two consecutive 8x8 VRAM tiles (top half then bottom half),
           // so we expand each metasprite entry into two 8x8 OAM sub-entries.
-          let accumX = 0;
-          let accumY = 0;
-          const expandedTiles: string[] = [];
-          if (metasprite.length > 0) {
-            for (const tile of metasprite) {
-              accumX += tile.x;
-              accumY += tile.y;
-              const screenY = accumY - 8;
-              const palette = tile.props & 0x07;
-              const hflip = (tile.props & 0x20) !== 0;
-              const vflip = (tile.props & 0x40) !== 0;
-              if (spriteMode === "8x16") {
-                // Each canvas tile → two 8x8 VRAM tiles (top then bottom)
-                expandedTiles.push(
-                  `  { ${accumX}, ${screenY}, ${tile.tile}, ${palette}, ${hflip}, ${vflip} }`,
-                );
-                expandedTiles.push(
-                  `  { ${accumX}, ${screenY + 8}, ${tile.tile + 1}, ${palette}, ${hflip}, ${vflip} }`,
-                );
-              } else {
-                expandedTiles.push(
-                  `  { ${accumX}, ${screenY}, ${tile.tile}, ${palette}, ${hflip}, ${vflip} }`,
-                );
+
+          // Helper: expand one unique metasprite frame into OAM tile strings.
+          const expandFrame = (frame: { tile: number; x: number; y: number; props: number }[]): string[] => {
+            let accumX = 0;
+            let accumY = 0;
+            const tiles: string[] = [];
+            if (frame.length > 0) {
+              for (const tile of frame) {
+                accumX += tile.x;
+                accumY += tile.y;
+                const screenY = accumY - 8;
+                const palette = tile.props & 0x07;
+                const hflip = (tile.props & 0x20) !== 0;
+                const vflip = (tile.props & 0x40) !== 0;
+                if (spriteMode === "8x16") {
+                  tiles.push(`  { ${accumX}, ${screenY}, ${tile.tile}, ${palette}, ${hflip}, ${vflip} }`);
+                  tiles.push(`  { ${accumX}, ${screenY + 8}, ${tile.tile + 1}, ${palette}, ${hflip}, ${vflip} }`);
+                } else {
+                  tiles.push(`  { ${accumX}, ${screenY}, ${tile.tile}, ${palette}, ${hflip}, ${vflip} }`);
+                }
               }
+            } else {
+              tiles.push("  { 0, 0, 0, 0, false, false }");
             }
-          } else {
-            expandedTiles.push("  { 0, 0, 0, 0, false, false }");
-          }
-          const expandedLen = expandedTiles.length;
-          const metaspriteLines = expandedTiles.join(",\n");
-          const metaspriteArray = `static const gba_metasprite_tile_t ${spriteSymbol}_metasprite[${Math.max(
-            1,
-            expandedLen,
-          )}] = {\n${metaspriteLines}\n};`;
+            return tiles;
+          };
+
+          // Expand ALL unique metasprite frames.
+          const allExpandedFrames: string[][] = sprite.metasprites.map(expandFrame);
+
+          // All frames must have the same tile count (metasprite_len).
+          // Use the max tile count so short/empty frames get padded.
+          const tilesPerFrame = Math.max(1, ...allExpandedFrames.map((f) => f.length));
+
+          // Pad each frame to tilesPerFrame so the flat array is uniform.
+          const paddedFrames = allExpandedFrames.map((tiles) => {
+            const padded = [...tiles];
+            while (padded.length < tilesPerFrame) {
+              padded.push("  { 0, 0, 0, 0, false, false }");
+            }
+            return padded;
+          });
+
+          const metaspriteCount = paddedFrames.length;
+          const metaspriteLines = paddedFrames.flat().join(",\n");
+          const metaspriteArrayLen = Math.max(1, metaspriteCount * tilesPerFrame);
+
+          const metaspriteArray = `static const gba_metasprite_tile_t ${spriteSymbol}_metasprite[${metaspriteArrayLen}] = {\n${metaspriteLines}\n};`;
+
+          // Emit metasprites_order[] — maps anim frame position → unique frame index.
+          const metaspritesOrderStr = sprite.metaspritesOrder.join(", ");
+          const metaspritesOrderLen = Math.max(1, sprite.metaspritesOrder.length);
+          const metaspritesOrderArray = `static const uint8_t ${spriteSymbol}_metasprites_order[${metaspritesOrderLen}] = { ${metaspritesOrderStr || "0"} };`;
+
+          // Emit animations[] — 8 slots (idle+moving for each of 4 directions).
+          const animOffsets = sprite.animationOffsets;
+          const animLines = Array.from({ length: 8 }, (_, i) => {
+            const off = animOffsets[i] ?? { start: 0, end: 0 };
+            return `  { ${off.start}, ${off.end} }`;
+          }).join(",\n");
+          const animationsArray = `static const gba_animation_t ${spriteSymbol}_animations[8] = {\n${animLines}\n};`;
+
           const tilesetArray = `static const uint8_t ${spriteSymbol}_tileset[${Math.max(
             1,
             tileset.length,
-          )}] = {${
-            tileset.length > 0 ? `${formatCByteArray(tileset)}\n` : "\n  0x00\n"
-          }};`;
+          )}] = {${tileset.length > 0 ? `${formatCByteArray(tileset)}\n` : "\n  0x00\n"
+            }};`;
+
           const def = `static const gba_sprite_def_t ${spriteSymbol} = {
   ${tileset.length},
   ${spriteSymbol}_tileset,
   ${Math.ceil(tileset.length / 32)},
-  ${expandedLen},
+  ${tilesPerFrame},
   ${spriteSymbol}_metasprite,
+  ${spriteSymbol}_animations,
+  ${spriteSymbol}_metasprites_order,
+  ${metaspriteCount},
 };`;
-          return [metaspriteArray, tilesetArray, def].join("\n\n");
+          return [metaspriteArray, metaspritesOrderArray, animationsArray, tilesetArray, def].join("\n\n");
         })
         .join("\n\n");
+
 
       const spriteTableLines =
         localSprites.length > 0
           ? localSprites
-              .map((_, spriteIndex) => `  &${sceneSymbol}_sprite_${spriteIndex}`)
-              .join(",\n")
+            .map((_, spriteIndex) => `  &${sceneSymbol}_sprite_${spriteIndex}`)
+            .join(",\n")
           : "  NULL";
       const spriteTable = `static const gba_sprite_def_t *const ${sceneSymbol}_sprites[${Math.max(
         1,
@@ -1688,11 +1711,10 @@ const compileGBA = async (
       const collisionArray = `static const uint8_t ${sceneSymbol}_collisions[${Math.max(
         1,
         scene.collisions.length,
-      )}] = {${
-        scene.collisions.length > 0
+      )}] = {${scene.collisions.length > 0
           ? `${formatCByteArray(scene.collisions)}\n`
           : "\n  0x00\n"
-      }};`;
+        }};`;
       // Runtime actor indices: 0 is the player, scene actors follow in order.
       const actorIndexById = Object.fromEntries(
         scene.actors.map((actor, actorIndex) => [actor.id, actorIndex + 1]),
@@ -1719,11 +1741,11 @@ const compileGBA = async (
       const triggerArray =
         rawTriggers.length > 0
           ? `static const gba_trigger_def_t ${sceneSymbol}_triggers[${rawTriggers.length}] = {\n${rawTriggers
-              .map((trigger, triggerIndex) => {
-                const scriptSym = triggerScriptSymbols[triggerIndex];
-                return `  { ${trigger.x}, ${trigger.y}, ${trigger.width}, ${trigger.height}, ${scriptSym ?? "NULL"} }`;
-              })
-              .join(",\n")}\n};`
+            .map((trigger, triggerIndex) => {
+              const scriptSym = triggerScriptSymbols[triggerIndex];
+              return `  { ${trigger.x}, ${trigger.y}, ${trigger.width}, ${trigger.height}, ${scriptSym ?? "NULL"} }`;
+            })
+            .join(",\n")}\n};`
           : "";
       // Compile actor interact scripts.
       const actorScriptBlocks: string[] = [];
@@ -1748,46 +1770,43 @@ const compileGBA = async (
       const actorArray =
         scene.actors.length > 0
           ? `static const gba_actor_def_t ${sceneSymbol}_actors[${scene.actors.length}] = {\n${scene.actors
-              .map((actor, actorIndex) => {
-                const spriteIndex = spriteIndexById[actor.spriteSheetId] ?? 0;
-                const scriptSym = actorScriptSymbols[actorIndex];
-                // Isometric actors store tile-grid coordinates directly;
-                // top-down actors use pixel position (tile * 8).
-                const isIso = scene.type === "ISOMETRIC";
-                const actorX = isIso
-                  ? actor.x || 0
-                  : (actor.x || 0) * 8;
-                const actorY = isIso
-                  ? actor.y || 0
-                  : (actor.y || 0) * 8;
-                return `  { ${actorX}, ${actorY}, ${spriteIndex}, ${toGbaDirection(
-                  actor.direction,
-                )}, ${actor.moveSpeed || 1}, ${ensureNumber(
-                  actor.animSpeed,
-                  15,
-                )}, ${actor.isPinned ? "false" : "true"}, ${
-                  actor.persistent ? "true" : "false"
+            .map((actor, actorIndex) => {
+              const spriteIndex = spriteIndexById[actor.spriteSheetId] ?? 0;
+              const scriptSym = actorScriptSymbols[actorIndex];
+              // Isometric actors store tile-grid coordinates directly;
+              // top-down actors use pixel position (tile * 8).
+              const isIso = scene.type === "ISOMETRIC";
+              const actorX = isIso
+                ? actor.x || 0
+                : (actor.x || 0) * 8;
+              const actorY = isIso
+                ? actor.y || 0
+                : (actor.y || 0) * 8;
+              return `  { ${actorX}, ${actorY}, ${spriteIndex}, ${toGbaDirection(
+                actor.direction,
+              )}, ${actor.moveSpeed || 1}, ${ensureNumber(
+                actor.animSpeed,
+                15,
+              )}, ${actor.isPinned ? "false" : "true"}, ${actor.persistent ? "true" : "false"
                 }, ${actor.isPinned ? "true" : "false"}, false, ${scriptSym ?? "NULL"} }`;
-              })
-              .join(",\n")}\n};`
+            })
+            .join(",\n")}\n};`
           : "";
       const bgTilesetArray = `static const uint8_t ${sceneSymbol}_tileset[${Math.max(
         1,
         bgTileset.length,
-      )}] = {${
-        bgTileset.length > 0 ? `${formatCByteArray(bgTileset)}\n` : "\n  0x00\n"
-      }};`;
+      )}] = {${bgTileset.length > 0 ? `${formatCByteArray(bgTileset)}\n` : "\n  0x00\n"
+        }};`;
       const bgTilemapArray = `static const uint8_t ${sceneSymbol}_tilemap[${Math.max(
         1,
         bgTilemap.length,
-      )}] = {${
-        bgTilemap.length > 0 ? `${formatCByteArray(bgTilemap)}\n` : "\n  0x00\n"
-      }};`;
+      )}] = {${bgTilemap.length > 0 ? `${formatCByteArray(bgTilemap)}\n` : "\n  0x00\n"
+        }};`;
       const bgTilemapAttrArray =
         bgTilemapAttr.length > 0
           ? `static const uint8_t ${sceneSymbol}_tilemap_attr[${bgTilemapAttr.length}] = {${formatCByteArray(
-              bgTilemapAttr,
-            )}\n};`
+            bgTilemapAttr,
+          )}\n};`
           : "";
       const bgPaletteArray = `static const uint16_t ${sceneSymbol}_bg_palette[128] = {${formatCWordArray(
         bgPalette,
@@ -1955,8 +1974,8 @@ const compile = async (
     engineSchema,
     tmpPath = "/tmp",
     debugEnabled = false,
-    progress = (_msg: string) => {},
-    warnings = (_msg: string) => {},
+    progress = (_msg: string) => { },
+    warnings = (_msg: string) => { },
     buildType = "gb",
   }: {
     projectRoot: string;
@@ -2227,15 +2246,15 @@ const compile = async (
             .flat(),
           scene.script.length > 0
             ? {
-                id: "",
-                command: "INTERNAL_SET_CONTEXT",
-                args: {
-                  entity: scene,
-                  entityType: "scene",
-                  entityId: scene.id,
-                  scriptKey: "script",
-                },
-              }
+              id: "",
+              command: "INTERNAL_SET_CONTEXT",
+              args: {
+                entity: scene,
+                entityType: "scene",
+                entityId: scene.id,
+                scriptKey: "script",
+              },
+            }
             : [],
           scene.script || [],
         );

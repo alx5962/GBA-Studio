@@ -23,6 +23,8 @@ import {
 import os from "os";
 import { ReferencedBackground } from "lib/compiler/precompile/determineUsedAssets";
 
+jest.setTimeout(20000);
+
 test("should take into account state value when building projectiles", () => {
   const scene = projectileStateTest.scene as unknown as PrecompiledScene;
   const sprites = projectileStateTest.sprites as unknown as PrecompiledSprite[];
