@@ -393,6 +393,23 @@ function compileEvent(
         return false;
       }
       out.push(VM_OP_LOAD_SCENE, clampU8(sceneIndex));
+      if (args.x !== undefined || args.y !== undefined) {
+        const scale = args.units === "pixels" ? 1 : 8;
+        const x = clampU8(scriptValueToNumber(args.x) * scale);
+        const y = clampU8(scriptValueToNumber(args.y) * scale);
+        out.push(VM_OP_ACTOR_SET_POS, 0, x, y);
+      }
+      const dirStr =
+        typeof args.direction === "string"
+          ? args.direction
+          : args.direction &&
+              typeof args.direction === "object" &&
+              "value" in args.direction
+            ? String((args.direction as { value?: unknown }).value ?? "")
+            : "";
+      if (dirStr && dirStr.toLowerCase() in GBA_DIRECTIONS) {
+        out.push(VM_OP_ACTOR_SET_DIR, 0, GBA_DIRECTIONS[dirStr.toLowerCase()]);
+      }
       return true;
     }
 
@@ -592,22 +609,24 @@ function compileEvent(
 
     case "EVENT_ACTOR_SET_POSITION": {
       const actor = resolveActorIndex(args.actorId, ctx);
+      const scale = args.units === "pixels" ? 1 : 8;
       out.push(
         VM_OP_ACTOR_SET_POS,
         actor,
-        clampU8(scriptValueToNumber(args.x)),
-        clampU8(scriptValueToNumber(args.y)),
+        clampU8(scriptValueToNumber(args.x) * scale),
+        clampU8(scriptValueToNumber(args.y) * scale),
       );
       return true;
     }
 
     case "EVENT_ACTOR_MOVE_RELATIVE": {
       const actor = resolveActorIndex(args.actorId, ctx);
+      const scale = args.units === "pixels" ? 1 : 8;
       out.push(
         VM_OP_ACTOR_MOVE_REL,
         actor,
-        clampS8ToU8(scriptValueToNumber(args.x)),
-        clampS8ToU8(scriptValueToNumber(args.y)),
+        clampS8ToU8(scriptValueToNumber(args.x) * scale),
+        clampS8ToU8(scriptValueToNumber(args.y) * scale),
       );
       return true;
     }

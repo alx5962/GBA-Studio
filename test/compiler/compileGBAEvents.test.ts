@@ -109,6 +109,34 @@ describe("compileGBAScript", () => {
     expect(out[2]).toBe(VM_OP_END);
   });
 
+  it("EVENT_SWITCH_SCENE emits position and direction opcodes when provided", () => {
+    const ctx = makeCtx({ "scene-abc": 2 });
+    const events: GBAScriptEvent[] = [
+      {
+        command: "EVENT_SWITCH_SCENE",
+        args: {
+          sceneId: "scene-abc",
+          x: { type: "number", value: 24 },
+          y: { type: "number", value: 8 },
+          direction: "left",
+        },
+      },
+    ];
+    const out = compileGBAScript(events, ctx);
+    expect(out).toEqual([
+      VM_OP_LOAD_SCENE,
+      2,
+      VM_OP_ACTOR_SET_POS,
+      0,
+      192,
+      64,
+      VM_OP_ACTOR_SET_DIR,
+      0,
+      1,
+      VM_OP_END,
+    ]);
+  });
+
   it("EVENT_SWITCH_SCENE to unknown scene emits a warning and is skipped", () => {
     const ctx = makeCtx({});
     const events: GBAScriptEvent[] = [
@@ -626,11 +654,22 @@ describe("compileGBAScript", () => {
     expect(out[2]).toBe(0x00);
   });
 
-  it("EVENT_ACTOR_SET_POSITION resolves player to index 0", () => {
+  it("EVENT_ACTOR_SET_POSITION resolves player to index 0 with tile to pixel conversion", () => {
     const events: GBAScriptEvent[] = [
       {
         command: "EVENT_ACTOR_SET_POSITION",
         args: { actorId: "player", x: 5, y: 7 },
+      },
+    ];
+    const out = compileGBAScript(events, noopCtx);
+    expect(out).toEqual([VM_OP_ACTOR_SET_POS, 0, 40, 56, VM_OP_END]);
+  });
+
+  it("EVENT_ACTOR_SET_POSITION respects pixel units when provided", () => {
+    const events: GBAScriptEvent[] = [
+      {
+        command: "EVENT_ACTOR_SET_POSITION",
+        args: { actorId: "player", x: 5, y: 7, units: "pixels" },
       },
     ];
     const out = compileGBAScript(events, noopCtx);
@@ -646,18 +685,18 @@ describe("compileGBAScript", () => {
     const events: GBAScriptEvent[] = [
       {
         command: "EVENT_ACTOR_SET_POSITION",
-        args: { actorId: "npc-1", x: 3, y: 4 },
+        args: { actorId: "npc-1", x: 3, y: 4, units: "pixels" },
       },
     ];
     const out = compileGBAScript(events, ctx);
     expect(out).toEqual([VM_OP_ACTOR_SET_POS, 2, 3, 4, VM_OP_END]);
   });
 
-  it("EVENT_ACTOR_MOVE_RELATIVE encodes negative deltas as signed bytes", () => {
+  it("EVENT_ACTOR_MOVE_RELATIVE encodes negative deltas as signed bytes with tile scaling", () => {
     const events: GBAScriptEvent[] = [
       {
         command: "EVENT_ACTOR_MOVE_RELATIVE",
-        args: { actorId: "player", x: -1, y: 2 },
+        args: { actorId: "player", x: -1, y: 2, units: "pixels" },
       },
     ];
     const out = compileGBAScript(events, noopCtx);

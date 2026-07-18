@@ -27,7 +27,7 @@ compatibility effort.
 |-------|----------|----|--------|-------|-------|
 | EVENT_END | ✅ | ✅ `VM_OP_END` | ✅ | ❌ | Terminates script thread |
 | EVENT_TEXT | ✅ | ✅ `VM_OP_SHOW_TEXT` | 🟡 | ❌ | Renders first two wrapped lines; no paging/avatars/inline codes |
-| EVENT_SWITCH_SCENE | ✅ | ✅ `VM_OP_LOAD_SCENE` | ✅ | ❌ | No fade / entry-position/direction args yet |
+| EVENT_SWITCH_SCENE | ✅ | ✅ `VM_OP_LOAD_SCENE` | ✅ | ✅ | Supports entry position (x, y) & direction; fade speed omitted |
 | EVENT_SET_VALUE | ✅ | ✅ `VM_OP_SET_CONST` / `VM_OP_COPY_VAR` | ✅ | ❌ | Constant or variable source only |
 | EVENT_INC_VALUE | ✅ | ✅ `VM_OP_ADD_CONST` | ✅ | ❌ | |
 | EVENT_DEC_VALUE | ✅ | ✅ `VM_OP_SUB_CONST` | ✅ | ❌ | |

@@ -2023,6 +2023,35 @@ extern const gba_game_data_t gba_game_data;
 
 #endif
 `;
+  const getEngineFieldValue = (id: string, defaultValue: number): number => {
+    if (Array.isArray(projectData.engineFieldValues)) {
+      const item = projectData.engineFieldValues.find(
+        (v: any) => v && (v.id === id || v.key === id),
+      );
+      if (item && typeof item.value === "number") {
+        return item.value;
+      }
+    } else if (
+      projectData.engineFieldValues &&
+      typeof projectData.engineFieldValues === "object"
+    ) {
+      const val = (projectData.engineFieldValues as Record<string, any>)[id];
+      if (typeof val === "number") {
+        return val;
+      } else if (val && typeof val.value === "number") {
+        return val.value;
+      }
+    }
+    return defaultValue;
+  };
+
+  const platWalkVel = getEngineFieldValue("plat_walk_vel", 6400);
+  const platGrav = getEngineFieldValue("plat_grav", 1792);
+  const platMaxFallVel = getEngineFieldValue("plat_max_fall_vel", 20000);
+  const platJumpVel = getEngineFieldValue("plat_jump_vel", 16384);
+  const platHoldGrav = getEngineFieldValue("plat_hold_grav", 512);
+  const platHoldJumpMax = getEngineFieldValue("plat_hold_jump_max", 15);
+
   output["gba_scene_data.c"] = `#include <stdint.h>
 #include <stddef.h>
 #include "gba_scene.h"
@@ -2054,6 +2083,14 @@ const gba_game_data_t gba_game_data = {
     0,
     Math.min(255, Math.round(ensureNumber(projectData.settings.startAnimSpeed, 15))),
   )},
+  {
+    ${platWalkVel},
+    ${platGrav},
+    ${platMaxFallVel},
+    ${platJumpVel},
+    ${platHoldGrav},
+    ${platHoldJumpMax},
+  },
   gba_scene_table,
   gba_bootstrap_script,
 };
