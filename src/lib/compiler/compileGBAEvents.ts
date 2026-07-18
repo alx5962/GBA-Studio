@@ -479,8 +479,24 @@ function compileEvent(
     }
 
     case "EVENT_WAIT": {
-      const frames = clampU8(Number(args.frames ?? 1));
-      out.push(VM_OP_WAIT, frames);
+      // When unit is "frames" use args.frames; otherwise args.time is in
+      // seconds (stored as a ScriptValue) and must be converted to frames at
+      // 60 fps.
+      const isFrameUnit = args.units === "frames";
+      const rawFrames = isFrameUnit
+        ? scriptValueToNumber(args.frames ?? 1)
+        : Math.ceil(scriptValueToNumber(args.time ?? 0.5) * 60);
+      // VM_OP_WAIT accepts a single u8 (0-255). For longer durations emit
+      // multiple wait opcodes so no VM changes are required.
+      let remaining = Math.max(0, Math.round(rawFrames));
+      if (remaining === 0) {
+        return true;
+      }
+      while (remaining > 0) {
+        const chunk = Math.min(remaining, 255);
+        out.push(VM_OP_WAIT, chunk);
+        remaining -= chunk;
+      }
       return true;
     }
 
@@ -494,15 +510,10 @@ function compileEvent(
 
     case "EVENT_MUSIC_PLAY": {
       const musicId = String(args.musicId ?? "");
-      let musicIndex = ctx.musicIndexById?.[musicId];
-      if (musicIndex === undefined && ctx.musicIndexById) {
-        const firstIdx = Object.values(ctx.musicIndexById)[0];
-        if (firstIdx !== undefined) {
-          musicIndex = firstIdx;
-        }
-      }
+      const musicIndex = ctx.musicIndexById?.[musicId];
       if (musicIndex === undefined) {
-        musicIndex = 0;
+        // No valid music track set – skip the opcode entirely.
+        return true;
       }
       const loop = args.loop !== false ? 1 : 0;
       out.push(VM_OP_MUSIC_PLAY, musicIndex, loop);
@@ -696,6 +707,11 @@ function compileEvents(
 ): number[] {
   const out: number[] = [];
   for (const event of events) {
+    // Disabled events have args.__comment set to a truthy value.
+    // EVENT_COMMENT blocks are pure annotations. Both are silently skipped.
+    if (event.args?.__comment || event.command === "EVENT_COMMENT") {
+      continue;
+    }
     const ok = compileEvent(event, out, ctx);
     if (!ok) {
       ctx.warnings(

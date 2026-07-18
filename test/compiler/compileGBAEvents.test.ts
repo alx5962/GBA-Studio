@@ -49,6 +49,32 @@ describe("compileGBAScript", () => {
     expect(out[0]).toBe(VM_OP_END);
   });
 
+  it("disabled event (args.__comment = true) is skipped and produces no bytecode", () => {
+    const events: GBAScriptEvent[] = [
+      { command: "EVENT_TEXT", args: { text: "Hello", __comment: true } },
+    ];
+    const out = compileGBAScript(events, noopCtx);
+    // Only the implicit terminal END should be emitted.
+    expect(out).toEqual([VM_OP_END]);
+  });
+
+  it("EVENT_COMMENT block is silently skipped", () => {
+    const events: GBAScriptEvent[] = [
+      { command: "EVENT_COMMENT", args: { text: "just a note" } },
+    ];
+    const out = compileGBAScript(events, noopCtx);
+    expect(out).toEqual([VM_OP_END]);
+  });
+
+  it("disabled events are skipped without emitting a warning", () => {
+    const ctx = makeCtx();
+    const events: GBAScriptEvent[] = [
+      { command: "EVENT_TEXT", args: { text: "Hello", __comment: true } },
+    ];
+    compileGBAScript(events, ctx);
+    expect(ctx.warnings).not.toHaveBeenCalled();
+  });
+
   it("EVENT_TEXT emits VM_OP_SHOW_TEXT followed by the NUL-terminated string", () => {
     const events: GBAScriptEvent[] = [
       { command: "EVENT_TEXT", args: { text: "Hi" } },
@@ -319,11 +345,37 @@ describe("compileGBAScript", () => {
 
   it("EVENT_WAIT emits VM_OP_WAIT with frame count", () => {
     const events: GBAScriptEvent[] = [
-      { command: "EVENT_WAIT", args: { frames: 30 } },
+      { command: "EVENT_WAIT", args: { units: "frames", frames: 30 } },
     ];
     const out = compileGBAScript(events, noopCtx);
     expect(out[0]).toBe(VM_OP_WAIT);
     expect(out[1]).toBe(30);
+  });
+
+  it("EVENT_WAIT converts seconds to frames at 60fps", () => {
+    const events: GBAScriptEvent[] = [
+      { command: "EVENT_WAIT", args: { units: "time", time: { type: "number", value: 1 } } },
+    ];
+    const out = compileGBAScript(events, noopCtx);
+    expect(out[0]).toBe(VM_OP_WAIT);
+    expect(out[1]).toBe(60); // 1 second * 60fps
+  });
+
+  it("EVENT_WAIT chunks long waits into multiple VM_OP_WAIT opcodes", () => {
+    // 40 seconds = 2400 frames, needs 9×255 + 1×105 = 10 chunks
+    const events: GBAScriptEvent[] = [
+      { command: "EVENT_WAIT", args: { units: "time", time: { type: "number", value: 40 } } },
+    ];
+    const out = compileGBAScript(events, noopCtx);
+    // 2400 frames: 9 chunks of 255 (2295) + 1 chunk of 105
+    const expectedChunks = Math.floor(2400 / 255); // 9
+    const remainder = 2400 % 255; // 105
+    for (let i = 0; i < expectedChunks; i++) {
+      expect(out[i * 2]).toBe(VM_OP_WAIT);
+      expect(out[i * 2 + 1]).toBe(255);
+    }
+    expect(out[expectedChunks * 2]).toBe(VM_OP_WAIT);
+    expect(out[expectedChunks * 2 + 1]).toBe(remainder);
   });
 
   it("EVENT_PALETTE_SET_BACKGROUND maps to scene tone", () => {
@@ -512,7 +564,7 @@ describe("compileGBAScript", () => {
         command: "EVENT_GROUP",
         children: {
           true: [
-            { command: "EVENT_WAIT", args: { frames: 5 } },
+            { command: "EVENT_WAIT", args: { units: "frames", frames: 5 } },
           ],
         },
       },
