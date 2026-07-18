@@ -776,6 +776,15 @@ const precompileMusic = (
     },
   );
 
+  // Also collect scene.musicId set via the scene properties background music
+  // dropdown — walkScenesScripts only walks script events, so it misses this.
+  for (const scene of scenes) {
+    const sceneMusicId = (scene as unknown as { musicId?: string }).musicId;
+    if (sceneMusicId && usedMusicIds.indexOf(sceneMusicId) === -1) {
+      usedMusicIds.push(sceneMusicId);
+    }
+  }
+
   const usedMusic: PrecompiledMusicTrack[] = music
     .filter((track) => {
       return usedMusicIds.indexOf(track.id) > -1;
@@ -1533,7 +1542,20 @@ const compileGBA = async (
     ]),
   ) as Record<string, { script?: GBAScriptEvent[] }>;
 
-  const gbaEventCtx = { sceneIndexById, customEventsById, warnings };
+  // Build music-id → index map for EVENT_MUSIC_PLAY compilation.
+  const gbaUsedMusic: PrecompiledMusicTrack[] = (
+    precompiled.usedMusic.length > 0
+      ? precompiled.usedMusic
+      : (projectData.music ?? []).map((track) => ({
+          ...track,
+          dataName: track.symbol,
+        }))
+  ) as PrecompiledMusicTrack[];
+  const musicIndexById = Object.fromEntries(
+    gbaUsedMusic.map((track, index) => [track.id, index]),
+  ) as Record<string, number>;
+
+  const gbaEventCtx = { sceneIndexById, customEventsById, musicIndexById, warnings };
 
   // Task 11 — Validation: warn on invalid isometric scene configurations.
   precompiled.sceneData.forEach((scene) => {
@@ -1579,15 +1601,41 @@ const compileGBA = async (
       const rawScene = projectData.scenes.find((item) => item.id === scene.id);
       const rawTriggers = rawScene?.triggers ?? scene.triggers;
       const background = scene.background;
-      const bgTileset = background?.tileset
-        ? convertGbTilesetToGba4bpp(background.tileset.data, true /* bgMode */)
+      const tiles1 = background?.tileset?.data || [];
+      const tiles2 = background?.cgbTileset?.data || [];
+      const combinedGbTileset = new Uint8Array(tiles1.length + tiles2.length);
+      combinedGbTileset.set(tiles1, 0);
+      combinedGbTileset.set(tiles2, tiles1.length);
+
+      const bgTileset = combinedGbTileset.length > 0
+        ? convertGbTilesetToGba4bpp(combinedGbTileset, true /* bgMode */)
         : new Uint8Array();
-      const bgTilemap = background?.tilemap
+
+      let bgTilemap = background?.tilemap
         ? Uint8Array.from(background.tilemap.data)
         : new Uint8Array();
+
       const bgTilemapAttr = background?.tilemapAttr
         ? Uint8Array.from(background.tilemapAttr.data)
         : new Uint8Array();
+
+      if (background?.tilemap) {
+        const numTiles1 = tiles1.length / 16;
+        const numTiles2 = tiles2.length / 16;
+        const offset1 = Math.max(192 - numTiles1, 0);
+        const offset2 = Math.max(192 - numTiles2, 0);
+
+        for (let i = 0; i < bgTilemap.length; i++) {
+          const v = bgTilemap[i];
+          const attr = bgTilemapAttr[i] ?? 0;
+          const inVRAM2 = (attr & 0x08) !== 0;
+
+          const offset = inVRAM2 ? offset2 : offset1;
+          const tileIndex = v >= 128 ? v - offset : v;
+          const gbaTileIndex = inVRAM2 ? tileIndex + numTiles1 : tileIndex;
+          bgTilemap[i] = gbaTileIndex;
+        }
+      }
       const bgPalette = toGbaPaletteData(
         precompiled.usedPalettes[precompiled.scenePaletteIndexes[scene.id] || 0],
       );
@@ -1721,6 +1769,25 @@ const compileGBA = async (
       ) as Record<string, number>;
       const sceneEventCtx = { ...gbaEventCtx, actorIndexById };
 
+      // Compile scene init script (including scene.musicId if set).
+      const rawSceneInitScript = (rawScene?.script ?? scene.script ?? []) as GBAScriptEvent[];
+      const sceneInitEvents: GBAScriptEvent[] = [...rawSceneInitScript];
+      const sceneMusicId = (scene as { musicId?: string }).musicId;
+      if (sceneMusicId) {
+        sceneInitEvents.unshift({
+          command: "EVENT_MUSIC_PLAY",
+          args: { musicId: sceneMusicId, loop: true },
+        });
+      }
+
+      let sceneInitScriptSymbol: string | null = null;
+      let sceneInitScriptBlock = "";
+      if (sceneInitEvents.length > 0) {
+        sceneInitScriptSymbol = `${sceneSymbol}_init_script`;
+        const initBytecode = compileGBAScript(sceneInitEvents, sceneEventCtx);
+        sceneInitScriptBlock = emitGBAScriptC(sceneInitScriptSymbol, initBytecode);
+      }
+
       // Compile trigger scripts and emit trigger array.
       const triggerScriptBlocks: string[] = [];
       const triggerScriptSymbols: (string | null)[] = rawTriggers.map(
@@ -1840,6 +1907,7 @@ static const gba_iso_scene_def_t ${sceneSymbol} = {
     .sprite_count   = ${localSprites.length},
     .sprites        = ${sceneSymbol}_sprites,
     .triggers       = ${rawTriggers.length > 0 ? `${sceneSymbol}_triggers` : "NULL"},
+    .init_script    = ${sceneInitScriptSymbol ?? "NULL"},
   },
   .iso_tile_w = ${ISO_TILE_W},
   .iso_tile_h = ${ISO_TILE_H},
@@ -1862,6 +1930,7 @@ static const gba_iso_scene_def_t ${sceneSymbol} = {
   ${localSprites.length},
   ${sceneSymbol}_sprites,
   ${rawTriggers.length > 0 ? `${sceneSymbol}_triggers` : "NULL"},
+  ${sceneInitScriptSymbol ?? "NULL"},
 };`;
 
       sceneMap[scene.symbol] = {
@@ -1877,6 +1946,7 @@ static const gba_iso_scene_def_t ${sceneSymbol} = {
         bgPaletteArray,
         spritePaletteArray,
         collisionArray,
+        sceneInitScriptBlock,
         ...triggerScriptBlocks,
         ...actorScriptBlocks,
         actorArray,
@@ -1940,6 +2010,28 @@ const gba_game_data_t gba_game_data = {
   gba_bootstrap_script,
 };
 `;
+
+  // Add music data
+  output["music_data.h"] = compileMusicHeader(gbaUsedMusic);
+  output["music_data.c"] = `#include "data/music_data.h"
+#include <stddef.h>
+
+const hUGESong_t* const gba_music_tracks[${Math.max(1, gbaUsedMusic.length)}] = {
+${gbaUsedMusic.length > 0 ? gbaUsedMusic.map((track) => `  &${track.dataName}_Data`).join(",\n") : "  NULL"}
+};
+
+const uint8_t gba_music_track_count = ${gbaUsedMusic.length};
+`;
+  if (gbaUsedMusic.length > 0) {
+    await compileMusicTracks(gbaUsedMusic as PrecompiledMusicTrack[], {
+      engine: projectData.settings.musicDriver,
+      output,
+      tmpPath,
+      projectRoot,
+      progress,
+      warnings,
+    });
+  }
 
   output["game_globals.i"] = compileGameGlobalsInclude(
     {},

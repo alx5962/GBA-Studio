@@ -98,6 +98,7 @@ export const getBuildCommands = async (
           "-specs=gba.specs",
           "-Wall",
           "-Wextra",
+          "-Wno-unknown-pragmas",
           "-O2",
           "-fomit-frame-pointer",
           "-Iinclude",

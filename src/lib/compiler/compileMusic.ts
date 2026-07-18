@@ -213,12 +213,16 @@ export const compileMusicHeader = (tracks: PrecompiledMusicTrack[]) => {
   return `#ifndef MUSIC_DATA_H
 #define MUSIC_DATA_H
 
+#include "hUGEDriver.h"
+
 ${tracks
       .map(
-        (track) => `extern const void __bank_${track.dataName}_Data;
-extern const void ${track.dataName}_Data;`,
+        (track) => `extern const hUGESong_t ${track.dataName}_Data;`,
       )
       .join("\n")}
+
+extern const hUGESong_t* const gba_music_tracks[${Math.max(1, tracks.length)}];
+extern const uint8_t gba_music_track_count;
 
 #endif
 `;

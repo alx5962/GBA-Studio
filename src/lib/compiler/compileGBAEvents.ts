@@ -27,6 +27,8 @@ const VM_OP_ACTOR_SET_POS = 0x11;
 const VM_OP_ACTOR_MOVE_REL = 0x12;
 const VM_OP_ACTOR_SET_DIR = 0x13;
 const VM_OP_ACTOR_SET_HIDDEN = 0x14;
+const VM_OP_MUSIC_PLAY = 0x15;
+const VM_OP_MUSIC_STOP = 0x16;
 
 // GBA key bit masks (mirror gba_system.h).
 const GBA_KEYS: Record<string, number> = {
@@ -62,6 +64,8 @@ export type GBAScriptEvent = {
 export type GBACompileContext = {
   // Map from scene id → scene index (0-based) used for LOAD_SCENE operand.
   sceneIndexById: Record<string, number>;
+  // Map from music track id → music track index.
+  musicIndexById?: Record<string, number>;
   // Map from actor id → runtime actor index for the scene being compiled.
   // Runtime index 0 is the player; scene actors follow. Set per-scene.
   actorIndexById?: Record<string, number>;
@@ -485,6 +489,35 @@ function compileEvent(
         Number(args.tone ?? args.palette ?? args.palette0 ?? 0),
       );
       out.push(VM_OP_SET_SCENE_TONE, tone);
+      return true;
+    }
+
+    case "EVENT_MUSIC_PLAY": {
+      const musicId = String(args.musicId ?? "");
+      let musicIndex = ctx.musicIndexById?.[musicId];
+      if (musicIndex === undefined && ctx.musicIndexById) {
+        const firstIdx = Object.values(ctx.musicIndexById)[0];
+        if (firstIdx !== undefined) {
+          musicIndex = firstIdx;
+        }
+      }
+      if (musicIndex === undefined) {
+        musicIndex = 0;
+      }
+      const loop = args.loop !== false ? 1 : 0;
+      out.push(VM_OP_MUSIC_PLAY, musicIndex, loop);
+      return true;
+    }
+
+    case "EVENT_MUSIC_STOP": {
+      out.push(VM_OP_MUSIC_STOP);
+      return true;
+    }
+
+    case "EVENT_SET_INPUT_SCRIPT":
+    case "EVENT_REMOVE_INPUT_SCRIPT":
+    case "EVENT_INPUT_SCRIPT_SET":
+    case "EVENT_INPUT_SCRIPT_REMOVE": {
       return true;
     }
 
