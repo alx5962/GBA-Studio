@@ -46,6 +46,7 @@ export interface PrecompiledBackground {
   tilemapAttr: PrecompiledTileData;
   autoPalettes?: Palette[];
   colorMode: ColorModeSetting;
+  filename: string;
 }
 
 export interface ProjectileData {

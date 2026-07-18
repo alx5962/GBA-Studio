@@ -176,6 +176,7 @@ export const dummyPrecompiledBackground: PrecompiledBackground = {
   id: "",
   symbol: "bg_1",
   name: "",
+  filename: "",
   width: 1,
   height: 1,
   tileset: {
