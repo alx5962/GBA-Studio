@@ -1803,13 +1803,14 @@ const compileGBA = async (
           localSprites.length,
         )}] = {\n${spriteTableLines}\n};`;
 
-        const collisionArray = `static const uint8_t ${sceneSymbol}_collisions[${Math.max(
-          1,
-          scene.collisions.length,
-        )}] = {${scene.collisions.length > 0
-            ? `${formatCByteArray(scene.collisions)}\n`
-            : "\n  0x00\n"
-          }};`;
+        const expectedCollisionLen = Math.max(1, scene.width * scene.height);
+        const collisionsData = Array(expectedCollisionLen)
+          .fill(0)
+          .map((_, index) => (scene.collisions && scene.collisions[index]) || 0);
+
+        const collisionArray = `static const uint8_t ${sceneSymbol}_collisions[${expectedCollisionLen}] = {\n${formatCByteArray(
+          collisionsData,
+        )}\n};`;
         // Runtime actor indices: 0 is the player, scene actors follow in order.
         const actorIndexById = Object.fromEntries(
           scene.actors.map((actor, actorIndex) => [actor.id, actorIndex + 1]),

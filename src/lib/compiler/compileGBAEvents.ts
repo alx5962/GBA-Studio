@@ -29,6 +29,8 @@ const VM_OP_ACTOR_SET_DIR = 0x13;
 const VM_OP_ACTOR_SET_HIDDEN = 0x14;
 const VM_OP_MUSIC_PLAY = 0x15;
 const VM_OP_MUSIC_STOP = 0x16;
+const VM_OP_MENU = 0x17;
+const VM_OP_CAMERA_SHAKE = 0x18;
 
 // GBA key bit masks (mirror gba_system.h).
 const GBA_KEYS: Record<string, number> = {
@@ -145,12 +147,16 @@ function scriptValueVariableIndex(value: unknown): number | undefined {
 }
 
 function constValueToU8(value: unknown): number | undefined {
+  if (value === undefined || value === null) {
+    return undefined;
+  }
+
   if (typeof value === "number" || typeof value === "string") {
     return clampU8(Number(value));
   }
 
-  if (!value || typeof value !== "object" || !("type" in value)) {
-    return 0;
+  if (typeof value !== "object" || !("type" in value)) {
+    return undefined;
   }
 
   const scriptValue = value as { type?: unknown; value?: unknown };
@@ -403,8 +409,8 @@ function compileEvent(
         typeof args.direction === "string"
           ? args.direction
           : args.direction &&
-              typeof args.direction === "object" &&
-              "value" in args.direction
+            typeof args.direction === "object" &&
+            "value" in args.direction
             ? String((args.direction as { value?: unknown }).value ?? "")
             : "";
       if (dirStr && dirStr.toLowerCase() in GBA_DIRECTIONS) {
@@ -514,6 +520,27 @@ function compileEvent(
         out.push(VM_OP_WAIT, chunk);
         remaining -= chunk;
       }
+      return true;
+    }
+
+    case "EVENT_CAMERA_SHAKE": {
+      const isFrameUnit = args.units === "frames";
+      const rawFrames = isFrameUnit
+        ? scriptValueToNumber(args.frames ?? 30)
+        : Math.ceil(scriptValueToNumber(args.time ?? 0.5) * 60);
+      const frames = clampU8(Math.max(1, Math.round(rawFrames || 30)));
+
+      const shakeDirection = String(args.shakeDirection ?? "diagonal");
+      const shouldShakeX =
+        args.shouldShakeX !== false && shakeDirection !== "vertical";
+      const shouldShakeY =
+        args.shouldShakeY !== false && shakeDirection !== "horizontal";
+
+      let flags = 0;
+      if (shouldShakeX) flags |= 0x01;
+      if (shouldShakeY) flags |= 0x02;
+
+      out.push(VM_OP_CAMERA_SHAKE, frames, flags);
       return true;
     }
 
@@ -637,11 +664,13 @@ function compileEvent(
       return true;
     }
 
+    case "EVENT_ACTOR_SHOW":
     case "EVENT_ACTOR_ACTIVATE": {
       out.push(VM_OP_ACTOR_SET_HIDDEN, resolveActorIndex(args.actorId, ctx), 0);
       return true;
     }
 
+    case "EVENT_ACTOR_HIDE":
     case "EVENT_ACTOR_DEACTIVATE": {
       out.push(VM_OP_ACTOR_SET_HIDDEN, resolveActorIndex(args.actorId, ctx), 1);
       return true;
@@ -683,6 +712,15 @@ function compileEvent(
       return true;
     }
 
+    case "EVENT_LOOP": {
+      const children =
+        (args.true as GBAScriptEvent[] | undefined) ?? event.children?.true;
+      const childBytes = compileNestedEvents(children, ctx);
+      out.push(...childBytes);
+      pushJump(out, -(childBytes.length + 3));
+      return true;
+    }
+
     case "EVENT_IF_COLOR_SUPPORTED": {
       // The GBA always supports colour, so the "true" branch is always taken.
       // Compile it inline and drop the "false" branch entirely.
@@ -711,6 +749,131 @@ function compileEvent(
         (args.false as GBAScriptEvent[] | undefined) ?? event.children?.false,
         ctx,
       );
+      return true;
+    }
+
+    case "EVENT_SWITCH": {
+      // A switch compares one variable against up to 16 constant cases and
+      // runs the first matching arm (or an optional else block).  We compile
+      // it as a linear chain of VM_OP_IF_VAR_EQ_CONST checks — no new opcode
+      // needed, since that's exactly what the GBA VM already supports.
+      //
+      // Bytecode shape per arm (value V, body B bytes):
+      //   IF_VAR_EQ_CONST var V +3   ; if var == V, skip the jump-over
+      //   JUMP  (3 + |B| + 3)        ; var != V → skip this arm + jump-to-end
+      //   <body bytes>               ; arm body
+      //   JUMP  <offset-to-end>      ; after body, skip remaining arms + else
+      // After all arms:
+      //   <else body bytes>
+      //
+      // We build the bodies first, patch jump targets once we know their sizes.
+      const varIdx = parseVariableIndex(args.variable);
+      const numChoices = Math.max(
+        0,
+        Math.min(16, Math.floor(Number(args.choices ?? 2))),
+      );
+
+      // Collect (value, compiledBody) pairs for each arm.
+      type Arm = { value: number; body: number[] };
+      const arms: Arm[] = [];
+      for (let i = 0; i < numChoices; i++) {
+        const rawVal = (args as Record<string, unknown>)[`value${i}`];
+        const caseVal = constValueToU8(rawVal) ?? clampU8(i + 1);
+        const branchEvents =
+          (args as Record<string, unknown>)[`true${i}`] as
+          | GBAScriptEvent[]
+          | undefined;
+        const children =
+          event.children?.[`true${i}`] as GBAScriptEvent[] | undefined;
+        arms.push({
+          value: caseVal,
+          body: compileNestedEvents(branchEvents ?? children, ctx),
+        });
+      }
+
+      const elseEvents =
+        (args as Record<string, unknown>).false as
+        | GBAScriptEvent[]
+        | undefined;
+      const elseBody = compileNestedEvents(
+        elseEvents ?? event.children?.false,
+        ctx,
+      );
+
+      // Now emit the chained conditional jumps.
+      // We need to patch "jump to end" offsets once we know total remaining size,
+      // so we build the full output in a scratch buffer first.
+      const scratch: number[] = [];
+      // jumpToEndPatches[i] = index in `scratch` of the s16 offset to patch.
+      const jumpToEndPatches: number[] = [];
+
+      for (const arm of arms) {
+        // IF_VAR_EQ_CONST var value +3  (branch-offset = 3: skip the JUMP below)
+        scratch.push(VM_OP_IF_VAR_EQ_CONST, varIdx, arm.value);
+        pushS16(scratch, 3);
+        // JUMP over (body + trailing jump-to-end)
+        // body.length + 3 (for the trailing JUMP + s16)
+        const jumpOverOffset = arm.body.length + 3;
+        scratch.push(VM_OP_JUMP);
+        pushS16(scratch, jumpOverOffset);
+        // body
+        scratch.push(...arm.body);
+        // JUMP to end — offset patched after we know all remaining bytes.
+        scratch.push(VM_OP_JUMP);
+        jumpToEndPatches.push(scratch.length); // record where the s16 goes
+        pushS16(scratch, 0); // placeholder
+      }
+
+      // Else body follows immediately.
+      const elseStart = scratch.length;
+      scratch.push(...elseBody);
+      const totalEnd = scratch.length;
+
+      // Patch each jump-to-end with the offset from just after it to totalEnd.
+      for (const patchIdx of jumpToEndPatches) {
+        const fromAfterOffset = patchIdx + 2; // PC after reading the s16
+        const offset = totalEnd - fromAfterOffset;
+        patchS16(scratch, patchIdx, offset);
+      }
+      // Suppress unused-variable lint if elseStart equals totalEnd (no else).
+      void elseStart;
+
+      out.push(...scratch);
+      return true;
+    }
+
+    case "EVENT_CHOICE": {
+      const varIndex = parseVariableIndex(args.variable);
+      const trueText = String(args.trueText || "Choice A");
+      const falseText = String(args.falseText || "Choice B");
+
+      // 1. Emit VM_OP_MENU targeting varIndex with 2 choices: trueText, falseText
+      out.push(VM_OP_MENU, varIndex, 2);
+      out.push(...encodeString(trueText));
+      out.push(...encodeString(falseText));
+
+      // 2. Post-fixup: if result is 2 (Choice B), map it to 0 (false)
+      out.push(VM_OP_IF_VAR_EQ_CONST, varIndex, 2);
+      pushS16(out, 3);
+      out.push(VM_OP_JUMP);
+      pushS16(out, 3);
+      out.push(VM_OP_SET_CONST, varIndex, 0);
+
+      return true;
+    }
+
+    case "EVENT_MENU": {
+      // Emit: VM_OP_MENU  varIndex  n_items  "item1\0"  "item2\0"  ...
+      // The GBA VM reads all inline strings from the bytecode stream and
+      // stores the 1-based selection result (0 = cancelled with B) in var.
+      const varIndex = parseVariableIndex(args.variable);
+      const rawItems = Number(args.items ?? 2);
+      const n = Math.max(1, Math.min(8, Math.floor(rawItems))); // clamp 1..8
+      out.push(VM_OP_MENU, varIndex, n);
+      for (let i = 1; i <= n; i++) {
+        const label = String((args as Record<string, unknown>)[`option${i}`] ?? "");
+        out.push(...encodeString(label));
+      }
       return true;
     }
 

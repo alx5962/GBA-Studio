@@ -25,6 +25,7 @@ const VM_OP_ACTOR_SET_POS = 0x11;
 const VM_OP_ACTOR_MOVE_REL = 0x12;
 const VM_OP_ACTOR_SET_DIR = 0x13;
 const VM_OP_ACTOR_SET_HIDDEN = 0x14;
+const VM_OP_CAMERA_SHAKE = 0x18;
 
 const noopCtx = {
   sceneIndexById: {} as Record<string, number>,
@@ -714,15 +715,23 @@ describe("compileGBAScript", () => {
     expect(out).toEqual([VM_OP_ACTOR_SET_DIR, 0, 3, VM_OP_END]);
   });
 
-  it("EVENT_ACTOR_ACTIVATE / DEACTIVATE toggle hidden", () => {
+  it("EVENT_ACTOR_ACTIVATE / DEACTIVATE / SHOW / HIDE toggle hidden", () => {
     const out = compileGBAScript(
       [
         { command: "EVENT_ACTOR_DEACTIVATE", args: { actorId: "player" } },
         { command: "EVENT_ACTOR_ACTIVATE", args: { actorId: "player" } },
+        { command: "EVENT_ACTOR_HIDE", args: { actorId: "player" } },
+        { command: "EVENT_ACTOR_SHOW", args: { actorId: "player" } },
       ],
       noopCtx,
     );
     expect(out).toEqual([
+      VM_OP_ACTOR_SET_HIDDEN,
+      0,
+      1,
+      VM_OP_ACTOR_SET_HIDDEN,
+      0,
+      0,
       VM_OP_ACTOR_SET_HIDDEN,
       0,
       1,
@@ -815,6 +824,41 @@ describe("compileGBAScript", () => {
     expect(out[0]).toBe(VM_OP_SET_CONST);
     expect(out[3]).toBe(VM_OP_LOAD_SCENE);
     expect(out[5]).toBe(VM_OP_END);
+  });
+
+  it("EVENT_SWITCH compiles to a chain of IF_VAR_EQ_CONST checks", () => {
+    const ctx = makeCtx();
+    const events: GBAScriptEvent[] = [
+      {
+        command: "EVENT_SWITCH",
+        args: {
+          variable: "0",
+          choices: 2,
+        },
+        children: {
+          true0: [{ command: "EVENT_WAIT", args: { frames: 5, units: "frames" } }],
+          true1: [{ command: "EVENT_WAIT", args: { frames: 10, units: "frames" } }],
+        },
+      },
+    ];
+    const out = compileGBAScript(events, ctx);
+    // Verifying default values (1 and 2) are used when value0/value1 are omitted:
+    // First arm checks variable 0 == value 1:
+    expect(out[0]).toBe(VM_OP_IF_VAR_EQ_CONST);
+    expect(out[1]).toBe(0); // variable 0
+    expect(out[2]).toBe(1); // default value 1
+    // Second arm checks variable 0 == value 2:
+    expect(out[13]).toBe(VM_OP_IF_VAR_EQ_CONST);
+    expect(out[14]).toBe(0); // variable 0
+    expect(out[15]).toBe(2); // default value 2
+  });
+
+  it("EVENT_CAMERA_SHAKE emits VM_OP_CAMERA_SHAKE opcode for shake duration and flags", () => {
+    const events: GBAScriptEvent[] = [
+      { command: "EVENT_CAMERA_SHAKE", args: { time: 0.5 } },
+    ];
+    const out = compileGBAScript(events, noopCtx);
+    expect(out).toEqual([VM_OP_CAMERA_SHAKE, 30, 3, VM_OP_END]);
   });
 });
 
