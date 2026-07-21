@@ -31,6 +31,8 @@ const VM_OP_MUSIC_PLAY = 0x15;
 const VM_OP_MUSIC_STOP = 0x16;
 const VM_OP_MENU = 0x17;
 const VM_OP_CAMERA_SHAKE = 0x18;
+const VM_OP_SEED_RNG = 0x19;
+const VM_OP_SOUND_PLAY_EFFECT = 0x1a;
 
 // GBA key bit masks (mirror gba_system.h).
 const GBA_KEYS: Record<string, number> = {
@@ -874,6 +876,83 @@ function compileEvent(
         const label = String((args as Record<string, unknown>)[`option${i}`] ?? "");
         out.push(...encodeString(label));
       }
+      return true;
+    }
+
+    case "EVENT_RNG_SEED": {
+      // Reseed the PRNG from a hardware entropy source (REG_VCOUNT XOR
+      // current state). No operands needed — the VM handles the sampling.
+      out.push(VM_OP_SEED_RNG);
+      return true;
+    }
+
+    case "EVENT_SOUND_PLAY_EFFECT": {
+      // Encoding: VM_OP_SOUND_PLAY_EFFECT  sfx_type  param1  param2  duration_frames
+      //   sfx_type 0 = beep,  1 = tone,  2 = crash
+      // fxhammer (sample-playback) has no GBA PSG equivalent — silently skip.
+      const effectType = String(args.type ?? "beep");
+
+      if (effectType === "beep" || effectType === "") {
+        const pitch = Math.max(1, Math.min(8, Math.round(Number(args.pitch ?? 4))));
+        // GB Studio pitch 1..8 → index 0..7 (1=lowest, 8=highest).
+        const pitchIndex = clampU8(pitch - 1);
+        const seconds =
+          typeof args.duration === "number" ? args.duration : 0.5;
+        const durationFrames = clampU8(Math.round(seconds * 60));
+        const shouldWait = args.wait !== false;
+        out.push(VM_OP_SOUND_PLAY_EFFECT, 0, pitchIndex, 0, durationFrames);
+        if (shouldWait && durationFrames > 0) {
+          let remaining = durationFrames;
+          while (remaining > 0) {
+            const chunk = Math.min(remaining, 255);
+            out.push(VM_OP_WAIT, chunk);
+            remaining -= chunk;
+          }
+        }
+        return true;
+      }
+
+      if (effectType === "tone") {
+        const freq = Math.max(1, Number(args.frequency ?? 200));
+        // GB Studio → GBA period: period = floor(2048 - 131072/freq + 0.5), clamped 0..2047.
+        const rawPeriod = Math.round(2048 - 131072 / freq);
+        const period = Math.max(0, Math.min(2047, rawPeriod));
+        const param1 = (period >> 8) & 0x07;
+        const param2 = period & 0xff;
+        const seconds =
+          typeof args.duration === "number" ? args.duration : 0.5;
+        const durationFrames = clampU8(Math.round(seconds * 60));
+        const shouldWait = args.wait !== false;
+        out.push(VM_OP_SOUND_PLAY_EFFECT, 1, param1, param2, durationFrames);
+        if (shouldWait && durationFrames > 0) {
+          let remaining = durationFrames;
+          while (remaining > 0) {
+            const chunk = Math.min(remaining, 255);
+            out.push(VM_OP_WAIT, chunk);
+            remaining -= chunk;
+          }
+        }
+        return true;
+      }
+
+      if (effectType === "crash") {
+        const seconds =
+          typeof args.duration === "number" ? args.duration : 0.5;
+        const durationFrames = clampU8(Math.round(seconds * 60));
+        const shouldWait = args.wait !== false;
+        out.push(VM_OP_SOUND_PLAY_EFFECT, 2, 0, 0, durationFrames);
+        if (shouldWait && durationFrames > 0) {
+          let remaining = durationFrames;
+          while (remaining > 0) {
+            const chunk = Math.min(remaining, 255);
+            out.push(VM_OP_WAIT, chunk);
+            remaining -= chunk;
+          }
+        }
+        return true;
+      }
+
+      // fxhammer or unknown type — no GBA PSG equivalent, silently no-op.
       return true;
     }
 
