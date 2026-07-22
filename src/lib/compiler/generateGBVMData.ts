@@ -47,6 +47,7 @@ export interface PrecompiledBackground {
   autoPalettes?: Palette[];
   colorMode: ColorModeSetting;
   filename: string;
+  is360?: boolean;
 }
 
 export interface ProjectileData {

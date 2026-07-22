@@ -162,6 +162,9 @@ export const determineUsedAssets = ({
           forceTilesetGeneration,
         };
       } else {
+        if (!is360) {
+          usedBackgroundsLookup[id].is360 = false;
+        }
         if (
           isIncompatibleColorMode(
             colorMode,

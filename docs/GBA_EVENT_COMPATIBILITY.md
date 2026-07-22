@@ -27,6 +27,7 @@ compatibility effort.
 |-------|----------|----|--------|-------|-------|
 | EVENT_END | ✅ | ✅ `VM_OP_END` | ✅ | ❌ | Terminates script thread |
 | EVENT_TEXT | ✅ | ✅ `VM_OP_SHOW_TEXT` | 🟡 | ❌ | Renders first two wrapped lines; no paging/avatars/inline codes |
+| EVENT_TEXT_DRAW | ✅ | ✅ `VM_OP_SHOW_TEXT` | 🟡 | ✅ | Mapped to VM_OP_SHOW_TEXT |
 | EVENT_SWITCH_SCENE | ✅ | ✅ `VM_OP_LOAD_SCENE` | ✅ | ✅ | Supports entry position (x, y) & direction; fade speed omitted |
 | EVENT_SET_VALUE | ✅ | ✅ `VM_OP_SET_CONST` / `VM_OP_COPY_VAR` | ✅ | ❌ | Constant or variable source only |
 | EVENT_INC_VALUE | ✅ | ✅ `VM_OP_ADD_CONST` | ✅ | ❌ | |
@@ -34,6 +35,8 @@ compatibility effort.
 | EVENT_VARIABLE_MATH | 🟡 | ✅ add/sub/copy/rnd | ✅ | ❌ | Only `set`/`add`/`sub`/`rnd`; `mul`/`div`/`mod`/bitwise skipped |
 | EVENT_WAIT | ✅ | ✅ `VM_OP_WAIT` | ✅ | ❌ | Frame count clamped to u8 (max 255) |
 | EVENT_PALETTE_SET_BACKGROUND | 🟡 | ✅ `VM_OP_SET_SCENE_TONE` | 🟡 | ❌ | Maps to a single scene "tone"; no per-palette RGB |
+| EVENT_FADE_IN | 🟡 | ✅ `VM_OP_SET_SCENE_TONE` | 🟡 | ✅ | Maps fade in to normal scene tone (0) |
+| EVENT_FADE_OUT | 🟡 | ✅ `VM_OP_SET_SCENE_TONE` | 🟡 | ✅ | Maps fade out to dark scene tone (3) |
 | EVENT_IF | 🟡 | ✅ `VM_OP_IF_VAR_*` | ✅ | ❌ | Variable-to-constant comparisons only |
 | EVENT_IF_TRUE | ✅ | ✅ `VM_OP_IF_VAR_GT_CONST` | ✅ | ❌ | |
 | EVENT_IF_FALSE | ✅ | ✅ `VM_OP_IF_VAR_GT_CONST` (inverted) | ✅ | ❌ | |

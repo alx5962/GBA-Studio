@@ -1573,9 +1573,9 @@ const compileGBA = async (
     precompiled.usedMusic.length > 0
       ? precompiled.usedMusic
       : (projectData.music ?? []).map((track) => ({
-          ...track,
-          dataName: track.symbol,
-        }))
+        ...track,
+        dataName: track.symbol,
+      }))
   ) as PrecompiledMusicTrack[];
   const musicIndexById = Object.fromEntries(
     gbaUsedMusic.map((track, index) => [track.id, index]),

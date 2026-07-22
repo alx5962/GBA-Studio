@@ -26,6 +26,7 @@ const VM_OP_ACTOR_MOVE_REL = 0x12;
 const VM_OP_ACTOR_SET_DIR = 0x13;
 const VM_OP_ACTOR_SET_HIDDEN = 0x14;
 const VM_OP_CAMERA_SHAKE = 0x18;
+const VM_OP_AWAIT_INPUT = 0x1b;
 
 const noopCtx = {
   sceneIndexById: {} as Record<string, number>,
@@ -97,6 +98,21 @@ describe("compileGBAScript", () => {
     // "Hello\nWorld\0"
     const str = String.fromCharCode(...out.slice(1, out.indexOf(0x00, 1)));
     expect(str).toBe("Hello\nWorld");
+  });
+
+  it("EVENT_TEXT_DRAW emits VM_OP_SHOW_TEXT followed by NUL-terminated string", () => {
+    const ctx = makeCtx();
+    const events: GBAScriptEvent[] = [
+      {
+        command: "EVENT_TEXT_DRAW",
+        args: { text: "Draw Me", x: 2, y: 3, location: "background" },
+      },
+    ];
+    const out = compileGBAScript(events, ctx);
+    expect(out[0]).toBe(VM_OP_SHOW_TEXT);
+    const str = String.fromCharCode(...out.slice(1, out.indexOf(0x00, 1)));
+    expect(str).toBe("Draw Me");
+    expect(ctx.warnings).not.toHaveBeenCalled();
   });
 
   it("EVENT_SWITCH_SCENE emits VM_OP_LOAD_SCENE with the resolved scene index", () => {
@@ -415,6 +431,22 @@ describe("compileGBAScript", () => {
     expect(out).toEqual([VM_OP_SET_SCENE_TONE, 3, VM_OP_END]);
   });
 
+  it("EVENT_FADE_IN emits VM_OP_SET_SCENE_TONE 0", () => {
+    const ctx = makeCtx();
+    const events: GBAScriptEvent[] = [{ command: "EVENT_FADE_IN" }];
+    const out = compileGBAScript(events, ctx);
+    expect(out).toEqual([VM_OP_SET_SCENE_TONE, 0, VM_OP_END]);
+    expect(ctx.warnings).not.toHaveBeenCalled();
+  });
+
+  it("EVENT_FADE_OUT emits VM_OP_SET_SCENE_TONE 3", () => {
+    const ctx = makeCtx();
+    const events: GBAScriptEvent[] = [{ command: "EVENT_FADE_OUT" }];
+    const out = compileGBAScript(events, ctx);
+    expect(out).toEqual([VM_OP_SET_SCENE_TONE, 3, VM_OP_END]);
+    expect(ctx.warnings).not.toHaveBeenCalled();
+  });
+
   it("EVENT_IF_TRUE compiles true and false branches", () => {
     const events: GBAScriptEvent[] = [
       {
@@ -653,6 +685,27 @@ describe("compileGBAScript", () => {
     expect(out[0]).toBe(VM_OP_IF_INPUT);
     expect(out[1]).toBe(0x42);
     expect(out[2]).toBe(0x00);
+  });
+
+  it("EVENT_AWAIT_INPUT emits the correct opcode and key mask", () => {
+    const events: GBAScriptEvent[] = [
+      { command: "EVENT_AWAIT_INPUT", args: { input: ["a", "b"] } },
+    ];
+    const out = compileGBAScript(events, noopCtx);
+    // A=0x0001 | B=0x0002 = 0x0003
+    expect(out[0]).toBe(VM_OP_AWAIT_INPUT);
+    expect(out[1]).toBe(0x03); // mask lo
+    expect(out[2]).toBe(0x00); // mask hi
+    expect(out[3]).toBe(VM_OP_END);
+  });
+
+  it("EVENT_AWAIT_INPUT with an empty mask emits no opcode (no-op)", () => {
+    const events: GBAScriptEvent[] = [
+      { command: "EVENT_AWAIT_INPUT", args: { input: [] } },
+    ];
+    const out = compileGBAScript(events, noopCtx);
+    // No VM_OP_AWAIT_INPUT — just END.
+    expect(out).toEqual([VM_OP_END]);
   });
 
   it("EVENT_ACTOR_SET_POSITION resolves player to index 0 with tile to pixel conversion", () => {

@@ -33,6 +33,28 @@ const VM_OP_MENU = 0x17;
 const VM_OP_CAMERA_SHAKE = 0x18;
 const VM_OP_SEED_RNG = 0x19;
 const VM_OP_SOUND_PLAY_EFFECT = 0x1a;
+const VM_OP_AWAIT_INPUT = 0x1b;
+const VM_OP_ACTOR_SET_COLLISIONS = 0x1c;
+const VM_OP_IF_ACTOR_AT_POS = 0x1d;
+const VM_OP_ACTOR_SET_MOVE_SPEED = 0x1e;
+const VM_OP_ACTOR_MOVE_TO = 0x1f;
+const VM_OP_IF_ACTOR_RELATIVE_TO_ACTOR = 0x20;
+const VM_OP_ACTOR_SET_STATE = 0x21;
+const VM_OP_ACTOR_PUSH = 0x22;
+const VM_OP_ACTOR_SET_ENABLED = 0x23;
+const VM_OP_ACTOR_SET_ANIM_FRAME = 0x24;
+const VM_OP_ACTOR_SET_ANIM_SPEED = 0x25;
+const VM_OP_IF_VAR_EQ_VAR = 0x26;
+const VM_OP_IF_VAR_GT_VAR = 0x27;
+const VM_OP_IF_VAR_LT_VAR = 0x28;
+const VM_OP_ACTOR_MOVE_CANCEL = 0x29;
+const VM_OP_CAMERA_MOVE_TO = 0x2a;
+const VM_OP_CAMERA_LOCK = 0x2b;
+// Direction operands for VM_OP_IF_ACTOR_RELATIVE_TO_ACTOR (mirror vm.h)
+const ACTOR_RELATIVE_ABOVE = 0;
+const ACTOR_RELATIVE_BELOW = 1;
+const ACTOR_RELATIVE_LEFT = 2;
+const ACTOR_RELATIVE_RIGHT = 3;
 
 // GBA key bit masks (mirror gba_system.h).
 const GBA_KEYS: Record<string, number> = {
@@ -129,6 +151,13 @@ function clampU8(n: number): number {
   return Math.max(0, Math.min(255, Math.round(n)));
 }
 
+function clampU16(n: number): number {
+  if (!Number.isFinite(n)) {
+    return 0;
+  }
+  return Math.max(0, Math.min(65535, Math.round(n)));
+}
+
 function parseVariableIndex(variable: unknown): number {
   const variableId = String(variable ?? "0");
   const numericPart = variableId.replace(/[^0-9]/g, "");
@@ -136,16 +165,23 @@ function parseVariableIndex(variable: unknown): number {
 }
 
 function scriptValueVariableIndex(value: unknown): number | undefined {
-  if (!value || typeof value !== "object" || !("type" in value)) {
+  if (value === undefined || value === null) {
     return undefined;
   }
-
-  const scriptValue = value as { type?: unknown; value?: unknown };
-  if (scriptValue.type !== "variable") {
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    if (!/^-?[0-9]+$/.test(trimmed)) {
+      return parseVariableIndex(trimmed);
+    }
     return undefined;
   }
-
-  return parseVariableIndex(scriptValue.value);
+  if (typeof value === "object" && "type" in value) {
+    const scriptValue = value as { type?: unknown; value?: unknown };
+    if (scriptValue.type === "variable") {
+      return parseVariableIndex(scriptValue.value);
+    }
+  }
+  return undefined;
 }
 
 function constValueToU8(value: unknown): number | undefined {
@@ -153,8 +189,16 @@ function constValueToU8(value: unknown): number | undefined {
     return undefined;
   }
 
-  if (typeof value === "number" || typeof value === "string") {
-    return clampU8(Number(value));
+  if (typeof value === "number") {
+    return clampU8(value);
+  }
+
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    if (/^-?[0-9]+$/.test(trimmed)) {
+      return clampU8(Number(trimmed));
+    }
+    return undefined;
   }
 
   if (typeof value !== "object" || !("type" in value)) {
@@ -316,7 +360,54 @@ function conditionFromScriptValue(
   condition: unknown,
   ctx: GBACompileContext,
 ): BranchCondition | undefined {
-  if (!condition || typeof condition !== "object") {
+  if (condition === undefined || condition === null) {
+    return undefined;
+  }
+
+  if (typeof condition === "boolean") {
+    return {
+      opcode: VM_OP_IF_VAR_EQ_CONST,
+      variable: 0,
+      value: 0,
+      invert: !condition,
+    };
+  }
+
+  if (typeof condition === "string") {
+    const str = condition.trim();
+    const match = str.match(/^([$a-zA-Z0-9_]+)\s*(==|!=|>=|<=|>|<)\s*([$a-zA-Z0-9_]+)$/);
+    if (match) {
+      const typeMap: Record<string, string> = {
+        "==": "eq",
+        "!=": "ne",
+        ">": "gt",
+        "<": "lt",
+        ">=": "gte",
+        "<=": "lte",
+      };
+      return conditionFromScriptValue({
+        type: typeMap[match[2]] ?? "eq",
+        valueA: match[1],
+        valueB: match[3],
+      }, ctx);
+    }
+    return {
+      opcode: VM_OP_IF_VAR_GT_CONST,
+      variable: parseVariableIndex(str),
+      value: 0,
+    };
+  }
+
+  if (typeof condition === "number") {
+    return {
+      opcode: VM_OP_IF_VAR_EQ_CONST,
+      variable: 0,
+      value: 0,
+      invert: condition === 0,
+    };
+  }
+
+  if (typeof condition !== "object") {
     return undefined;
   }
 
@@ -326,6 +417,24 @@ function conditionFromScriptValue(
     valueA?: unknown;
     valueB?: unknown;
   };
+
+  if (scriptValue.type === "true") {
+    return {
+      opcode: VM_OP_IF_VAR_EQ_CONST,
+      variable: 0,
+      value: 0,
+      invert: false,
+    };
+  }
+
+  if (scriptValue.type === "false") {
+    return {
+      opcode: VM_OP_IF_VAR_EQ_CONST,
+      variable: 0,
+      value: 0,
+      invert: true,
+    };
+  }
 
   if (scriptValue.type === "variable") {
     return {
@@ -346,25 +455,78 @@ function conditionFromScriptValue(
   const directOpcode = compareOpcode(scriptValue.type);
   const inverseOpcode = inverseCompareOpcode(scriptValue.type);
   const opcode = directOpcode ?? inverseOpcode;
-  if (!opcode) {
-    return undefined;
+
+  if (opcode) {
+    const varA = scriptValueVariableIndex(scriptValue.valueA);
+    const constB = constValueToU8(scriptValue.valueB);
+
+    if (varA !== undefined && constB !== undefined) {
+      return {
+        opcode,
+        variable: varA,
+        value: constB,
+        invert: inverseOpcode !== undefined,
+      };
+    }
+
+    const constA = constValueToU8(scriptValue.valueA);
+    const varB = scriptValueVariableIndex(scriptValue.valueB);
+
+    if (constA !== undefined && varB !== undefined) {
+      let swappedType = String(scriptValue.type);
+      if (swappedType === ">" || swappedType === ".GT" || swappedType === "gt") swappedType = "<";
+      else if (swappedType === "<" || swappedType === ".LT" || swappedType === "lt") swappedType = ">";
+      else if (swappedType === ">=" || swappedType === ".GTE" || swappedType === "gte") swappedType = "<=";
+      else if (swappedType === "<=" || swappedType === ".LTE" || swappedType === "lte") swappedType = ">=";
+
+      const swappedDirect = compareOpcode(swappedType);
+      const swappedInverse = inverseCompareOpcode(swappedType);
+      const swappedOpcode = swappedDirect ?? swappedInverse;
+
+      if (swappedOpcode) {
+        return {
+          opcode: swappedOpcode,
+          variable: varB,
+          value: constA,
+          invert: swappedInverse !== undefined,
+        };
+      }
+    }
+
+    if (varA !== undefined && varB !== undefined) {
+      let varOpcode = VM_OP_IF_VAR_EQ_VAR;
+      if (opcode === VM_OP_IF_VAR_GT_CONST) varOpcode = VM_OP_IF_VAR_GT_VAR;
+      if (opcode === VM_OP_IF_VAR_LT_CONST) varOpcode = VM_OP_IF_VAR_LT_VAR;
+
+      return {
+        opcode: varOpcode,
+        variable: varA,
+        value: varB,
+        invert: inverseOpcode !== undefined,
+      };
+    }
+
+    if (constA !== undefined && constB !== undefined) {
+      let staticTrue = false;
+      const typeStr = String(scriptValue.type);
+      if (typeStr === "==" || typeStr === ".EQ" || typeStr === "eq") staticTrue = constA === constB;
+      else if (typeStr === "!=" || typeStr === ".NE" || typeStr === "ne") staticTrue = constA !== constB;
+      else if (typeStr === ">" || typeStr === ".GT" || typeStr === "gt") staticTrue = constA > constB;
+      else if (typeStr === "<" || typeStr === ".LT" || typeStr === "lt") staticTrue = constA < constB;
+      else if (typeStr === ">=" || typeStr === ".GTE" || typeStr === "gte") staticTrue = constA >= constB;
+      else if (typeStr === "<=" || typeStr === ".LTE" || typeStr === "lte") staticTrue = constA <= constB;
+
+      return {
+        opcode: VM_OP_IF_VAR_EQ_CONST,
+        variable: 0,
+        value: 0,
+        invert: !staticTrue,
+      };
+    }
   }
 
-  const variable = scriptValueVariableIndex(scriptValue.valueA);
-  const value = constValueToU8(scriptValue.valueB);
-  if (variable === undefined || value === undefined) {
-    ctx.warnings(
-      `GBA compiler: EVENT_IF only supports variable-to-constant comparisons — skipped`,
-    );
-    return undefined;
-  }
-
-  return {
-    opcode,
-    variable,
-    value,
-    invert: inverseOpcode !== undefined,
-  };
+  ctx.warnings(`GBA compiler: unsupported EVENT_IF condition — skipped`);
+  return undefined;
 }
 
 // Compile one event and append bytes to `out`. Returns false if the event
@@ -381,7 +543,8 @@ function compileEvent(
       out.push(VM_OP_END);
       return true;
 
-    case "EVENT_TEXT": {
+    case "EVENT_TEXT":
+    case "EVENT_TEXT_DRAW": {
       // args.text may be a string or array of strings (multi-page). We join
       // with newline — the textbox renderer shows the first two wrapped lines.
       const raw = Array.isArray(args.text)
@@ -546,11 +709,50 @@ function compileEvent(
       return true;
     }
 
+    case "EVENT_CAMERA_MOVE_TO":
+    case "EVENT_CAMERA_SET_POSITION": {
+      const scale = args.units === "pixels" ? 1 : 8;
+      const pxX = scriptValueToNumber(args.x) * scale;
+      const pxY = scriptValueToNumber(args.y) * scale;
+      const targetCenterX = clampU16(pxX + 120);
+      const targetCenterY = clampU16(pxY + 80);
+      const speed =
+        command === "EVENT_CAMERA_SET_POSITION"
+          ? 0
+          : clampU8(scriptValueToNumber(args.speed ?? 1));
+      out.push(
+        VM_OP_CAMERA_MOVE_TO,
+        targetCenterX & 0xff,
+        (targetCenterX >> 8) & 0xff,
+        targetCenterY & 0xff,
+        (targetCenterY >> 8) & 0xff,
+        speed,
+      );
+      return true;
+    }
+
+    case "EVENT_CAMERA_LOCK":
+    case "EVENT_CAMERA_SET_LOCK": {
+      out.push(VM_OP_CAMERA_LOCK);
+      return true;
+    }
+
+
     case "EVENT_PALETTE_SET_BACKGROUND": {
       const tone = clampU8(
         Number(args.tone ?? args.palette ?? args.palette0 ?? 0),
       );
       out.push(VM_OP_SET_SCENE_TONE, tone);
+      return true;
+    }
+
+    case "EVENT_FADE_IN": {
+      out.push(VM_OP_SET_SCENE_TONE, 0);
+      return true;
+    }
+
+    case "EVENT_FADE_OUT": {
+      out.push(VM_OP_SET_SCENE_TONE, 3);
       return true;
     }
 
@@ -578,10 +780,20 @@ function compileEvent(
       return true;
     }
 
-    case "EVENT_IF": {
-      const condition = conditionFromScriptValue(args.condition, ctx);
+    case "EVENT_IF":
+    case "EVENT_IF_EXPRESSION": {
+      const condInput = args.condition ?? args.expression;
+      const condition = conditionFromScriptValue(condInput, ctx);
       if (!condition) {
-        return false;
+        ctx.warnings(
+          `GBA compiler: unsupported EVENT_IF_EXPRESSION ("${String(condInput)}") — compiling true branch as fallback`,
+        );
+        const trueEvents =
+          (args.true as GBAScriptEvent[] | undefined) ?? event.children?.true;
+        if (trueEvents && trueEvents.length > 0) {
+          out.push(...compileNestedEvents(trueEvents, ctx));
+        }
+        return true;
       }
       compileConditional(
         out,
@@ -675,6 +887,150 @@ function compileEvent(
     case "EVENT_ACTOR_HIDE":
     case "EVENT_ACTOR_DEACTIVATE": {
       out.push(VM_OP_ACTOR_SET_HIDDEN, resolveActorIndex(args.actorId, ctx), 1);
+      return true;
+    }
+
+    case "EVENT_ACTOR_COLLISIONS_DISABLE": {
+      out.push(VM_OP_ACTOR_SET_COLLISIONS, resolveActorIndex(args.actorId, ctx), 0);
+      return true;
+    }
+
+    case "EVENT_ACTOR_COLLISIONS_ENABLE": {
+      out.push(VM_OP_ACTOR_SET_COLLISIONS, resolveActorIndex(args.actorId, ctx), 1);
+      return true;
+    }
+
+    case "EVENT_ACTOR_SET_STATE": {
+      const actor = resolveActorIndex(args.actorId, ctx);
+      const loopAnim = args.loopAnim !== false ? 1 : 0;
+      out.push(VM_OP_ACTOR_SET_STATE, actor, loopAnim);
+      return true;
+    }
+
+    case "EVENT_ACTOR_PUSH": {
+      const actor = resolveActorIndex(args.actorId ?? "$self$", ctx);
+      const continueUntilCollision = args.continue ? 1 : 0;
+      out.push(VM_OP_ACTOR_PUSH, actor, continueUntilCollision);
+      return true;
+    }
+
+    case "EVENT_ACTOR_STOP_UPDATE": {
+      const actor = resolveActorIndex(args.actorId ?? "$self$", ctx);
+      out.push(VM_OP_ACTOR_SET_ENABLED, actor, 0);
+      return true;
+    }
+
+    case "EVENT_ACTOR_START_UPDATE": {
+      const actor = resolveActorIndex(args.actorId ?? "$self$", ctx);
+      out.push(VM_OP_ACTOR_SET_ENABLED, actor, 1);
+      return true;
+    }
+
+    case "EVENT_ACTOR_SET_FRAME":
+    case "EVENT_ACTOR_SET_FRAME_TO_VALUE": {
+      const actor = resolveActorIndex(args.actorId ?? "$self$", ctx);
+      const frame = clampU8(scriptValueToNumber(args.frame ?? 0));
+      out.push(VM_OP_ACTOR_SET_ANIM_FRAME, actor, frame);
+      return true;
+    }
+
+    case "EVENT_ACTOR_SET_ANIMATION_SPEED": {
+      const actor = resolveActorIndex(args.actorId ?? "$self$", ctx);
+      const speed = clampU8(scriptValueToNumber(args.speed ?? 15));
+      out.push(VM_OP_ACTOR_SET_ANIM_SPEED, actor, speed);
+      return true;
+    }
+
+    case "EVENT_ACTOR_MOVE_CANCEL": {
+      const actor = resolveActorIndex(args.actorId ?? "$self$", ctx);
+      out.push(VM_OP_ACTOR_MOVE_CANCEL, actor);
+      return true;
+    }
+
+    case "EVENT_ACTOR_SET_MOVEMENT_SPEED": {
+      const actor = resolveActorIndex(args.actorId, ctx);
+      // `speed` is a positive integer (1 = 1 px/frame, 2 = 2 px/frame, …).
+      // The GBA engine stores this directly as pixels/frame in actor->move_speed.
+      const speed = clampU8(Math.max(1, Math.round(Number(args.speed ?? 1))));
+      out.push(VM_OP_ACTOR_SET_MOVE_SPEED, actor, speed);
+      return true;
+    }
+
+    case "EVENT_ACTOR_MOVE_TO": {
+      const actor = resolveActorIndex(args.actorId, ctx);
+      // units: "tiles" (default) ×8 for pixel coords; "pixels" = direct.
+      // moveType / collideWith are GBA-side handled by the engine’s
+      // horizontal-first step logic (matching the GB Studio default).
+      const scale = args.units === "pixels" ? 1 : 8;
+      const x = clampU8(scriptValueToNumber(args.x) * scale);
+      const y = clampU8(scriptValueToNumber(args.y) * scale);
+      out.push(VM_OP_ACTOR_MOVE_TO, actor, x, y);
+      return true;
+    }
+
+    case "EVENT_IF_ACTOR_RELATIVE_TO_ACTOR": {
+      const actorA = resolveActorIndex(args.actorId, ctx);
+      const actorB = resolveActorIndex(args.otherActorId, ctx);
+      const opMap: Record<string, number> = {
+        up: ACTOR_RELATIVE_ABOVE,
+        down: ACTOR_RELATIVE_BELOW,
+        left: ACTOR_RELATIVE_LEFT,
+        right: ACTOR_RELATIVE_RIGHT,
+      };
+      const op = opMap[String(args.operation ?? "up")] ?? ACTOR_RELATIVE_ABOVE;
+
+      const trueEvents =
+        (args.true as GBAScriptEvent[] | undefined) ?? event.children?.true;
+      const falseEvents =
+        (args.false as GBAScriptEvent[] | undefined) ?? event.children?.false;
+      const trueBytes = compileNestedEvents(trueEvents, ctx);
+      const falseBytes = compileNestedEvents(falseEvents, ctx);
+
+      // VM_OP_IF_ACTOR_RELATIVE_TO_ACTOR  actor_a  actor_b  op  offset_lo  offset_hi
+      out.push(VM_OP_IF_ACTOR_RELATIVE_TO_ACTOR, actorA, actorB, op);
+      pushS16(out, 3); // if true, skip the JUMP below
+
+      const jumpToFalseOffsetIndex = out.length + 1;
+      pushJump(out, 0);
+      out.push(...trueBytes);
+
+      const jumpToEndOffsetIndex = out.length + 1;
+      pushJump(out, 0);
+      out.push(...falseBytes);
+
+      patchS16(out, jumpToFalseOffsetIndex, trueBytes.length + 3);
+      patchS16(out, jumpToEndOffsetIndex, falseBytes.length);
+      return true;
+    }
+
+    case "EVENT_IF_ACTOR_AT_POSITION": {
+      const actor = resolveActorIndex(args.actorId, ctx);
+      const scale = args.units === "pixels" ? 1 : 8;
+      const x = clampU8(scriptValueToNumber(args.x) * scale);
+      const y = clampU8(scriptValueToNumber(args.y) * scale);
+
+      const trueEvents =
+        (args.true as GBAScriptEvent[] | undefined) ?? event.children?.true;
+      const falseEvents =
+        (args.false as GBAScriptEvent[] | undefined) ?? event.children?.false;
+      const trueBytes = compileNestedEvents(trueEvents, ctx);
+      const falseBytes = compileNestedEvents(falseEvents, ctx);
+
+      // VM_OP_IF_ACTOR_AT_POS  actor  x  y  offset_lo  offset_hi
+      // offset skips the jump-over when the condition is true.
+      out.push(VM_OP_IF_ACTOR_AT_POS, actor, x, y);
+      pushS16(out, 3); // if match, skip the JUMP below
+
+      const jumpToFalseOffsetIndex = out.length + 1;
+      pushJump(out, 0); // placeholder — jump to false branch
+      out.push(...trueBytes);
+
+      const jumpToEndOffsetIndex = out.length + 1;
+      pushJump(out, 0); // placeholder — jump past false branch
+      out.push(...falseBytes);
+
+      patchS16(out, jumpToFalseOffsetIndex, trueBytes.length + 3);
+      patchS16(out, jumpToEndOffsetIndex, falseBytes.length);
       return true;
     }
 
@@ -876,6 +1232,19 @@ function compileEvent(
         const label = String((args as Record<string, unknown>)[`option${i}`] ?? "");
         out.push(...encodeString(label));
       }
+      return true;
+    }
+
+    case "EVENT_AWAIT_INPUT": {
+      // Wait until any of the specified buttons are pressed.
+      // Encoding: VM_OP_AWAIT_INPUT  mask_lo  mask_hi
+      const mask = inputMask(args.input);
+      // A mask of 0 means no buttons — treat as a no-op so the script
+      // doesn't hang forever waiting for a button that can never be pressed.
+      if (mask === 0) {
+        return true;
+      }
+      out.push(VM_OP_AWAIT_INPUT, mask & 0xff, (mask >> 8) & 0xff);
       return true;
     }
 

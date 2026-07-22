@@ -1299,3 +1299,52 @@ test("should allow reusing tileset for identical backgrounds if used with common
   expect(usedBackgrounds[1].tilemap.symbol).toBe(`bg_ad_copy_t1_tilemap`);
   expect(usedBackgrounds[1].tileset.symbol).toBe(`bg_ad_t1_tileset`);
 });
+
+test("should set is360 to false if a background is used in both LOGO and normal scenes", async () => {
+  const backgrounds = [
+    {
+      id: "bg_logo",
+      name: "bg_logo",
+      width: 20,
+      height: 18,
+      imageWidth: 160,
+      imageHeight: 144,
+      filename: "bg_ad.png",
+      symbol: "bg_logo",
+      is360: false,
+    },
+  ] as ReferencedBackground[];
+  const scenes = [
+    {
+      ...dummyScene,
+      id: "logo_scene",
+      name: "logo_scene",
+      type: "LOGO",
+      backgroundId: "bg_logo",
+      actors: [],
+      triggers: [],
+    },
+    {
+      ...dummyScene,
+      id: "normal_scene",
+      name: "normal_scene",
+      type: "TOPDOWN",
+      backgroundId: "bg_logo",
+      actors: [],
+      triggers: [],
+    },
+  ] as Scene[];
+
+  const { usedBackgrounds } = await precompileBackgrounds(
+    backgrounds,
+    scenes,
+    [],
+    "default",
+    `${__dirname}/_files`,
+    { warnings: () => {} },
+  );
+
+  expect(usedBackgrounds).toHaveLength(1);
+  expect(usedBackgrounds[0].is360).toBe(false);
+});
+
