@@ -144,11 +144,14 @@ const compileImage = async (
   { warnings }: CompileImageOptions,
 ): Promise<PrecompiledBackgroundData> => {
   let autoColorMode = ImageColorMode.MANUAL;
-  const cgbOnly = colorMode === "color";
+  const imgColorMode =
+    (img as BackgroundData & { colorMode?: ColorModeSetting }).colorMode ||
+    colorMode;
+  const cgbOnly = imgColorMode === "color";
   const filename = assetFilename(projectPath, "backgrounds", img);
   const dmgFilename = monoOverrideForFilename(filename);
 
-  if (img.autoColor && colorMode !== "mono") {
+  if (img.autoColor && imgColorMode !== "mono") {
     const useDmgImg = img.monoOverrideId && (await fileExists(dmgFilename));
     autoColorMode = useDmgImg
       ? ImageColorMode.AUTO_COLOR_WITH_DMG
@@ -169,7 +172,7 @@ const compileImage = async (
   let autoPalettes: Palette[] | undefined = undefined;
   if (autoColorMode === ImageColorMode.AUTO_COLOR) {
     // Extract both tiles and colors from color PNG
-    const paletteData = await readFileToPalettes(filename, colorCorrection);
+    const paletteData = await readFileToPalettes(filename, "none");
     tileData = indexedImageToTilesDataArray(paletteData.indexedImage);
     autoTileColors = paletteData.map;
     autoPalettes = paletteData.palettes.map((colors, index) => ({
@@ -319,7 +322,7 @@ const compileImages = async (
                     img,
                     undefined,
                     img.is360,
-                    img.colorMode,
+                    img.colorMode || "default",
                     colorCorrection,
                     projectPath,
                     { warnings },
@@ -333,7 +336,7 @@ const compileImages = async (
                 img,
                 commonTileset,
                 img.is360,
-                img.colorMode,
+                img.colorMode || "default",
                 colorCorrection,
                 projectPath,
                 { warnings },

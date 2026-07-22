@@ -686,29 +686,6 @@ export const SceneEditor = ({ id }: SceneEditorProps) => {
                   </MenuItem>
                 )}
                 <MenuDivider />
-                {colorsEnabled && (
-                  <MenuItem onClick={onCopyBackgroundPaletteIds}>
-                    {l10n("FIELD_COPY_BACKGROUND_PALETTES")}
-                  </MenuItem>
-                )}
-                {colorsEnabled && (
-                  <MenuItem onClick={onCopySpritePaletteIds}>
-                    {l10n("FIELD_COPY_SPRITE_PALETTES")}
-                  </MenuItem>
-                )}
-                {colorsEnabled &&
-                  clipboardFormat === ClipboardTypePaletteIds && (
-                    <MenuItem onClick={onPasteBackgroundPaletteIds}>
-                      {l10n("FIELD_PASTE_BACKGROUND_PALETTES")}
-                    </MenuItem>
-                  )}
-                {colorsEnabled &&
-                  clipboardFormat === ClipboardTypePaletteIds && (
-                    <MenuItem onClick={onPasteSpritePaletteIds}>
-                      {l10n("FIELD_PASTE_SPRITE_PALETTES")}
-                    </MenuItem>
-                  )}
-                {colorsEnabled && <MenuDivider />}
                 <MenuItem onClick={onRemove}>
                   {l10n("MENU_DELETE_SCENE")}
                 </MenuItem>
@@ -942,105 +919,6 @@ export const SceneEditor = ({ id }: SceneEditorProps) => {
                     </FormField>
                   </FormRow>
                 )}
-
-                <FormRow>
-                  <FormField
-                    name="playerSpriteSheetId"
-                    label={
-                      <>
-                        {l10n("FIELD_SCENE_BACKGROUND_PALETTES")}
-                        <InlineDropdownWrapper>
-                          <DropdownButton
-                            size="small"
-                            variant="transparent"
-                            showArrow={false}
-                            label={l10n(
-                              background?.autoColor
-                                ? "FIELD_AUTOMATIC"
-                                : "FIELD_MANUAL",
-                            )}
-                          >
-                            <MenuItem
-                              onClick={() => onChangeAutoColor(true)}
-                              icon={
-                                background?.autoColor ? (
-                                  <CheckIcon />
-                                ) : (
-                                  <BlankIcon />
-                                )
-                              }
-                            >
-                              {l10n("FIELD_AUTOMATIC")}
-                            </MenuItem>
-                            <MenuItem
-                              onClick={() => onChangeAutoColor(false)}
-                              icon={
-                                !background?.autoColor ? (
-                                  <CheckIcon />
-                                ) : (
-                                  <BlankIcon />
-                                )
-                              }
-                            >
-                              {l10n("FIELD_MANUAL")}
-                            </MenuItem>
-                          </DropdownButton>
-                        </InlineDropdownWrapper>
-                      </>
-                    }
-                  >
-                    {!background?.autoColor && (
-                      <PaletteButtons>
-                        {[0, 1, 2, 3, 4, 5, 6, 7].map((index) => (
-                          <PaletteSelectButton
-                            key={index}
-                            name={`scenePalette${index}`}
-                            value={
-                              (scene.paletteIds && scene.paletteIds[index]) ||
-                              ""
-                            }
-                            onChange={onEditPaletteId(index)}
-                            slotNumber={index + 1}
-                            optional
-                            optionalDefaultPaletteId={
-                              defaultBackgroundPaletteIds[index] || ""
-                            }
-                            optionalLabel={l10n("FIELD_GLOBAL_DEFAULT")}
-                          />
-                        ))}
-                      </PaletteButtons>
-                    )}
-                  </FormField>
-                </FormRow>
-
-                <FormRow>
-                  <FormField
-                    name="playerSpriteSheetId"
-                    label={l10n("FIELD_SCENE_SPRITE_PALETTES")}
-                  >
-                    <PaletteButtons>
-                      {[0, 1, 2, 3, 4, 5, 6, 7].map((index) => (
-                        <PaletteSelectButton
-                          key={index}
-                          name={`scenePalette${index}`}
-                          type="sprite"
-                          value={
-                            (scene.spritePaletteIds &&
-                              scene.spritePaletteIds[index]) ||
-                            ""
-                          }
-                          slotNumber={index + 1}
-                          onChange={onEditSpritePaletteId(index)}
-                          optional
-                          optionalDefaultPaletteId={
-                            defaultSpritePaletteIds[index] || ""
-                          }
-                          optionalLabel={l10n("FIELD_GLOBAL_DEFAULT")}
-                        />
-                      ))}
-                    </PaletteButtons>
-                  </FormField>
-                </FormRow>
 
                 {/* <FormDivider /> */}
               </SidebarColumn>

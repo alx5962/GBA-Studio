@@ -6,7 +6,6 @@ import SpritesPage from "components/pages/SpritesPage";
 import DialoguePage from "components/pages/DialoguePage";
 import WorldPage from "components/pages/WorldPage";
 import MusicPage from "components/pages/MusicPage";
-import PalettePage from "components/pages/PalettePage";
 import SettingsPage from "components/pages/SettingsPage";
 import { DropZone } from "ui/upload/DropZone";
 import projectActions from "store/features/project/projectActions";
@@ -23,82 +22,57 @@ const AppWrapper = styled.div`
 `;
 
 const AppContent = styled.div`
-  width: 100%;
-  height: calc(100% - 38px);
-  display: flex;
-  flex-direction: row;
+  flex: 1;
+  position: relative;
+  overflow: hidden;
 `;
 
 const App = () => {
   const dispatch = useAppDispatch();
-  const [draggingOver, setDraggingOver] = useState(false);
-  const dragLeaveTimer = useRef<ReturnType<typeof setTimeout>>();
+  const loaded = useAppSelector((state) => state.document.loaded);
   const section = useAppSelector((state) => state.navigation.section);
   const error = useAppSelector((state) => state.error);
-  const loaded = useAppSelector((state) => state.document.loaded);
+  const [draggingOver, setDraggingOver] = useState(false);
+  const dragTarget = useRef<EventTarget | null>(null);
 
-  const onDragOver = useCallback(
-    (e: DragEvent) => {
-      // Don't activate dropzone unless dragging a file
-      const types = e.dataTransfer?.types;
-      if (!types || types.indexOf("Files") === -1) {
-        return;
-      }
-
-      e.preventDefault();
-      e.stopPropagation();
-      if (dragLeaveTimer.current) {
-        clearTimeout(dragLeaveTimer.current);
-      }
-      if (!draggingOver) {
-        setDraggingOver(true);
-      }
-    },
-    [draggingOver],
-  );
-
-  const onDragLeave = useCallback((e: DragEvent) => {
+  const onDragEnter = useCallback((e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
-    e.stopPropagation();
-    if (dragLeaveTimer.current) {
-      clearTimeout(dragLeaveTimer.current);
-    }
-    dragLeaveTimer.current = setTimeout(() => {
+    dragTarget.current = e.target;
+    setDraggingOver(true);
+  }, []);
+
+  const onDragOver = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+  }, []);
+
+  const onDragLeave = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    if (e.target === dragTarget.current) {
       setDraggingOver(false);
-    }, 100);
+    }
   }, []);
 
   const onDrop = useCallback(
-    (e: DragEvent) => {
+    (e: React.DragEvent<HTMLDivElement>) => {
+      e.preventDefault();
       setDraggingOver(false);
-      if (!e.dataTransfer?.files) {
-        return;
-      }
-      for (let i = 0; i < e.dataTransfer.files.length; i++) {
-        const file = e.dataTransfer.files[i];
-        dispatch(projectActions.addFileToProject(file.path));
-      }
+      const files = Array.from(e.dataTransfer.files).map((f) => f.path);
+      files.forEach((file) => dispatch(projectActions.addFileToProject(file)));
     },
     [dispatch],
   );
 
   useEffect(() => {
-    window.addEventListener("dragover", onDragOver);
-    window.addEventListener("dragleave", onDragLeave);
-    window.addEventListener("drop", onDrop);
-    return () => {
-      window.removeEventListener("dragover", onDragOver);
-      window.removeEventListener("dragleave", onDragLeave);
-      window.removeEventListener("drop", onDrop);
-    };
-  }, [onDragLeave, onDragOver, onDrop]);
+    window.addEventListener("dragover", (e) => e.preventDefault(), false);
+    window.addEventListener("drop", (e) => e.preventDefault(), false);
+  }, []);
 
   if (error.visible) {
     return <GlobalError />;
   }
 
   return (
-    <AppWrapper>
+    <AppWrapper onDragEnter={onDragEnter} onDragOver={onDragOver} onDragLeave={onDragLeave} onDrop={onDrop}>
       <AppToolbar />
       {!loaded ? (
         <LoadingPane />
@@ -109,7 +83,6 @@ const App = () => {
           {section === "sprites" && <SpritesPage />}
           {section === "music" && <MusicPage />}
           {section === "sounds" && <SoundsPage />}
-          {section === "palettes" && <PalettePage />}
           {section === "dialogue" && <DialoguePage />}
           {section === "settings" && <SettingsPage />}
           {draggingOver && <DropZone />}

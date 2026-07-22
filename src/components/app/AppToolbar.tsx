@@ -40,15 +40,14 @@ import useWindowSize from "ui/hooks/use-window-size";
 import { useAppDispatch, useAppSelector } from "store/hooks";
 import API from "renderer/lib/api";
 
-const sectionAccelerators = {
+const sectionAccelerators: Partial<Record<NavigationSection, string>> = {
   world: "CommandOrControl+1",
   sprites: "CommandOrControl+2",
   backgrounds: "CommandOrControl+3",
   music: "CommandOrControl+4",
   sounds: "CommandOrControl+5",
-  palettes: "CommandOrControl+6",
-  dialogue: "CommandOrControl+7",
-  settings: "CommandOrControl+8",
+  dialogue: "CommandOrControl+6",
+  settings: "CommandOrControl+7",
 };
 
 const zoomSections = ["world", "sprites", "backgrounds", "ui"];
@@ -81,7 +80,7 @@ const AppToolbar: FC = () => {
   const smallZoom = (windowSize.width || 0) < 900;
   const showTitle = API.platform === "darwin" && (windowSize.width || 0) > 800;
 
-  const sectionNames = useMemo(
+  const sectionNames: Record<NavigationSection, string> = useMemo(
     () => ({
       world: l10n("NAV_GAME_WORLD"),
       sprites: l10n("NAV_SPRITES"),
@@ -217,24 +216,27 @@ const AppToolbar: FC = () => {
       <DropdownButton
         label={
           <span style={{ textAlign: "left", minWidth: 106 }}>
-            {sectionNames[section]}
+            {sectionNames[section] || sectionNames.world}
           </span>
         }
       >
-        {Object.keys(sectionNames).map((key: string) => (
-          <MenuItem
-            key={key}
-            onClick={setSection(key as NavigationSection)}
-            style={{ minWidth: 150 }}
-          >
-            {sectionNames[key as NavigationSection]}
-            {sectionAccelerators[key as NavigationSection] && (
-              <MenuAccelerator
-                accelerator={sectionAccelerators[key as NavigationSection]}
-              />
-            )}
-          </MenuItem>
-        ))}
+        {Object.keys(sectionNames)
+          .filter((key) => key !== "palettes")
+          .map((key: string) => {
+            const accelerator = sectionAccelerators[key as NavigationSection];
+            return (
+              <MenuItem
+                key={key}
+                onClick={setSection(key as NavigationSection)}
+                style={{ minWidth: 150 }}
+              >
+                {sectionNames[key as NavigationSection]}
+                {accelerator && (
+                  <MenuAccelerator accelerator={accelerator} />
+                )}
+              </MenuItem>
+            );
+          })}
       </DropdownButton>
       {showZoom && (
         <ZoomButton

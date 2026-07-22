@@ -41,6 +41,8 @@ import { useAppDispatch, useAppSelector } from "store/hooks";
 const Wrapper = styled.div`
   display: flex;
   width: 100%;
+  height: calc(100vh - 38px);
+  overflow: hidden;
 `;
 
 const PrecisionIcon = styled(TargetIcon)`

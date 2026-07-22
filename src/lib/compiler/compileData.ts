@@ -1,3 +1,4 @@
+import fs from "fs-extra";
 import { keyBy } from "lodash";
 import { uniq } from "lodash";
 const SparkMD5 = require("spark-md5");
@@ -5,6 +6,12 @@ import { PNG } from "pngjs";
 import { assetFilename } from "shared/lib/helpers/assets";
 import { eventHasArg } from "lib/helpers/eventSystem";
 import compileImages from "./compileImages";
+import { readFileToPalettes } from "lib/tiles/readFileToPalettes";
+import {
+  tilesAndLookupToTilemap,
+  toTileLookup,
+} from "shared/lib/tiles/tileData";
+import { indexedImageToTilesDataArray } from "lib/tiles/readFileToTiles";
 import compileEntityEvents from "./compileEntityEvents";
 import {
   projectTemplatesRoot,
@@ -1348,16 +1355,11 @@ const convertGbTileToGba4bpp = (
     for (let column = 0; column < 8; column += 2) {
       const leftShift = 7 - column;
       const rightShift = 6 - column;
-      let left =
+      const left =
         ((lo >> leftShift) & 0x01) | (((hi >> leftShift) & 0x01) << 1);
-      let right =
+      const right =
         ((lo >> rightShift) & 0x01) | (((hi >> rightShift) & 0x01) << 1);
-      // In BG mode shift 0→1 so no pixel is transparent
-      if (bgMode) {
-        if (left === 0) left = 1;
-        if (right === 0) right = 1;
-      }
-      output.push(left | (right << 4));
+      output.push((left & 0x0f) | ((right & 0x0f) << 4));
     }
   }
 
@@ -1464,6 +1466,150 @@ const readImageToRGB15 = async (filename: string): Promise<Uint16Array> => {
       resolve(pixels);
     });
   });
+};
+
+const readImageTo8bpp = async (
+  filename: string,
+): Promise<{ pixels: Uint8Array; palette: number[] }> => {
+  const fileData = await readFile(filename);
+  return new Promise((resolve, reject) => {
+    new PNG().parse(fileData, (err, data) => {
+      if (err) {
+        return reject(err);
+      }
+      const width = data.width;
+      const height = data.height;
+      const pixels = new Uint8Array(width * height);
+      const paletteColors: number[] = [];
+      const paletteMap = new Map<number, number>();
+
+      for (let i = 0; i < width * height; i++) {
+        const r = data.data[i * 4];
+        const g = data.data[i * 4 + 1];
+        const b = data.data[i * 4 + 2];
+        const r5 = r >> 3;
+        const g5 = g >> 3;
+        const b5 = b >> 3;
+        const rgb15 = r5 | (g5 << 5) | (b5 << 10);
+
+        let colorIdx = paletteMap.get(rgb15);
+        if (colorIdx === undefined) {
+          colorIdx = paletteColors.length;
+          if (colorIdx < 256) {
+            paletteColors.push(rgb15);
+            paletteMap.set(rgb15, colorIdx);
+          } else {
+            colorIdx = 0;
+          }
+        }
+        pixels[i] = colorIdx;
+      }
+      const palette = new Array(256).fill(0);
+      for (let i = 0; i < paletteColors.length; i++) {
+        palette[i] = paletteColors[i];
+      }
+      resolve({ pixels, palette });
+    });
+  });
+};
+
+const readImageTo8bppTiles = async (
+  filename: string,
+): Promise<{
+  bgTileset: Uint8Array;
+  bgTilemap: Uint16Array;
+  bgPalette: number[];
+}> => {
+  return new Promise((resolve, reject) => {
+    const fileData = fs.readFileSync(filename);
+    new PNG().parse(fileData, (err, data) => {
+      if (err) {
+        return reject(err);
+      }
+      const width = data.width;
+      const height = data.height;
+      const pixels = new Uint8Array(width * height);
+      const paletteColors: number[] = [];
+      const paletteMap = new Map<number, number>();
+
+      for (let i = 0; i < width * height; i++) {
+        const r = data.data[i * 4];
+        const g = data.data[i * 4 + 1];
+        const b = data.data[i * 4 + 2];
+        const r5 = r >> 3;
+        const g5 = g >> 3;
+        const b5 = b >> 3;
+        const rgb15 = r5 | (g5 << 5) | (b5 << 10);
+
+        let colorIdx = paletteMap.get(rgb15);
+        if (colorIdx === undefined) {
+          colorIdx = paletteColors.length;
+          if (colorIdx < 240) {
+            paletteColors.push(rgb15);
+            paletteMap.set(rgb15, colorIdx);
+          } else {
+            colorIdx = 0;
+          }
+        }
+        pixels[i] = colorIdx;
+      }
+
+      const palette = new Array(256).fill(0);
+      for (let i = 0; i < paletteColors.length; i++) {
+        palette[i] = paletteColors[i];
+      }
+
+      const xTiles = Math.floor(width / 8);
+      const yTiles = Math.floor(height / 8);
+      const tileLookup = new Map<string, number>();
+      const uniqueTiles: Uint8Array[] = [];
+      const tilemap: number[] = [];
+
+      for (let ty = 0; ty < yTiles; ty++) {
+        for (let tx = 0; tx < xTiles; tx++) {
+          const tile = new Uint8Array(64);
+          for (let py = 0; py < 8; py++) {
+            for (let px = 0; px < 8; px++) {
+              tile[py * 8 + px] = pixels[(ty * 8 + py) * width + (tx * 8 + px)];
+            }
+          }
+          const key = tile.join(",");
+          let tileIdx = tileLookup.get(key);
+          if (tileIdx === undefined) {
+            tileIdx = uniqueTiles.length;
+            uniqueTiles.push(tile);
+            tileLookup.set(key, tileIdx);
+          }
+          tilemap.push(tileIdx);
+        }
+      }
+
+      const bgTileset = new Uint8Array(uniqueTiles.length * 64);
+      uniqueTiles.forEach((tile, idx) => {
+        bgTileset.set(tile, idx * 64);
+      });
+
+      const bgTilemap = Uint16Array.from(tilemap);
+
+      resolve({
+        bgTileset,
+        bgTilemap,
+        bgPalette: palette,
+      });
+    });
+  });
+};
+
+const autoPalettesToGbaData = (palettes?: Palette[]): number[] => {
+  const output = new Array(8 * 16).fill(0);
+  if (!palettes) return output;
+  for (let bank = 0; bank < Math.min(8, palettes.length); bank++) {
+    const colors = palettes[bank].colors;
+    for (let color = 0; color < Math.min(16, colors.length); color++) {
+      output[bank * 16 + color] = hexColorToGba(colors[color]);
+    }
+  }
+  return output;
 };
 
 // Simplified GBA compilation flow
@@ -1630,8 +1776,10 @@ const compileGBA = async (
         const background = scene.background;
 
         let bgTileset: Uint8Array = new Uint8Array();
-        let bgTilemap: Uint8Array = new Uint8Array();
+        let bgTilemap: Uint8Array | Uint16Array = new Uint16Array();
         let bgTilemapAttr: Uint8Array = new Uint8Array();
+        let pointNClickPaletteData: number[] | undefined = undefined;
+        let autoPalettes: Palette[] | undefined = background?.autoPalettes;
 
         if (scene.type === "LOGO" && background) {
           try {
@@ -1645,47 +1793,47 @@ const compileGBA = async (
           } catch (e) {
             warnings(`Failed to read logo image: ${e}`);
           }
-        } else {
-          const tiles1 = background?.tileset?.data || [];
-          const tiles2 = background?.cgbTileset?.data || [];
-          const combinedGbTileset = new Uint8Array(tiles1.length + tiles2.length);
-          combinedGbTileset.set(tiles1, 0);
-          combinedGbTileset.set(tiles2, tiles1.length);
-
-          bgTileset = combinedGbTileset.length > 0
-            ? convertGbTilesetToGba4bpp(combinedGbTileset, true /* bgMode */)
-            : new Uint8Array();
-
-          bgTilemap = background?.tilemap
-            ? Uint8Array.from(background.tilemap.data)
-            : new Uint8Array();
-
-          bgTilemapAttr = background?.tilemapAttr
-            ? Uint8Array.from(background.tilemapAttr.data)
-            : new Uint8Array();
-
-          if (background?.tilemap) {
-            const numTiles1 = tiles1.length / 16;
-            const numTiles2 = tiles2.length / 16;
-            const offset1 = Math.max(192 - numTiles1, 0);
-            const offset2 = Math.max(192 - numTiles2, 0);
-
-            for (let i = 0; i < bgTilemap.length; i++) {
-              const v = bgTilemap[i];
-              const attr = bgTilemapAttr[i] ?? 0;
-              const inVRAM2 = (attr & 0x08) !== 0;
-
-              const offset = inVRAM2 ? offset2 : offset1;
-              const tileIndex = v >= 128 ? v - offset : v;
-              const gbaTileIndex = inVRAM2 ? tileIndex + numTiles1 : tileIndex;
-              bgTilemap[i] = gbaTileIndex;
-            }
+        } else if (scene.type === "POINTNCLICK" && background) {
+          try {
+            const filename = assetFilename(projectRoot, "backgrounds", background);
+            const { pixels, palette } = await readImageTo8bpp(filename);
+            bgTileset = pixels;
+            pointNClickPaletteData = palette;
+          } catch (e) {
+            warnings(`Failed to read pointnclick image: ${e}`);
+          }
+        } else if (background) {
+          try {
+            const filename = assetFilename(projectRoot, "backgrounds", background);
+            const res = await readImageTo8bppTiles(filename);
+            bgTileset = res.bgTileset;
+            bgTilemap = res.bgTilemap;
+            pointNClickPaletteData = res.bgPalette;
+          } catch (e) {
+            const tiles1 = background?.tileset?.data || [];
+            const tiles2 = background?.cgbTileset?.data || [];
+            const combinedGbTileset = new Uint8Array(tiles1.length + tiles2.length);
+            combinedGbTileset.set(tiles1, 0);
+            combinedGbTileset.set(tiles2, tiles1.length);
+            bgTileset = combinedGbTileset.length > 0
+              ? convertGbTilesetToGba4bpp(combinedGbTileset, true /* bgMode */)
+              : new Uint8Array();
+            bgTilemap = background?.tilemap?.data
+              ? Uint8Array.from(background.tilemap.data)
+              : new Uint8Array();
+            bgTilemapAttr = background?.tilemapAttr?.data
+              ? Uint8Array.from(background.tilemapAttr.data)
+              : new Uint8Array();
           }
         }
 
-        const bgPalette = toGbaPaletteData(
-          precompiled.usedPalettes[precompiled.scenePaletteIndexes[scene.id] || 0],
-        );
+        const bgPalette = pointNClickPaletteData
+          ? pointNClickPaletteData
+          : (autoPalettes
+            ? autoPalettesToGbaData(autoPalettes)
+            : toGbaPaletteData(
+                precompiled.usedPalettes[precompiled.scenePaletteIndexes[scene.id] || 0],
+              ));
         const spritePalette = toGbaPaletteData(
           precompiled.usedPalettes[
           precompiled.sceneActorPaletteIndexes[scene.id] || 0
@@ -1912,10 +2060,10 @@ const compileGBA = async (
           bgTileset.length,
         )}] = {${bgTileset.length > 0 ? `${formatCByteArray(bgTileset)}\n` : "\n  0x00\n"
           }};`;
-        const bgTilemapArray = `static const uint8_t ${sceneSymbol}_tilemap[${Math.max(
+        const bgTilemapArray = `static const uint16_t ${sceneSymbol}_tilemap[${Math.max(
           1,
           bgTilemap.length,
-        )}] = {${bgTilemap.length > 0 ? `${formatCByteArray(bgTilemap)}\n` : "\n  0x00\n"
+        )}] = {${bgTilemap.length > 0 ? `${formatCWordArray(Array.from(bgTilemap))}\n` : "\n  0x0000\n"
           }};`;
         const bgTilemapAttrArray =
           bgTilemapAttr.length > 0
@@ -1923,7 +2071,7 @@ const compileGBA = async (
               bgTilemapAttr,
             )}\n};`
             : "";
-        const bgPaletteArray = `static const uint16_t ${sceneSymbol}_bg_palette[128] = {${formatCWordArray(
+        const bgPaletteArray = `static const uint16_t ${sceneSymbol}_bg_palette[256] = {${formatCWordArray(
           bgPalette,
         )}\n};`;
         const spritePaletteArray = `static const uint16_t ${sceneSymbol}_sprite_palette[128] = {${formatCWordArray(

@@ -693,30 +693,16 @@ const SceneView = memo(({ id, index, editable }: SceneViewProps) => {
         }}
       >
         {background && (
-          <>
-            {gbcEnabled && background.autoColor ? (
-              <AutoColorizedImage
-                width={scene.width * TILE_SIZE}
-                height={scene.height * TILE_SIZE}
-                src={assetURL("backgrounds", background)}
-                tilesSrc={
-                  tilesOverride
-                    ? assetURL("backgrounds", tilesOverride)
-                    : undefined
-                }
-                previewAsMono={previewAsMono}
-              />
-            ) : (
-              <ColorizedImage
-                width={scene.width * TILE_SIZE}
-                height={scene.height * TILE_SIZE}
-                src={assetURL("backgrounds", background)}
-                tiles={tileColors}
-                palettes={palettes}
-                previewAsMono={previewAsMono}
-              />
-            )}
-          </>
+          <img
+            width={scene.width * TILE_SIZE}
+            height={scene.height * TILE_SIZE}
+            src={assetURL("backgrounds", background)}
+            style={{
+              display: "block",
+              pointerEvents: "none",
+              userSelect: "none",
+            }}
+          />
         )}
         {showCollisions && (
           <SceneOverlay>

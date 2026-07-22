@@ -115,21 +115,16 @@ const BackgroundViewer = ({ backgroundId }: MetaspriteEditorProps) => {
                 transform: `translate3d(0px, 0px, 0px) scale(${zoom})`,
               }}
             >
-              {gbcEnabled && background.autoColor ? (
-                <AutoColorizedImage
-                  width={background.width * TILE_SIZE}
-                  height={background.height * TILE_SIZE}
-                  src={assetURL("backgrounds", background)}
-                />
-              ) : (
-                <ColorizedImage
-                  width={background.width * TILE_SIZE}
-                  height={background.height * TILE_SIZE}
-                  src={assetURL("backgrounds", background)}
-                  tiles={background.tileColors}
-                  palettes={palettes}
-                />
-              )}
+              <img
+                width={background.width * TILE_SIZE}
+                height={background.height * TILE_SIZE}
+                src={assetURL("backgrounds", background)}
+                style={{
+                  display: "block",
+                  pointerEvents: "none",
+                  userSelect: "none",
+                }}
+              />
             </ImageScale>
           </ImageContainer>
         </ContentWrapper>

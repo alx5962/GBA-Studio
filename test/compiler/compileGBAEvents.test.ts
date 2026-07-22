@@ -858,12 +858,12 @@ describe("compileGBAScript", () => {
   it("unsupported events are skipped with a warning", () => {
     const ctx = makeCtx();
     const events: GBAScriptEvent[] = [
-      { command: "EVENT_ACTOR_MOVE_TO", args: { actorId: "1", x: 5, y: 5 } },
+      { command: "EVENT_UNSUPPORTED_DUMMY", args: { actorId: "1", x: 5, y: 5 } },
     ];
     const out = compileGBAScript(events, ctx);
     expect(out).toEqual([VM_OP_END]);
     expect(ctx.warnings).toHaveBeenCalledWith(
-      expect.stringContaining("EVENT_ACTOR_MOVE_TO"),
+      expect.stringContaining("EVENT_UNSUPPORTED_DUMMY"),
     );
   });
 

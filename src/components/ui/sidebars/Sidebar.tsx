@@ -16,7 +16,10 @@ export const SidebarColumn = styled.div`
 export const Sidebar = styled.div`
   width: 100%;
   height: 100%;
-  overflow: auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 `;
 
 export const SidebarColumns = styled.div`

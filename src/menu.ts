@@ -360,22 +360,15 @@ const buildMenu = async ({ themeManager, l10nManager }: BuildMenuProps) => {
           },
         },
         {
-          label: l10n("MENU_PALETTES"),
-          accelerator: "CommandOrControl+6",
-          click: () => {
-            notifyListeners("section", "palettes");
-          },
-        },
-        {
           label: l10n("MENU_DIALOGUE_REVIEW"),
-          accelerator: "CommandOrControl+7",
+          accelerator: "CommandOrControl+6",
           click: () => {
             notifyListeners("section", "dialogue");
           },
         },
         {
           label: l10n("MENU_SETTINGS"),
-          accelerator: "CommandOrControl+8",
+          accelerator: "CommandOrControl+7",
           click: () => {
             notifyListeners("section", "settings");
           },

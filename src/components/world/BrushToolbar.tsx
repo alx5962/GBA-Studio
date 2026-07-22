@@ -690,46 +690,6 @@ const BrushToolbar = ({ hasFocusForKeyboardShortcuts }: BrushToolbarProps) => {
           </Button>
         </LayerVisibilityPanel>
       </BrushToolbarWrapper>
-
-      {modalColorIndex > -1 && (
-        <>
-          <MenuOverlay onClick={closePaletteModal} />
-          <RelativePortal>
-            <PaletteModal
-              style={{
-                left: 200 + 36 * modalColorIndex,
-                top: 30,
-              }}
-            >
-              <PaletteSelect
-                value={scene?.paletteIds?.[modalColorIndex] || ""}
-                optional
-                optionalDefaultPaletteId={
-                  defaultBackgroundPaletteIds[modalColorIndex] || ""
-                }
-                optionalLabel={l10n("FIELD_GLOBAL_DEFAULT")}
-                prefix={`${modalColorIndex + 1}: `}
-                onChange={onChangePalette}
-                name={""}
-              />
-              <Button
-                variant="normal"
-                size="small"
-                onClick={() => {
-                  setSection("palettes");
-                  setNavigationId(
-                    (palettes[modalColorIndex] &&
-                      palettes[modalColorIndex]?.id) ??
-                      "",
-                  );
-                }}
-              >
-                {l10n("FIELD_EDIT_PALETTES")}
-              </Button>
-            </PaletteModal>
-          </RelativePortal>
-        </>
-      )}
     </>
   );
 };

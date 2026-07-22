@@ -25,6 +25,8 @@ import { NAVIGATOR_MIN_WIDTH } from "consts";
 const Wrapper = styled.div`
   display: flex;
   width: 100%;
+  height: calc(100vh - 38px);
+  overflow: hidden;
 `;
 
 const WorldPage = () => {

@@ -603,7 +603,7 @@ test("should emit GBA tilesets and tilemaps for scene backgrounds", async () => 
     "static const uint8_t scene_1_tileset[",
   );
   expect(compiled.files["gba_scene_data.c"]).toContain(
-    "static const uint8_t scene_1_tilemap[",
+    "static const uint16_t scene_1_tilemap[",
   );
   expect(compiled.files["gba_scene_data.c"]).toContain("scene_1_tileset");
   expect(compiled.files["gba_scene_data.c"]).toContain("scene_1_tilemap");
