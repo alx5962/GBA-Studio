@@ -50,6 +50,9 @@ const VM_OP_IF_VAR_LT_VAR = 0x28;
 const VM_OP_ACTOR_MOVE_CANCEL = 0x29;
 const VM_OP_CAMERA_MOVE_TO = 0x2a;
 const VM_OP_CAMERA_LOCK = 0x2b;
+const VM_OP_IF_ACTOR_DIRECTION = 0x2c;
+const VM_OP_ACTOR_SET_SPRITE = 0x2d;
+const VM_OP_PLAYER_BOUNCE = 0x2e;
 // Direction operands for VM_OP_IF_ACTOR_RELATIVE_TO_ACTOR (mirror vm.h)
 const ACTOR_RELATIVE_ABOVE = 0;
 const ACTOR_RELATIVE_BELOW = 1;
@@ -95,6 +98,8 @@ export type GBACompileContext = {
   // Map from actor id → runtime actor index for the scene being compiled.
   // Runtime index 0 is the player; scene actors follow. Set per-scene.
   actorIndexById?: Record<string, number>;
+  // Map from sprite sheet id → sprite index.
+  spriteIndexById?: Record<string, number>;
   // Runtime index substituted for the "$self$" actor id (the actor whose
   // own script is being compiled). Undefined outside an actor script.
   selfActorIndex?: number;
@@ -116,6 +121,11 @@ function resolveActorIndex(actorId: unknown, ctx: GBACompileContext): number {
     return ctx.selfActorIndex ?? 0;
   }
   return ctx.actorIndexById?.[id] ?? 0;
+}
+
+function resolveSpriteIndex(spriteId: unknown, ctx: GBACompileContext): number {
+  const id = String(spriteId ?? "");
+  return ctx.spriteIndexById?.[id] ?? 0;
 }
 
 // Signed byte (-128..127) encoded as u8 for delta operands.
@@ -738,7 +748,10 @@ function compileEvent(
     }
 
 
-    case "EVENT_PALETTE_SET_BACKGROUND": {
+    case "EVENT_PALETTE_SET_BACKGROUND":
+    case "EVENT_PALETTE_SET_SPRITE":
+    case "EVENT_PALETTE_SET_UI":
+    case "EVENT_PALETTE_SET_EMOTE": {
       const tone = clampU8(
         Number(args.tone ?? args.palette ?? args.palette0 ?? 0),
       );
@@ -848,6 +861,30 @@ function compileEvent(
       return true;
     }
 
+    case "EVENT_IF_ACTOR_DIRECTION": {
+      const actor = resolveActorIndex(args.actorId ?? "$self$", ctx);
+      const dir = directionValue(args.direction);
+      const trueEvents =
+        (args.true as GBAScriptEvent[] | undefined) ?? event.children?.true;
+      const falseEvents =
+        (args.false as GBAScriptEvent[] | undefined) ?? event.children?.false;
+      const trueBytes = compileNestedEvents(trueEvents, ctx);
+      const falseBytes = compileNestedEvents(falseEvents, ctx);
+
+      // VM_OP_IF_ACTOR_DIRECTION actor direction offset(branch over skip-jump)
+      out.push(VM_OP_IF_ACTOR_DIRECTION, actor, dir);
+      pushS16(out, 3);
+      const jumpToFalseIndex = out.length + 1;
+      pushJump(out, 0);
+      out.push(...trueBytes);
+      const jumpToEndIndex = out.length + 1;
+      pushJump(out, 0);
+      out.push(...falseBytes);
+      patchS16(out, jumpToFalseIndex, trueBytes.length + 3);
+      patchS16(out, jumpToEndIndex, falseBytes.length);
+      return true;
+    }
+
     case "EVENT_ACTOR_SET_POSITION": {
       const actor = resolveActorIndex(args.actorId, ctx);
       const scale = args.units === "pixels" ? 1 : 8;
@@ -875,6 +912,25 @@ function compileEvent(
     case "EVENT_ACTOR_SET_DIRECTION": {
       const actor = resolveActorIndex(args.actorId, ctx);
       out.push(VM_OP_ACTOR_SET_DIR, actor, directionValue(args.direction));
+      return true;
+    }
+
+    case "EVENT_ACTOR_SET_SPRITE": {
+      const actor = resolveActorIndex(args.actorId, ctx);
+      const spriteIndex = resolveSpriteIndex(args.spriteSheetId, ctx);
+      out.push(VM_OP_ACTOR_SET_SPRITE, actor, spriteIndex);
+      return true;
+    }
+
+    case "EVENT_PLAYER_BOUNCE": {
+      const hStr = String(args.height ?? "medium").toLowerCase();
+      let height = 1;
+      if (hStr === "low" || hStr === "0") height = 0;
+      else if (hStr === "medium" || hStr === "1") height = 1;
+      else if (hStr === "high" || hStr === "2") height = 2;
+      else height = clampU8(scriptValueToNumber(args.height));
+
+      out.push(VM_OP_PLAYER_BOUNCE, height);
       return true;
     }
 

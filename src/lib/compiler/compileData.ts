@@ -1815,7 +1815,7 @@ const compileGBA = async (
         const actorIndexById = Object.fromEntries(
           scene.actors.map((actor, actorIndex) => [actor.id, actorIndex + 1]),
         ) as Record<string, number>;
-        const sceneEventCtx = { ...gbaEventCtx, actorIndexById };
+        const sceneEventCtx = { ...gbaEventCtx, actorIndexById, spriteIndexById };
 
         // Compile scene init script (including scene.musicId if set).
         const rawSceneInitScript = (rawScene?.script ?? scene.script ?? []) as GBAScriptEvent[];
