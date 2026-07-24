@@ -27,6 +27,10 @@ const VM_OP_ACTOR_SET_DIR = 0x13;
 const VM_OP_ACTOR_SET_HIDDEN = 0x14;
 const VM_OP_CAMERA_SHAKE = 0x18;
 const VM_OP_AWAIT_INPUT = 0x1b;
+const VM_OP_OVERLAY_SHOW = 0x2f;
+const VM_OP_OVERLAY_HIDE = 0x30;
+const VM_OP_OVERLAY_MOVE_TO = 0x31;
+const VM_OP_OVERLAY_SET_SCANLINE_CUTOFF = 0x32;
 
 const noopCtx = {
   sceneIndexById: {} as Record<string, number>,
@@ -912,6 +916,46 @@ describe("compileGBAScript", () => {
     ];
     const out = compileGBAScript(events, noopCtx);
     expect(out).toEqual([VM_OP_CAMERA_SHAKE, 30, 3, VM_OP_END]);
+  });
+
+  it("EVENT_OVERLAY_SHOW, EVENT_OVERLAY_HIDE, EVENT_OVERLAY_MOVE_TO, and EVENT_OVERLAY_SET_SCANLINE_CUTOFF emit opcodes without warnings", () => {
+    const ctx = makeCtx();
+    const events: GBAScriptEvent[] = [
+      { command: "EVENT_OVERLAY_SHOW", args: { color: "black", x: 0, y: 0 } },
+      { command: "EVENT_OVERLAY_MOVE_TO", args: { x: 0, y: 18, speed: "2" } },
+      { command: "EVENT_OVERLAY_SET_SCANLINE_CUTOFF", args: { y: 150, units: "pixels" } },
+      { command: "EVENT_OVERLAY_HIDE" },
+    ];
+    const out = compileGBAScript(events, ctx);
+    expect(out).toEqual([
+      VM_OP_OVERLAY_SHOW,
+      0,
+      0,
+      0,
+      VM_OP_OVERLAY_MOVE_TO,
+      0,
+      144,
+      2,
+      VM_OP_OVERLAY_SET_SCANLINE_CUTOFF,
+      150,
+      VM_OP_OVERLAY_HIDE,
+      VM_OP_END,
+    ]);
+    expect(ctx.warnings).not.toHaveBeenCalled();
+  });
+
+  it("EVENT_PLAYER_SET_SPRITE emits VM_OP_ACTOR_SET_SPRITE for actor 0 (player)", () => {
+    const ctx = {
+      sceneIndexById: {},
+      spriteIndexById: { "sprite-sheet-2": 4 },
+      warnings: jest.fn(),
+    };
+    const events: GBAScriptEvent[] = [
+      { command: "EVENT_PLAYER_SET_SPRITE", args: { spriteSheetId: "sprite-sheet-2" } },
+    ];
+    const out = compileGBAScript(events, ctx);
+    expect(out).toEqual([0x2d /* VM_OP_ACTOR_SET_SPRITE */, 0, 4, VM_OP_END]);
+    expect(ctx.warnings).not.toHaveBeenCalled();
   });
 });
 

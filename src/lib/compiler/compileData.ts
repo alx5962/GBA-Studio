@@ -1832,8 +1832,8 @@ const compileGBA = async (
           : (autoPalettes
             ? autoPalettesToGbaData(autoPalettes)
             : toGbaPaletteData(
-                precompiled.usedPalettes[precompiled.scenePaletteIndexes[scene.id] || 0],
-              ));
+              precompiled.usedPalettes[precompiled.scenePaletteIndexes[scene.id] || 0],
+            ));
         const spritePalette = toGbaPaletteData(
           precompiled.usedPalettes[
           precompiled.sceneActorPaletteIndexes[scene.id] || 0
@@ -2010,32 +2010,63 @@ const compileGBA = async (
               })
               .join(",\n")}\n};`
             : "";
-        // Compile actor interact scripts.
+        const toGbaCollisionGroup = (group?: string): number => {
+          if (group === "1") return 2;
+          if (group === "2") return 4;
+          if (group === "3") return 8;
+          if (group === "player") return 1;
+          return 0;
+        };
+
+        // Compile actor interact and hit scripts.
         const actorScriptBlocks: string[] = [];
-        const actorScriptSymbols: (string | null)[] = scene.actors.map(
-          (actor, actorIndex) => {
-            const scriptEvents = actor.script as GBAScriptEvent[] | undefined;
-            if (!scriptEvents || scriptEvents.length === 0) return null;
-            if (
-              scriptEvents.length === 1 &&
-              scriptEvents[0].command === "EVENT_END"
-            )
+        const actorScriptSymbols: {
+          interact: string | null;
+          hit: string | null;
+          collisionGroup: number;
+        }[] = scene.actors.map((actor, actorIndex) => {
+          const collisionGroup = toGbaCollisionGroup(actor.collisionGroup);
+          let interactSymbol: string | null = null;
+          let hitSymbol: string | null = null;
+
+          const compileEvents = (
+            events: GBAScriptEvent[] | undefined,
+            name: string,
+          ): string | null => {
+            if (!events || events.length === 0) return null;
+            if (events.length === 1 && events[0].command === "EVENT_END")
               return null;
-            const symbol = `${sceneSymbol}_actor_${actorIndex}_interact_script`;
-            const bytecode = compileGBAScript(scriptEvents, {
+            const symbol = `${sceneSymbol}_actor_${actorIndex}_${name}_script`;
+            const bytecode = compileGBAScript(events, {
               ...sceneEventCtx,
               selfActorIndex: actorIndex + 1,
             });
             actorScriptBlocks.push(emitGBAScriptC(symbol, bytecode));
             return symbol;
-          },
-        );
+          };
+
+          const scriptEvents = actor.script as GBAScriptEvent[] | undefined;
+          if (collisionGroup !== 0) {
+            // When collisionGroup is set, actor.script is the On Hit (Player) script
+            hitSymbol = compileEvents(scriptEvents, "hit");
+          } else {
+            // Otherwise actor.script is the On Interact script
+            interactSymbol = compileEvents(scriptEvents, "interact");
+          }
+
+          return {
+            interact: interactSymbol,
+            hit: hitSymbol,
+            collisionGroup,
+          };
+        });
         const actorArray =
           scene.actors.length > 0
             ? `static const gba_actor_def_t ${sceneSymbol}_actors[${scene.actors.length}] = {\n${scene.actors
               .map((actor, actorIndex) => {
                 const spriteIndex = spriteIndexById[actor.spriteSheetId] ?? 0;
-                const scriptSym = actorScriptSymbols[actorIndex];
+                const { interact, hit, collisionGroup } =
+                  actorScriptSymbols[actorIndex];
                 // Isometric actors store tile-grid coordinates directly;
                 // top-down actors use pixel position (tile * 8).
                 const isIso = scene.type === "ISOMETRIC";
@@ -2051,7 +2082,7 @@ const compileGBA = async (
                   actor.animSpeed,
                   15,
                 )}, ${actor.isPinned ? "false" : "true"}, ${actor.persistent ? "true" : "false"
-                  }, ${actor.isPinned ? "true" : "false"}, false, ${scriptSym ?? "NULL"} }`;
+                  }, ${actor.isPinned ? "true" : "false"}, false, ${interact ?? "NULL"}, ${collisionGroup}, ${hit ?? "NULL"} }`;
               })
               .join(",\n")}\n};`
             : "";

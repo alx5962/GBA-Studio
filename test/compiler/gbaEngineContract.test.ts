@@ -74,6 +74,10 @@ test("GBA event compiler opcodes match bundled engine VM constants", () => {
         ],
       },
     },
+    { command: "EVENT_OVERLAY_SHOW", args: { color: "black", x: 0, y: 0 } },
+    { command: "EVENT_OVERLAY_MOVE_TO", args: { x: 0, y: 18, speed: 2 } },
+    { command: "EVENT_OVERLAY_SET_SCANLINE_CUTOFF", args: { y: 150 } },
+    { command: "EVENT_OVERLAY_HIDE" },
     { command: "EVENT_TEXT", args: { text: "OK" } },
   ];
 
@@ -95,6 +99,10 @@ test("GBA event compiler opcodes match bundled engine VM constants", () => {
   expect(emittedOpcodes).toContain(vmOpcode("VM_OP_JUMP"));
   expect(emittedOpcodes).toContain(vmOpcode("VM_OP_IF_VAR_EQ_CONST"));
   expect(emittedOpcodes).toContain(vmOpcode("VM_OP_SET_SCENE_TONE"));
+  expect(emittedOpcodes).toContain(vmOpcode("VM_OP_OVERLAY_SHOW"));
+  expect(emittedOpcodes).toContain(vmOpcode("VM_OP_OVERLAY_MOVE_TO"));
+  expect(emittedOpcodes).toContain(vmOpcode("VM_OP_OVERLAY_SET_SCANLINE_CUTOFF"));
+  expect(emittedOpcodes).toContain(vmOpcode("VM_OP_OVERLAY_HIDE"));
   expect(emittedOpcodes).toContain(vmOpcode("VM_OP_SHOW_TEXT"));
   expect(bytecode[bytecode.length - 1]).toBe(vmOpcode("VM_OP_END"));
 });

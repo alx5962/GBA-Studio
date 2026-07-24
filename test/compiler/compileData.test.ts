@@ -1348,3 +1348,58 @@ test("should set is360 to false if a background is used in both LOGO and normal 
   expect(usedBackgrounds[0].is360).toBe(false);
 });
 
+test("should compile actor collision group and hit script into gba_actor_def_t", () => {
+  const scenes = [
+    {
+      ...dummyScene,
+      id: "1",
+      name: "scene_1",
+      symbol: "scene_1",
+      backgroundId: "bg1",
+      type: "TOPDOWN",
+      actors: [
+        {
+          ...dummyActor,
+          id: "actor1",
+          collisionGroup: "1",
+          spriteSheetId: "5",
+          script: [
+            {
+              id: "ev1",
+              command: "EVENT_CAMERA_SHAKE",
+              args: { time: 0.5, magnitude: 5 },
+            },
+          ],
+        },
+      ],
+      triggers: [],
+    },
+  ] as Scene[];
+  const usedBackgrounds = [
+    {
+      ...dummyBackground,
+      id: "bg1",
+    },
+  ] as unknown as PrecompiledBackground[];
+  const spriteData = [
+    {
+      id: "5",
+    },
+  ] as unknown as PrecompiledSprite[];
+  const defaultPlayerSprites = {
+    TOPDOWN: "5",
+  };
+  const sceneData = precompileScenes(
+    scenes,
+    {},
+    defaultPlayerSprites,
+    "8x16",
+    usedBackgrounds,
+    spriteData,
+    { warnings: () => {} },
+  );
+
+  expect(sceneData).toHaveLength(1);
+  expect(sceneData[0].actors[0]).not.toBeNull();
+});
+

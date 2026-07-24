@@ -53,6 +53,10 @@ const VM_OP_CAMERA_LOCK = 0x2b;
 const VM_OP_IF_ACTOR_DIRECTION = 0x2c;
 const VM_OP_ACTOR_SET_SPRITE = 0x2d;
 const VM_OP_PLAYER_BOUNCE = 0x2e;
+const VM_OP_OVERLAY_SHOW = 0x2f;
+const VM_OP_OVERLAY_HIDE = 0x30;
+const VM_OP_OVERLAY_MOVE_TO = 0x31;
+const VM_OP_OVERLAY_SET_SCANLINE_CUTOFF = 0x32;
 // Direction operands for VM_OP_IF_ACTOR_RELATIVE_TO_ACTOR (mirror vm.h)
 const ACTOR_RELATIVE_ABOVE = 0;
 const ACTOR_RELATIVE_BELOW = 1;
@@ -793,6 +797,37 @@ function compileEvent(
       return true;
     }
 
+    case "EVENT_OVERLAY_SHOW": {
+      const color =
+        String(args.color ?? "black").toLowerCase() === "white" ? 1 : 0;
+      const scale = args.units === "pixels" ? 1 : 8;
+      const x = clampU8(scriptValueToNumber(args.x) * scale);
+      const y = clampU8(scriptValueToNumber(args.y) * scale);
+      out.push(VM_OP_OVERLAY_SHOW, color, x, y);
+      return true;
+    }
+
+    case "EVENT_OVERLAY_HIDE": {
+      out.push(VM_OP_OVERLAY_HIDE);
+      return true;
+    }
+
+    case "EVENT_OVERLAY_MOVE_TO": {
+      const scale = args.units === "pixels" ? 1 : 8;
+      const x = clampU8(scriptValueToNumber(args.x) * scale);
+      const y = clampU8(scriptValueToNumber(args.y) * scale);
+      const speed = clampU8(scriptValueToNumber(args.speed ?? 0));
+      out.push(VM_OP_OVERLAY_MOVE_TO, x, y, speed);
+      return true;
+    }
+
+    case "EVENT_OVERLAY_SET_SCANLINE_CUTOFF": {
+      const scale = args.units === "pixels" ? 1 : 8;
+      const y = clampU8(scriptValueToNumber(args.y ?? 144) * scale);
+      out.push(VM_OP_OVERLAY_SET_SCANLINE_CUTOFF, y);
+      return true;
+    }
+
     case "EVENT_IF":
     case "EVENT_IF_EXPRESSION": {
       const condInput = args.condition ?? args.expression;
@@ -915,8 +950,9 @@ function compileEvent(
       return true;
     }
 
-    case "EVENT_ACTOR_SET_SPRITE": {
-      const actor = resolveActorIndex(args.actorId, ctx);
+    case "EVENT_ACTOR_SET_SPRITE":
+    case "EVENT_PLAYER_SET_SPRITE": {
+      const actor = resolveActorIndex(args.actorId ?? "player", ctx);
       const spriteIndex = resolveSpriteIndex(args.spriteSheetId, ctx);
       out.push(VM_OP_ACTOR_SET_SPRITE, actor, spriteIndex);
       return true;
