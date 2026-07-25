@@ -1012,6 +1012,108 @@ const editScenes: CaseReducer<
   scenesAdapter.updateMany(state.scenes, action.payload);
 };
 
+const arrangeScenes: CaseReducer<EntitiesState, PayloadAction<void>> = (
+  state,
+) => {
+  const scenes = localSceneSelectAll(state);
+  if (scenes.length === 0) {
+    return;
+  }
+
+  const PADDING_X = 40;
+  const PADDING_Y = 60;
+  const MIN_SCENE_X = 60;
+  const MIN_SCENE_Y = 30;
+
+  // Clone scene positions and dimensions
+  const positions = scenes.map((scene) => ({
+    id: scene.id,
+    x: scene.x,
+    y: scene.y,
+    width: scene.width * 8,
+    height: scene.height * 8 + 30, // Includes scene header height
+  }));
+
+  // Sort scenes by Y then X
+  positions.sort((a, b) => a.y - b.y || a.x - b.x);
+
+  // Group scenes into horizontal rows based on Y proximity (50px threshold)
+  const rows: Array<{
+    y: number;
+    maxHeight: number;
+    scenes: typeof positions;
+  }> = [];
+
+  for (const pos of positions) {
+    let matchedRow = rows.find((r) => Math.abs(pos.y - r.y) < 50);
+
+    if (matchedRow) {
+      matchedRow.scenes.push(pos);
+      matchedRow.y = Math.min(matchedRow.y, pos.y);
+      matchedRow.maxHeight = Math.max(matchedRow.maxHeight, pos.height);
+    } else {
+      rows.push({
+        y: pos.y,
+        maxHeight: pos.height,
+        scenes: [pos],
+      });
+    }
+  }
+
+  // Sort rows top-to-bottom
+  rows.sort((a, b) => a.y - b.y);
+
+  let currentY = MIN_SCENE_Y;
+
+  for (const row of rows) {
+    // Snap row Y coordinate to be below previous row and at/above original row top
+    const rowY = Math.max(currentY, row.y);
+
+    // Sort scenes within row left-to-right
+    row.scenes.sort((a, b) => a.x - b.x);
+
+    let currentX = MIN_SCENE_X;
+
+    for (const pos of row.scenes) {
+      // Horizontally align scene Y to exact row Y
+      pos.y = rowY;
+
+      // Space out X coordinate horizontally so no overlap occurs within row
+      const posX = Math.max(currentX, pos.x);
+      pos.x = posX;
+      currentX = posX + pos.width + PADDING_X;
+    }
+
+    // Update currentY threshold for next row
+    currentY = rowY + row.maxHeight + PADDING_Y;
+  }
+
+  // Generate position updates for scenes that moved
+  const updates: Array<{ id: string; changes: Partial<SceneNormalized> }> = [];
+
+  for (const p of positions) {
+    const scene = scenes.find((s) => s.id === p.id);
+    if (scene) {
+      const newX = Math.max(MIN_SCENE_X, Math.round(p.x));
+      const newY = Math.max(MIN_SCENE_Y, Math.round(p.y));
+
+      if (scene.x !== newX || scene.y !== newY) {
+        updates.push({
+          id: scene.id,
+          changes: {
+            x: newX,
+            y: newY,
+          },
+        });
+      }
+    }
+  }
+
+  if (updates.length > 0) {
+    scenesAdapter.updateMany(state.scenes, updates);
+  }
+};
+
 const setSceneSymbol: CaseReducer<
   EntitiesState,
   PayloadAction<{ sceneId: string; symbol: string }>
@@ -4439,6 +4541,7 @@ const entitiesSlice = createSlice({
 
     editScene,
     editScenes,
+    arrangeScenes,
     setSceneSymbol,
     removeScene,
     removeScenes,

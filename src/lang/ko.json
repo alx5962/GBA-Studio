@@ -1,12 +1,10 @@
 {
   "RTL": false,
-
   "// 1": "UI -------------------------------------------------------",
   "ACTOR": "액터",
   "TRIGGER": "트리거",
   "SCENE": "씬",
   "PROJECT": "프로젝트",
-
   "// 2": "Navigator ------------------------------------------------",
   "NAV_GAME_WORLD": "게임 월드",
   "NAV_SPRITES": "스프라이트",
@@ -15,7 +13,6 @@
   "NAV_MUSIC": "배경 음악",
   "NAV_DIALOGUE_REVIEW": "Dialogue Review",
   "NAV_BUILD_AND_RUN": "컴파일 & 실행",
-
   "// 3": "Toolbar --------------------------------------------------",
   "TOOLBAR_MODIFIED": "수정 됨",
   "TOOLBAR_ZOOM_IN": "줌 인",
@@ -26,7 +23,6 @@
   "TOOLBAR_EXPORT_ROM": "롬 내보내기",
   "TOOLBAR_EXPORT_WEB": "html 내보내기",
   "TOOLBAR_RUN": "실행",
-
   "// 4": "Tools ----------------------------------------------------",
   "TOOL_SELECT_LABEL": "선택",
   "TOOL_ADD_LABEL": "추가",
@@ -35,7 +31,6 @@
   "TOOL_ADD_SCENE_LABEL": "씬 추가",
   "TOOL_ERASER_LABEL": "지우개",
   "TOOL_COLLISIONS_LABEL": "이동 금지 설정",
-
   "// 5": "Editors --------------------------------------------------",
   "SIDEBAR_NAVIGATION": "Navigation",
   "SIDEBAR_STARTING_SCENE": "씬 시작",
@@ -43,7 +38,6 @@
   "SIDEBAR_ACTOR_SCRIPT": "액터 스크립트",
   "SIDEBAR_TRIGGER_SCRIPT": "트리거 스크립트",
   "SIDEBAR_ADD_EVENT": "이벤트 추가",
-
   "// 6": "Form Fields ----------------------------------------------",
   "FIELD_NAME": "이름",
   "FIELD_AUTHOR": "제작자",
@@ -144,18 +138,15 @@
   "FIELD_COLOR2_NAME": "Light Green",
   "FIELD_COLOR3_NAME": "Dark Green",
   "FIELD_COLOR4_NAME": "Really Dark Green",
-
   "// 7": "Asset Viewer ---------------------------------------------",
   "ASSET_SEARCH": "Search...",
   "ASSET_EDIT": "Edit",
   "ASSET_ADD": "Add",
-
   "// 8": "Build ----------------------------------------------------",
   "BUILD_RUN": "Run",
   "BUILD_EXPORT_ROM": "Export ROM",
   "BUILD_EXPORT_WEB": "Export Web",
   "BUILD_CLEAR": "Clear",
-
   "// 9": "Scripting Events -----------------------------------------",
   "EVENT_SWITCH_SCENE": "Scene: Switch Scene",
   "EVENT_WAIT": "Wait",
@@ -239,9 +230,7 @@
   "EVENT_ACTOR_SET_FRAME_TO_VALUE": "Actor: Set Animation Frame Using Variable",
   "EVENT_CODE": "Code: Custom Script",
   "EVENT_NOTES": "Notes",
-
   "// 10": "Menu -----------------------------------------------------",
-
   "MENU_FILE": "File",
   "MENU_NEW_PROJECT": "New Project",
   "MENU_OPEN": "Open...",
@@ -276,7 +265,7 @@
   "MENU_DOCUMENTATION": "Documentation",
   "MENU_LEARN_MORE": "Learn More",
   "MENU_SPEECH": "Speech",
-  "MENU_ABOUT": "About GB Studio",
+  "MENU_ABOUT": "About ALXGBA Studio",
   "MENU_CART_TYPE": "Cartridge Type",
   "MENU_COPY_EVENT": "Copy Event",
   "MENU_RENAME_EVENT": "Rename Event",
@@ -304,15 +293,11 @@
   "MENU_DELETE_SCENE": "Delete Scene",
   "MENU_CHECK_FOR_UPDATES": "Check For Updates...",
   "MENU_PLUGINS": "Plugins",
-
   "// 11": "Warnings -----------------------------------------------------",
-
   "WARNING_BACKGROUND_TOO_SMALL": "Background is too small, must be at least 160px x 144px",
   "WARNING_BACKGROUND_TOO_LARGE": "Background is too large, must be at most 256px x 256px",
   "WARNING_BACKGROUND_NOT_MULTIPLE_OF_8": "Background dimensions are not a multiple of 8",
-
   "// 12": "Errors -------------------------------------------------------",
-
   "ERROR_PLEASE_ENTER_PROJECT_NAME": "Please enter a project name",
   "ERROR_PLEASE_ENTER_PROJECT_PATH": "Please enter a project path",
   "ERROR_PROJECT_ALREADY_EXISTS": "Project already exists",
@@ -320,9 +305,7 @@
   "ERROR_OPEN_GBSPROJ_FILE": "Please select a .gbsproj or .json file",
   "ERROR_MISSING_PROJECT": "Project file is missing",
   "ERROR_MOVED_OR_DELETED": "It may have moved location or been deleted",
-
   "// 13": "Splash -------------------------------------------------------",
-
   "SPLASH_NEW": "New",
   "SPLASH_OPEN": "Open",
   "SPLASH_RECENT": "Recent",
@@ -336,17 +319,13 @@
   "SPLASH_CREATING": "Creating",
   "SPLASH_CLEAR_RECENT": "Clear Recent",
   "SPLASH_NO_RECENT_PROJECTS": "No projects have been opened recently.",
-
   "// 14": "Dialogue Review ------------------------------------------------",
-
   "DIALOGUE_REVIEW": "Dialogue Review",
   "DIALOGUE_LINE": "Line",
   "DIALOGUE_LINES": "Lines",
   "DIALOGUE_WORD": "Word",
   "DIALOGUE_WORDS": "Words",
-
   "// 15": "Dialogs ------------------------------------------------------",
-
   "DIALOG_SAVE_CHANGES": "Do you want to save the changes you made to \"{name}\"?",
   "DIALOG_SAVE_WARNING": "Your changes will be lost if you don't save them.",
   "DIALOG_DOWNLOAD": "Download",

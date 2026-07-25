@@ -372,6 +372,10 @@ API.events.menu.pasteInPlace.subscribe(() => {
   store.dispatch(clipboardActions.pasteClipboardEntityInPlace());
 });
 
+API.events.menu.arrangeScenes.subscribe(() => {
+  store.dispatch(entitiesActions.arrangeScenes());
+});
+
 // Settings changed
 
 API.events.settings.uiScaleChanged.subscribe((_, zoomLevel) => {

@@ -2100,6 +2100,10 @@ menu.on("updateShowNavigator", (value) => {
   sendToProjectWindow("setting:changed", "showNavigator", value);
 });
 
+menu.on("arrangeScenes", () => {
+  sendToProjectWindow("menu:arrange-scenes");
+});
+
 menu.on("updateEmulatorMuted", (value) => {
   const isMuted = value === true;
   settings.set(EMULATOR_MUTED_SETTING_KEY, isMuted);

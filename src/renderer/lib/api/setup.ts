@@ -424,6 +424,10 @@ const APISetup = {
         createSubscribeAPI<(event: IpcRendererEvent, pluginId: string) => void>(
           "menu:plugin-run",
         ),
+      arrangeScenes:
+        createSubscribeAPI<(event: IpcRendererEvent) => void>(
+          "menu:arrange-scenes",
+        ),
     },
     app: {
       isFullScreenChanged: createSubscribeAPI<

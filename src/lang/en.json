@@ -1,9 +1,7 @@
 {
   "RTL": false,
-
   "GBSTUDIO_DESCRIPTION": "Visual retro game maker",
   "GBSTUDIO_COPYRIGHT": "Distributed under MIT license.",
-
   "// 1": "UI -------------------------------------------------------",
   "ACTOR": "Actor",
   "TRIGGER": "Trigger",
@@ -11,7 +9,6 @@
   "PROJECT": "Project",
   "CUSTOM_EVENT": "Script",
   "CONSTANT": "Constant",
-
   "// 2": "Navigator ------------------------------------------------",
   "NAV_GAME_WORLD": "Game World",
   "NAV_SPRITES": "Sprites",
@@ -24,7 +21,6 @@
   "NAV_BUILD_AND_RUN": "Build & Run",
   "NAV_SETTINGS": "Settings",
   "NAV_IMAGES": "Images",
-
   "// 3": "Toolbar --------------------------------------------------",
   "TOOLBAR_MODIFIED": "Modified",
   "TOOLBAR_ZOOM_IN": "Zoom In",
@@ -40,7 +36,6 @@
   "TOOLBAR_SAVING": "Saving",
   "TOOLBAR_SAVING_ERROR": "Error While Saving",
   "TOOLBAR_WRITING_FILES": "Writing To Disk",
-
   "// 4": "Tools ----------------------------------------------------",
   "TOOL_SELECT_LABEL": "Select",
   "TOOL_ADD_LABEL": "Add",
@@ -64,7 +59,6 @@
   "TOOL_TILE_PRIORITY": "Tile Priority",
   "TOOL_MAGIC": "Magic Brush",
   "TOOL_SLOPE": "Slope Brush",
-
   "// 5": "Editors --------------------------------------------------",
   "SIDEBAR_NAVIGATION": "Navigation",
   "SIDEBAR_STARTING_SCENE": "Starting Scene",
@@ -96,7 +90,6 @@
   "SIDEBAR_CONSTANTS": "Constants",
   "SIDEBAR_ADD_CONSTANT": "Add Constant",
   "SIDEBAR_CONSTANT_USES": "Constant Uses",
-
   "// 6": "Form Fields ----------------------------------------------",
   "FIELD_NAME": "Name",
   "FIELD_DESCRIPTION": "Description",
@@ -1247,12 +1240,10 @@
   "FIELD_OPEN_BUILD_FOLDER_ON_EXPORT": "Open Build Folder On Export",
   "FIELD_SHOW_ROM_USAGE_AFTER_BUILD": "Show ROM Usage After Build",
   "FIELD_ROM_FILENAME": "ROM Filename",
-
   "// 7": "Asset Viewer ---------------------------------------------",
   "ASSET_SEARCH": "Search...",
   "ASSET_EDIT": "Edit",
   "ASSET_ADD": "Add",
-
   "// 8": "Build ----------------------------------------------------",
   "BUILD_RUN": "Run",
   "BUILD_EXPORT_ROM": "Export ROM",
@@ -1263,7 +1254,6 @@
   "BUILD_CANCEL": "Cancel Build",
   "BUILD_CANCELLING": "Cancelling Build",
   "BUILD_CANCELLED": "Cancelled Build",
-
   "// 9": "Scripting Events -----------------------------------------",
   "EVENT_GROUP_ACTOR": "Actor",
   "EVENT_GROUP_CAMERA": "Camera",
@@ -1670,9 +1660,7 @@
   "EVENT_CAMERA_SET_BOUNDS": "Set Camera Bounds",
   "EVENT_CAMERA_SET_BOUNDS_DESC": "Set the bounds of the camera, preventing it from moving outside of the specified area.",
   "EVENT_CAMERA_SET_BOUNDS_LABEL": "Set Camera Bounds To {{x},{y},{width},{height}}",
-
   "// 10": "Menu -----------------------------------------------------",
-
   "MENU_FILE": "File",
   "MENU_NEW_PROJECT": "New Project",
   "MENU_OPEN": "Open...",
@@ -1712,13 +1700,14 @@
   "MENU_SHOW_CONNECTIONS_ALL": "All",
   "MENU_SHOW_CONNECTIONS_SELECTED": "Current Scene",
   "MENU_SHOW_CONNECTIONS_NONE": "None",
+  "MENU_ARRANGE_SCENES": "Arrange Scenes",
   "MENU_ZOOM_RESET": "Actual Size",
   "MENU_ZOOM_IN": "Zoom In",
   "MENU_ZOOM_OUT": "Zoom Out",
   "MENU_DOCUMENTATION": "Documentation",
   "MENU_LEARN_MORE": "Learn More",
   "MENU_SPEECH": "Speech",
-  "MENU_ABOUT": "About GB Studio",
+  "MENU_ABOUT": "About ALXGBA Studio",
   "MENU_CART_TYPE": "Cartridge Type",
   "MENU_COPY_EVENT": "Copy Event",
   "MENU_RENAME_EVENT": "Rename Event",
@@ -1811,9 +1800,7 @@
   "MENU_PROJECT_PLUGINS": "Project Plugins...",
   "MENU_PLAY_WINDOW": "Play Window",
   "MENU_MUTE_AUDIO": "Mute Audio",
-
   "// 11": "Warnings -----------------------------------------------------",
-
   "WARNING_BACKGROUND_TOO_SMALL": "Background is too small, must be at least 240px x 160px",
   "WARNING_BACKGROUND_TOO_LARGE": "Background is too large, must be at most 256px x 256px",
   "WARNING_BACKGROUND_NOT_MULTIPLE_OF_8": "Background width or height is not a multiple of 8px",
@@ -1845,9 +1832,7 @@
   "WARNING_FIELD_UNITS_SUBPX": "This field is using sub pixel units. The value here will be {multiplier}x larger than the value displayed in 'Settings'",
   "WARNING_FIELD_UNITS_SUBPX_PRECISE": "This field is using precision sub pixel units. The value here will be {multiplier}x larger than the value displayed in 'Settings'",
   "WARNING_SPRITE_MODE_MISMATCH": "Sprite {sprite} is being used in a scene {scene} with a different sprite mode ({sceneMode}) than the sprite's mode ({spriteMode}). This will cause the sprite to not display correctly. Either change the scene's sprite mode or use a different sprite.",
-
   "// 12": "Errors -------------------------------------------------------",
-
   "ERROR_PLEASE_ENTER_PROJECT_NAME": "Please enter a project name",
   "ERROR_PLEASE_ENTER_PROJECT_PATH": "Please enter a project path",
   "ERROR_PROJECT_ALREADY_EXISTS": "Project already exists",
@@ -1868,9 +1853,7 @@
   "ERROR_PLUGIN_NOT_FOUND": "Plugin not found",
   "ERROR_UNABLE_TO_REMOVE_PLUGIN": "Unable to remove plugin",
   "ERROR_UNABLE_TO_INSTALL_PLUGIN": "Unable to install plugin",
-
   "// 13": "Splash -------------------------------------------------------",
-
   "SPLASH_NEW": "New",
   "SPLASH_OPEN": "Open Project",
   "SPLASH_RECENT": "Recent",
@@ -1899,17 +1882,13 @@
   "SPLASH_NO_RECENT_PROJECTS": "No projects have been opened recently.",
   "SPLASH_CREDITS": "Credits",
   "SPLASH_CONTRIBUTORS": "Contributors",
-
   "// 14": "Dialogue Review ------------------------------------------------",
-
   "DIALOGUE_REVIEW": "Dialogue Review",
   "DIALOGUE_LINE": "Line",
   "DIALOGUE_LINES": "Lines",
   "DIALOGUE_WORD": "Word",
   "DIALOGUE_WORDS": "Words",
-
   "// 15": "Dialogs ------------------------------------------------------",
-
   "DIALOG_SAVE_CHANGES": "Do you want to save the changes you made to \"{name}\"?",
   "DIALOG_SAVE_WARNING": "Your changes will be lost if you don't save them.",
   "DIALOG_DOWNLOAD": "Download",
@@ -1982,9 +1961,7 @@
   "DIALOG_PLUGIN_INCOMPATIBLE_WITH_YOUR_GBSTUDIO": "This plugin may be incompatible with your version of GB Studio",
   "DIALOG_PLUGIN_INCOMPATIBLE_WITH_YOUR_GBSTUDIO_DESC": "This plugin is listed as supporting versions {pluginSupportedVersion} but your are using version {version}.",
   "DIALOG_PLUGIN_INCOMPATIBLE_WITH_YOUR_GBSTUDIO_PRERELEASE_DESC": "This plugin is listed as supporting versions {pluginSupportedVersion} but your are using a prerelease version {version}.",
-
   "// 16": "Settings ----------------------------------------------------",
-
   "SETTINGS": "Settings",
   "SETTINGS_SCENES": "Scenes",
   "SETTINGS_SCENE": "Scene",
@@ -2004,22 +1981,16 @@
   "SETTINGS_COLOR": "Color Options",
   "SETTINGS_BUILD": "Build Options",
   "SETTINGS_SPRITE": "Sprite Options",
-
   "// 17 ": "Palettes ---------------------------------------------------",
-
   "PALETTES_EDITOR": "Palettes Editor",
-
   "// 18 ": "Error ------------------------------------------------------",
-
   "ERROR_TITLE": "GB Studio encountered an error",
   "ERROR_WHAT_CAN_I_DO": "What can I do?",
   "ERROR_VIEW_STACK_TRACE": "View Stack Trace",
   "ERROR_CLOSE": "Close",
   "ERROR_UNABLE_TO_SAVE_MUSIC_FILE": "Unable to save music file",
   "ERROR_UNABLE_TO_SAVE_MUSIC_FILE_DESC": "Double check the file you're trying to edit isn't Read-only",
-
   "// 19 ": "Game Type --------------------------------------------------",
-
   "GAMETYPE_TOP_DOWN": "Top Down 2D",
   "GAMETYPE_PLATFORMER": "Platformer",
   "GAMETYPE_ADVENTURE": "Adventure",
@@ -2027,9 +1998,7 @@
   "GAMETYPE_POINT_N_CLICK": "Point and Click",
   "GAMETYPE_LOGO": "Logo",
   "GAMETYPE_ISOMETRIC": "Isometric",
-
   "// 20": "Compiler -----------------------------------------------------",
-
   "COMPILER_COMPILING": "Compiling",
   "COMPILER_LINKING": "Linking",
   "COMPILER_PACKING": "Packing Data",
@@ -2059,9 +2028,7 @@
   "COMPILER_LOCAL_ENGINE_NOT_FOUND": "Local engine not found, using default engine",
   "COMPILER_LOOKING_FOR_ENGINE_PLUGINS": "Looking for engine plugins in {path}",
   "COMPILER_USING_ENGINE_PLUGIN": "Using engine plugin: {path}",
-
   "// 21": "Messages -----------------------------------------------------",
-
   "MESSAGE_NO_SONGS_FOUND": "No songs found",
   "MESSAGE_ADD_UGE_FILES": "Please add .uge files to the project assets/music folder or create a new song with the + button above.",
   "MESSAGE_WHAT_ABOUT_MOD": "What about .mod files?",

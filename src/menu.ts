@@ -53,7 +53,8 @@ type MenuListenerKey =
   | "pluginManager"
   | "globalPlugins"
   | "projectPlugins"
-  | "openMusic";
+  | "openMusic"
+  | "arrangeScenes";
 
 export type MenuZoomType = "in" | "out" | "reset";
 
@@ -87,6 +88,7 @@ const listeners: Record<MenuListenerKey, MenuListenerFn[]> = {
   globalPlugins: [],
   projectPlugins: [],
   openMusic: [],
+  arrangeScenes: [],
 };
 
 const notifyListeners = (event: MenuListenerKey, value?: unknown) => {
@@ -515,6 +517,14 @@ const buildMenu = async ({ themeManager, l10nManager }: BuildMenuProps) => {
           type: "checkbox",
           click: (item: MenuItem) => {
             notifyListeners("updateShowNavigator", item.checked);
+          },
+        },
+        { type: "separator" },
+        {
+          id: "arrangeScenes",
+          label: l10n("MENU_ARRANGE_SCENES"),
+          click() {
+            notifyListeners("arrangeScenes");
           },
         },
         { type: "separator" },

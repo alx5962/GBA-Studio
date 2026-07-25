@@ -1,13 +1,11 @@
 {
   "RTL": false,
-
   "// 1": "UI -------------------------------------------------------",
   "ACTOR": "Attore",
   "TRIGGER": "Attivatore",
   "SCENE": "Scena",
   "PROJECT": "Progetto",
   "CUSTOM_EVENT": "Evento Personalizzato",
-
   "// 2": "Navigator ------------------------------------------------",
   "NAV_GAME_WORLD": "Mondo di Gioco",
   "NAV_SPRITES": "Lista Sprite",
@@ -17,7 +15,6 @@
   "NAV_DIALOGUE_REVIEW": "Revisione Dialogo",
   "NAV_BUILD_AND_RUN": "Compila ed esegui",
   "NAV_SETTINGS": "Impostazioni",
-
   "// 3": "Toolbar --------------------------------------------------",
   "TOOLBAR_MODIFIED": "modificato",
   "TOOLBAR_ZOOM_IN": "Zoom In",
@@ -28,7 +25,6 @@
   "TOOLBAR_EXPORT_ROM": "Esporta ROM",
   "TOOLBAR_EXPORT_WEB": "Esporta per il Web",
   "TOOLBAR_RUN": "Esegui",
-
   "// 4": "Tools ----------------------------------------------------",
   "TOOL_SELECT_LABEL": "Seleziona",
   "TOOL_ADD_LABEL": "Aggiungi",
@@ -37,7 +33,6 @@
   "TOOL_ADD_SCENE_LABEL": "Aggiungi Scena",
   "TOOL_ERASER_LABEL": "Gomma",
   "TOOL_COLLISIONS_LABEL": "Collisioni",
-
   "// 5": "Editors --------------------------------------------------",
   "SIDEBAR_NAVIGATION": "Navigazione",
   "SIDEBAR_STARTING_SCENE": "Scena iniziale",
@@ -52,7 +47,6 @@
   "SIDEBAR_ON_INIT": "Inizializzazione",
   "SIDEBAR_ON_TRIGGER": "Attivazione",
   "SIDEBAR_ON_INTERACT": "Interazione",
-
   "// 6": "Form Fields ----------------------------------------------",
   "FIELD_NAME": "Nome",
   "FIELD_DESCRIPTION": "Descrizione",
@@ -202,18 +196,15 @@
   "FIELD_CUSTOM_EVENT_DESCRIPTION_PLACEHOLDER": "Descrivi lo scopo di questo evento personalizzato",
   "FIELD_LOCAL": "Locale",
   "FIELD_GLOBAL": "Globale",
-
   "// 7": "Asset Viewer ---------------------------------------------",
   "ASSET_SEARCH": "Cerca...",
   "ASSET_EDIT": "Modifica",
   "ASSET_ADD": "Aggiungi",
-
   "// 8": "Build ----------------------------------------------------",
   "BUILD_RUN": "Esegui",
   "BUILD_EXPORT_ROM": "Esporta ROM",
   "BUILD_EXPORT_WEB": "Esporta per il Web",
   "BUILD_CLEAR": "Ripulisci",
-
   "// 9": "Scripting Events -----------------------------------------",
   "EVENT_SWITCH_SCENE": "Scena: Cambia Scena",
   "EVENT_WAIT": "Aspetta",
@@ -312,9 +303,7 @@
   "EVENT_MENU": "Testo: Mostra Menu",
   "EVENT_ACTOR_COLLISIONS_ENABLE": "Attore: Abilita Collisioni",
   "EVENT_ACTOR_COLLISIONS_DISABLE": "Attore: Disabilita Collisioni",
-
   "// 10": "Menu -----------------------------------------------------",
-
   "MENU_FILE": "File",
   "MENU_NEW_PROJECT": "Nuovo Progetto",
   "MENU_OPEN": "Apri...",
@@ -351,7 +340,7 @@
   "MENU_DOCUMENTATION": "Documentazione",
   "MENU_LEARN_MORE": "Maggiorni Informazioni",
   "MENU_SPEECH": "Voce",
-  "MENU_ABOUT": "About GB Studio",
+  "MENU_ABOUT": "About ALXGBA Studio",
   "MENU_CART_TYPE": "Tipo di Cartuccia",
   "MENU_COPY_EVENT": "Copia Evento",
   "MENU_RENAME_EVENT": "Rinomina Evento",
@@ -384,15 +373,11 @@
   "MENU_CHECK_FOR_UPDATES": "Controlla Aggiornamenti...",
   "MENU_PLUGINS": "Plugins",
   "MENU_RELOAD_ASSETS": "Ricarica gli Asset",
-
   "// 11": "Warnings -----------------------------------------------------",
-
   "WARNING_BACKGROUND_TOO_SMALL": "Il Background è troppo piccolo, dovrebbe essere almeno di 160px x 144px",
   "WARNING_BACKGROUND_TOO_LARGE": "Il Background è troppo grande, dovrebbe essere al massimo di 256px x 256px",
   "WARNING_BACKGROUND_NOT_MULTIPLE_OF_8": "Le dimensioni del Background non sono un multiplo di 8",
-
   "// 12": "Errors -------------------------------------------------------",
-
   "ERROR_PLEASE_ENTER_PROJECT_NAME": "Inserire il nome del progetto",
   "ERROR_PLEASE_ENTER_PROJECT_PATH": "Inserire un percorso per il progetto",
   "ERROR_PROJECT_ALREADY_EXISTS": "Il progetto è già esistente",
@@ -400,9 +385,7 @@
   "ERROR_OPEN_GBSPROJ_FILE": "Seleziona un file .gbsproj o .json",
   "ERROR_MISSING_PROJECT": "Il file di progetto è mancante",
   "ERROR_MOVED_OR_DELETED": "Potrebbe essere spostato oppure eliminato",
-
   "// 13": "Splash -------------------------------------------------------",
-
   "SPLASH_NEW": "Nuovo",
   "SPLASH_OPEN": "Apri",
   "SPLASH_RECENT": "Recente",
@@ -416,17 +399,13 @@
   "SPLASH_CREATING": "In creazione",
   "SPLASH_CLEAR_RECENT": "Rimuovi recenti",
   "SPLASH_NO_RECENT_PROJECTS": "Nessun progetto è stato aperto di recente.",
-
   "// 14": "Dialogue Review ------------------------------------------------",
-
   "DIALOGUE_REVIEW": "Revisione Dialogo",
   "DIALOGUE_LINE": "Linea",
   "DIALOGUE_LINES": "Linee",
   "DIALOGUE_WORD": "Parola",
   "DIALOGUE_WORDS": "Parole",
-
   "// 15": "Dialogs ------------------------------------------------------",
-
   "DIALOG_SAVE_CHANGES": "Vuoi salvare le modifiche fatte a \"{name}\"?",
   "DIALOG_SAVE_WARNING": "Le tue modifiche verranno perse se non vengono salvate.",
   "DIALOG_DOWNLOAD": "Download",
@@ -454,9 +433,7 @@
   "DIALOG_DELETE_CUSTOM_EVENT": "Delete Custom Event \"{name}\"?",
   "DIALOG_DELETE_CUSTOM_EVENT_USED": "{count} utilizzi di questo evento verranno rimossi.\n\nTrovati in: {sceneNames}",
   "DIALOG_DELETE_CUSTOM_EVENT_USED_SINGLAR": "{count} utilizzi di questo evento verranno rimossi.\n\nTrovati in: {sceneNames}",
-
   "// 16": "Settings ----------------------------------------------------",
-
   "SETTINGS": "Impostazione",
   "SETTINGS_SCENES": "Scene",
   "SETTINGS_SCENE": "Scena",
@@ -468,9 +445,7 @@
   "SETTINGS_CPU": "CPU",
   "SETTINGS_GBC": "Opzioni Colore GB Color",
   "SETTINGS_CUSTOM_HEADER": "Intestazione personalizzata (Web Build)",
-
   "// 17 ": "Error ------------------------------------------------------",
-
   "ERROR_TITLE": "GB Studio ha riscontrato un errore",
   "ERROR_WHAT_CAN_I_DO": "Cosa posso fare?",
   "ERROR_VIEW_STACK_TRACE": "Visualizza lo Stack Trace",
