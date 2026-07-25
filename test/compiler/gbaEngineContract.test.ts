@@ -78,6 +78,22 @@ test("GBA event compiler opcodes match bundled engine VM constants", () => {
     { command: "EVENT_OVERLAY_MOVE_TO", args: { x: 0, y: 18, speed: 2 } },
     { command: "EVENT_OVERLAY_SET_SCANLINE_CUTOFF", args: { y: 150 } },
     { command: "EVENT_OVERLAY_HIDE" },
+    { command: "EVENT_ACTOR_EMOTE", args: { actorId: "player", emoteId: "emote1" } },
+    {
+      command: "EVENT_SET_TIMER_SCRIPT",
+      args: {
+        timer: 1,
+        units: "frames",
+        frames: 30,
+        script: [{ command: "EVENT_INC_VALUE", args: { variable: "VAR_1" } }],
+      },
+    },
+    { command: "EVENT_TIMER_DISABLE", args: { timer: 1 } },
+    { command: "EVENT_TIMER_RESTART", args: { timer: 1 } },
+    { command: "EVENT_REPLACE_TILE_XY", args: { x: 0, y: 0, tileIndex: 1 } },
+    { command: "EVENT_SCENE_PUSH_STATE" },
+    { command: "EVENT_SCENE_POP_STATE", args: { fadeSpeed: 2 } },
+    { command: "EVENT_SCENE_POP_ALL_STATE", args: { fadeSpeed: 2 } },
     { command: "EVENT_TEXT", args: { text: "OK" } },
   ];
 
@@ -103,6 +119,14 @@ test("GBA event compiler opcodes match bundled engine VM constants", () => {
   expect(emittedOpcodes).toContain(vmOpcode("VM_OP_OVERLAY_MOVE_TO"));
   expect(emittedOpcodes).toContain(vmOpcode("VM_OP_OVERLAY_SET_SCANLINE_CUTOFF"));
   expect(emittedOpcodes).toContain(vmOpcode("VM_OP_OVERLAY_HIDE"));
+  expect(emittedOpcodes).toContain(vmOpcode("VM_OP_ACTOR_EMOTE"));
+  expect(emittedOpcodes).toContain(vmOpcode("VM_OP_SET_TIMER_SCRIPT"));
+  expect(emittedOpcodes).toContain(vmOpcode("VM_OP_TIMER_DISABLE"));
+  expect(emittedOpcodes).toContain(vmOpcode("VM_OP_TIMER_RESTART"));
+  expect(emittedOpcodes).toContain(vmOpcode("VM_OP_REPLACE_TILE_XY"));
+  expect(emittedOpcodes).toContain(vmOpcode("VM_OP_SCENE_PUSH_STATE"));
+  expect(emittedOpcodes).toContain(vmOpcode("VM_OP_SCENE_POP_STATE"));
+  expect(emittedOpcodes).toContain(vmOpcode("VM_OP_SCENE_POP_ALL_STATE"));
   expect(emittedOpcodes).toContain(vmOpcode("VM_OP_SHOW_TEXT"));
   expect(bytecode[bytecode.length - 1]).toBe(vmOpcode("VM_OP_END"));
 });

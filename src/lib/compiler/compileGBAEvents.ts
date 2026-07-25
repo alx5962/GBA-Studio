@@ -57,6 +57,14 @@ const VM_OP_OVERLAY_SHOW = 0x2f;
 const VM_OP_OVERLAY_HIDE = 0x30;
 const VM_OP_OVERLAY_MOVE_TO = 0x31;
 const VM_OP_OVERLAY_SET_SCANLINE_CUTOFF = 0x32;
+const VM_OP_ACTOR_EMOTE = 0x33;
+const VM_OP_SET_TIMER_SCRIPT = 0x34;
+const VM_OP_TIMER_DISABLE = 0x35;
+const VM_OP_TIMER_RESTART = 0x36;
+const VM_OP_REPLACE_TILE_XY = 0x37;
+const VM_OP_SCENE_PUSH_STATE = 0x38;
+const VM_OP_SCENE_POP_STATE = 0x39;
+const VM_OP_SCENE_POP_ALL_STATE = 0x3a;
 // Direction operands for VM_OP_IF_ACTOR_RELATIVE_TO_ACTOR (mirror vm.h)
 const ACTOR_RELATIVE_ABOVE = 0;
 const ACTOR_RELATIVE_BELOW = 1;
@@ -104,6 +112,8 @@ export type GBACompileContext = {
   actorIndexById?: Record<string, number>;
   // Map from sprite sheet id → sprite index.
   spriteIndexById?: Record<string, number>;
+  // Map from emote id → emote index.
+  emoteIndexById?: Record<string, number>;
   // Runtime index substituted for the "$self$" actor id (the actor whose
   // own script is being compiled). Undefined outside an actor script.
   selfActorIndex?: number;
@@ -130,6 +140,11 @@ function resolveActorIndex(actorId: unknown, ctx: GBACompileContext): number {
 function resolveSpriteIndex(spriteId: unknown, ctx: GBACompileContext): number {
   const id = String(spriteId ?? "");
   return ctx.spriteIndexById?.[id] ?? 0;
+}
+
+function resolveEmoteIndex(emoteId: unknown, ctx: GBACompileContext): number {
+  const id = String(emoteId ?? "");
+  return ctx.emoteIndexById?.[id] ?? 0;
 }
 
 // Signed byte (-128..127) encoded as u8 for delta operands.
@@ -955,6 +970,161 @@ function compileEvent(
       const actor = resolveActorIndex(args.actorId ?? "player", ctx);
       const spriteIndex = resolveSpriteIndex(args.spriteSheetId, ctx);
       out.push(VM_OP_ACTOR_SET_SPRITE, actor, spriteIndex);
+      return true;
+    }
+
+    case "EVENT_ACTOR_EMOTE": {
+      const actor = resolveActorIndex(args.actorId ?? "$self$", ctx);
+      const emoteIndex = resolveEmoteIndex(args.emoteId, ctx);
+      out.push(VM_OP_ACTOR_EMOTE, actor, emoteIndex);
+      return true;
+    }
+
+    case "EVENT_SET_TIMER_SCRIPT":
+    case "EVENT_TIMER_SCRIPT_SET": {
+      const timerVal = scriptValueToNumber(args.timer ?? 1);
+      const timerIdx = clampU8(Math.max(0, (timerVal || 1) - 1));
+      const isFrameUnit = args.units === "frames";
+      const rawFrames = isFrameUnit
+        ? scriptValueToNumber(args.frames ?? 30)
+        : Math.ceil(scriptValueToNumber(args.duration ?? args.time ?? 0.5) * 60);
+      const intervalFrames = clampU16(Math.max(1, Math.round(rawFrames)));
+
+      const scriptEvents =
+        (args.script as GBAScriptEvent[] | undefined) ??
+        (args.true as GBAScriptEvent[] | undefined) ??
+        event.children?.script ??
+        event.children?.end ??
+        event.children?.true;
+
+      const timerBytes = compileEvents(scriptEvents ?? [], ctx, true);
+
+      out.push(
+        VM_OP_SET_TIMER_SCRIPT,
+        timerIdx,
+        intervalFrames & 0xff,
+        (intervalFrames >> 8) & 0xff,
+      );
+      pushS16(out, timerBytes.length);
+      out.push(...timerBytes);
+      return true;
+    }
+
+    case "EVENT_TIMER_DISABLE":
+    case "EVENT_REMOVE_TIMER_SCRIPT":
+    case "EVENT_TIMER_SCRIPT_REMOVE": {
+      const timerVal = scriptValueToNumber(args.timer ?? 1);
+      const timerIdx = clampU8(Math.max(0, (timerVal || 1) - 1));
+      out.push(VM_OP_TIMER_DISABLE, timerIdx);
+      return true;
+    }
+
+    case "EVENT_TIMER_RESTART": {
+      const timerVal = scriptValueToNumber(args.timer ?? 1);
+      const timerIdx = clampU8(Math.max(0, (timerVal || 1) - 1));
+      out.push(VM_OP_TIMER_RESTART, timerIdx);
+      return true;
+    }
+
+    case "EVENT_REPLACE_TILE_XY": {
+      const xVar = scriptValueVariableIndex(args.x);
+      const yVar = scriptValueVariableIndex(args.y);
+      const tileVar = scriptValueVariableIndex(args.tileIndex);
+
+      let flags = 0;
+      let xOp = 0;
+      let yOp = 0;
+      let tileOp = 0;
+
+      if (xVar !== undefined) {
+        flags |= 0x01;
+        xOp = xVar;
+      } else {
+        xOp = clampU8(scriptValueToNumber(args.x));
+      }
+
+      if (yVar !== undefined) {
+        flags |= 0x02;
+        yOp = yVar;
+      } else {
+        yOp = clampU8(scriptValueToNumber(args.y));
+      }
+
+      if (tileVar !== undefined) {
+        flags |= 0x04;
+        tileOp = tileVar;
+      } else {
+        tileOp = clampU16(scriptValueToNumber(args.tileIndex));
+      }
+
+      if (args.tileSize === "16px") {
+        flags |= 0x08;
+      }
+
+      out.push(
+        VM_OP_REPLACE_TILE_XY,
+        xOp,
+        yOp,
+        tileOp & 0xff,
+        (tileOp >> 8) & 0xff,
+        flags,
+      );
+      return true;
+    }
+
+    case "EVENT_REPLACE_TILE_XY_SEQUENCE": {
+      const startTile = scriptValueToNumber(args.tileIndex);
+      const frameCount = Math.max(1, scriptValueToNumber(args.frames ?? 1));
+      const step = args.tileSize === "16px" ? 2 : 1;
+      const maxTile = startTile + (frameCount - 1) * step;
+      const varIdx = parseVariableIndex(args.variable);
+
+      // Clamp variable if below startTile
+      out.push(VM_OP_IF_VAR_LT_CONST, varIdx, clampU8(startTile));
+      pushS16(out, 3);
+      out.push(VM_OP_SET_CONST, varIdx, clampU8(startTile));
+
+      // Emit tile replacement using variable as tileIndex
+      compileEvent(
+        {
+          command: "EVENT_REPLACE_TILE_XY",
+          args: {
+            ...args,
+            tileIndex: { type: "variable", value: varIdx },
+          },
+        },
+        out,
+        ctx,
+      );
+
+      // Increment variable
+      out.push(VM_OP_ADD_CONST, varIdx, step);
+
+      // Reset variable if above maxTile
+      out.push(VM_OP_IF_VAR_GT_CONST, varIdx, clampU8(maxTile));
+      pushS16(out, 3);
+      out.push(VM_OP_SET_CONST, varIdx, clampU8(startTile));
+
+      return true;
+    }
+
+    case "EVENT_SCENE_PUSH_STATE":
+    case "EVENT_SCENE_STACK_PUSH": {
+      out.push(VM_OP_SCENE_PUSH_STATE);
+      return true;
+    }
+
+    case "EVENT_SCENE_POP_STATE":
+    case "EVENT_SCENE_STACK_POP": {
+      const speed = clampU8(scriptValueToNumber(args.fadeSpeed ?? 2));
+      out.push(VM_OP_SCENE_POP_STATE, speed);
+      return true;
+    }
+
+    case "EVENT_SCENE_POP_ALL_STATE":
+    case "EVENT_SCENE_STACK_POP_ALL": {
+      const speed = clampU8(scriptValueToNumber(args.fadeSpeed ?? 2));
+      out.push(VM_OP_SCENE_POP_ALL_STATE, speed);
       return true;
     }
 

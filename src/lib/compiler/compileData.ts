@@ -1352,14 +1352,24 @@ const convertGbTileToGba4bpp = (
     //   bytes[row*2+1] = hi-plane (bit 1 of each pixel's 2-bit palette index)
     const lo = bytes[row * 2] ?? 0;
     const hi = bytes[row * 2 + 1] ?? 0;
-    for (let column = 0; column < 8; column += 2) {
-      const leftShift = 7 - column;
-      const rightShift = 6 - column;
-      const left =
-        ((lo >> leftShift) & 0x01) | (((hi >> leftShift) & 0x01) << 1);
-      const right =
-        ((lo >> rightShift) & 0x01) | (((hi >> rightShift) & 0x01) << 1);
-      output.push((left & 0x0f) | ((right & 0x0f) << 4));
+    if (bgMode) {
+      // 8bpp mode: 64 bytes per tile (1 byte per pixel)
+      for (let column = 0; column < 8; column++) {
+        const shift = 7 - column;
+        const color = ((lo >> shift) & 0x01) | (((hi >> shift) & 0x01) << 1);
+        output.push(color);
+      }
+    } else {
+      // 4bpp mode: 32 bytes per tile (2 nibbles per byte)
+      for (let column = 0; column < 8; column += 2) {
+        const leftShift = 7 - column;
+        const rightShift = 6 - column;
+        const left =
+          ((lo >> leftShift) & 0x01) | (((hi >> leftShift) & 0x01) << 1);
+        const right =
+          ((lo >> rightShift) & 0x01) | (((hi >> rightShift) & 0x01) << 1);
+        output.push((left & 0x0f) | ((right & 0x0f) << 4));
+      }
     }
   }
 
@@ -1528,10 +1538,10 @@ const readImageTo8bppTiles = async (
       }
       const width = data.width;
       const height = data.height;
-      const pixels = new Uint8Array(width * height);
       const paletteColors: number[] = [];
       const paletteMap = new Map<number, number>();
 
+      // First pass: collect unique colors in deterministic scan order (max 240 colors)
       for (let i = 0; i < width * height; i++) {
         const r = data.data[i * 4];
         const g = data.data[i * 4 + 1];
@@ -1541,17 +1551,27 @@ const readImageTo8bppTiles = async (
         const b5 = b >> 3;
         const rgb15 = r5 | (g5 << 5) | (b5 << 10);
 
-        let colorIdx = paletteMap.get(rgb15);
-        if (colorIdx === undefined) {
-          colorIdx = paletteColors.length;
-          if (colorIdx < 240) {
+        if (!paletteMap.has(rgb15)) {
+          if (paletteColors.length < 240) {
+            paletteMap.set(rgb15, paletteColors.length);
             paletteColors.push(rgb15);
-            paletteMap.set(rgb15, colorIdx);
           } else {
-            colorIdx = 0;
+            paletteMap.set(rgb15, 0);
           }
         }
-        pixels[i] = colorIdx;
+      }
+
+      // Second pass: map pixels consistently to palette indices
+      const pixels = new Uint8Array(width * height);
+      for (let i = 0; i < width * height; i++) {
+        const r = data.data[i * 4];
+        const g = data.data[i * 4 + 1];
+        const b = data.data[i * 4 + 2];
+        const r5 = r >> 3;
+        const g5 = g >> 3;
+        const b5 = b >> 3;
+        const rgb15 = r5 | (g5 << 5) | (b5 << 10);
+        pixels[i] = paletteMap.get(rgb15) ?? 0;
       }
 
       const palette = new Array(256).fill(0);
@@ -1726,8 +1746,17 @@ const compileGBA = async (
   const musicIndexById = Object.fromEntries(
     gbaUsedMusic.map((track, index) => [track.id, index]),
   ) as Record<string, number>;
+  const emoteIndexById = Object.fromEntries(
+    precompiled.usedEmotes.map((emote, index) => [emote.id, index]),
+  ) as Record<string, number>;
 
-  const gbaEventCtx = { sceneIndexById, customEventsById, musicIndexById, warnings };
+  const gbaEventCtx = {
+    sceneIndexById,
+    customEventsById,
+    musicIndexById,
+    emoteIndexById,
+    warnings,
+  };
 
   // Task 11 — Validation: warn on invalid isometric scene configurations.
   precompiled.sceneData.forEach((scene) => {

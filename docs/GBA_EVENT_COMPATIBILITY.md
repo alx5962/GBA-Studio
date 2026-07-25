@@ -49,6 +49,15 @@ compatibility effort.
 | EVENT_ACTOR_SET_DIRECTION | 🟡 | ✅ `VM_OP_ACTOR_SET_DIR` | 🟡 | ✅ | Stored on actor; renderer doesn't use it yet |
 | EVENT_ACTOR_ACTIVATE | 🟡 | ✅ `VM_OP_ACTOR_SET_HIDDEN` | ✅ | ✅ | Mapped to show (hidden=0) |
 | EVENT_ACTOR_DEACTIVATE | 🟡 | ✅ `VM_OP_ACTOR_SET_HIDDEN` | ✅ | ✅ | Mapped to hide (hidden=1) |
+| EVENT_ACTOR_EMOTE | ✅ | ✅ `VM_OP_ACTOR_EMOTE` | ✅ | ✅ | Show emote bubble above actor |
+| EVENT_SET_TIMER_SCRIPT | ✅ | ✅ `VM_OP_SET_TIMER_SCRIPT` | ✅ | ✅ | Run script repeatedly after interval |
+| EVENT_TIMER_DISABLE | ✅ | ✅ `VM_OP_TIMER_DISABLE` | ✅ | ✅ | Disable timer script for slot |
+| EVENT_TIMER_RESTART | ✅ | ✅ `VM_OP_TIMER_RESTART` | ✅ | ✅ | Reset timer countdown |
+| EVENT_REPLACE_TILE_XY | ✅ | ✅ `VM_OP_REPLACE_TILE_XY` | ✅ | ✅ | Replace background tile at (x, y) |
+| EVENT_REPLACE_TILE_XY_SEQUENCE | ✅ | ✅ `VM_OP_REPLACE_TILE_XY` | ✅ | ✅ | Sequence through tiles at (x, y) |
+| EVENT_SCENE_PUSH_STATE | ✅ | ✅ `VM_OP_SCENE_PUSH_STATE` | ✅ | ✅ | Push current scene & player state to stack |
+| EVENT_SCENE_POP_STATE | ✅ | ✅ `VM_OP_SCENE_POP_STATE` | ✅ | ✅ | Restore previous scene & player state from stack |
+| EVENT_SCENE_POP_ALL_STATE | ✅ | ✅ `VM_OP_SCENE_POP_ALL_STATE` | ✅ | ✅ | Restore first scene & player state from stack |
 | EVENT_CALL_CUSTOM_EVENT | 🟡 | n/a | n/a | ✅ | Inlined at compile time; no parameter remapping yet |
 
 ## Missing events (skipped with warning)
@@ -69,7 +78,6 @@ by the phase that will address them.
 | EVENT_ACTOR_MOVE_TO | Move actor to target over time, optionally blocking |
 | EVENT_ACTOR_SET_STATE | Switch sprite animation state |
 | EVENT_ACTOR_PUSH | Push actor in facing direction |
-| EVENT_ACTOR_EMOTE | Show emote bubble above actor |
 | EVENT_PLATFORMER_STATE_SET | Platformer-specific; lower priority |
 
 ### Phase 4 — conditionals

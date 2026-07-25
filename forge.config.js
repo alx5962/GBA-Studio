@@ -56,10 +56,10 @@ module.exports = async () => {
       {
         name: "@electron-forge/maker-squirrel",
         config: {
-          name: "gba_studio",
-          exe: "gba-studio.exe",
+          name: "alxgba_studio",
+          exe: "alxgba-studio.exe",
           loadingGif: "src/assets/app/install.gif",
-          setupIcon: "src/assets/app/icon/app_icon.ico",
+          setupIcon: "src/assets/app/icon/alxapp_icon.ico",
         },
       },
       {
@@ -75,7 +75,7 @@ module.exports = async () => {
         name: "@electron-forge/maker-deb",
         config: {
           options: {
-            icon: "src/assets/app/icon/app_icon.png",
+            icon: "src/assets/app/icon/alxapp_icon.png",
           },
         },
       },
@@ -83,32 +83,32 @@ module.exports = async () => {
         name: "@electron-forge/maker-rpm",
         config: {
           options: {
-            icon: "src/assets/app/icon/app_icon.png",
+            icon: "src/assets/app/icon/alxapp_icon.png",
           },
         },
       },
     ],
     packagerConfig: {
-      name: "GBA Studio",
-      executableName: "gba-studio",
+      name: "ALXGBA Studio",
+      executableName: "alxgba-studio",
       packageManager: "yarn",
-      icon: "src/assets/app/icon/app_icon",
+      icon: "src/assets/app/icon/alxapp_icon.ico",
       darwinDarkModeSupport: true,
       extendInfo: "src/assets/app/Info.plist",
       extraResource: ["src/assets/app/icon/gbsproj.icns"],
       afterCopy: ["./src/lib/forge/hooks/after-copy"],
       asar: true,
-      appBundleId: "dev.gbstudio.gbstudio",
+      appBundleId: "dev.alxgba.alxgba-studio",
       // Only code-sign macOS builds when Apple credentials are available.
       // Without them the build is produced unsigned (signing can be added
       // later by providing APPLE_ID / signing secrets in CI).
       ...(process.env.APPLE_ID
         ? {
-            osxSign: {
-              "hardened-runtime": true,
-              entitlements: "./entitlements.plist",
-            },
-          }
+          osxSign: {
+            "hardened-runtime": true,
+            entitlements: "./entitlements.plist",
+          },
+        }
         : {}),
     },
     hooks: {

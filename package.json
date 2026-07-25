@@ -1,6 +1,6 @@
 {
   "name": "gba-studio",
-  "productName": "GBA Studio",
+  "productName": "ALXGBA Studio",
   "homepage": "https://www.gbstudio.dev",
   "bugs": {
     "url": "https://github.com/chrismaltby/gb-studio/issues"
@@ -45,7 +45,7 @@
     "knip": "knip"
   },
   "keywords": [],
-  "author": "GBA Studio",
+  "author": "ALXGBA Studio",
   "license": "MIT",
   "config": {
     "forge": "./forge.config.js"

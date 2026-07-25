@@ -1,9 +1,10 @@
-# GBA Studio
+# ALXGBA Studio
 
+- ALXGBA Studio Copyright (c) 2026 Alx5962, also released under the MIT license.
 - GBA Studio Copyright (c) 2025 Blue Heron, also released under the MIT license.
 - GB Studio Copyright (c) 2024 Chris Maltby, released under the [MIT license](https://opensource.org/licenses/MIT).
 
-GBA Studio is an experimental fork of GB Studio tailored for Game Boy Advance game development. Like the original, it provides a visual retro game editor for Mac, Linux, and Windows.
+ALXGBA Studio is an experimental fork of GB Studio and GBA Studio tailored for Game Boy Advance game development. Like the original, it provides a visual retro game editor for Windows.
 
 ## Project Status
 
@@ -16,37 +17,6 @@ This project is a prototype, but the editor UI is running and the GBA ROM build 
 
 [Join the GBA STUDIO Discord to share any issues or feedback thanks!](https://discord.gg/3B3SZmdpw)
 
-
-### GBA Feature Completeness
-
-| Area                           | Status      | Notes                                                                                                                    |
-| ------------------------------ | ----------- | ------------------------------------------------------------------------------------------------------------------------ |
-| Editor shell                   | Partial     | The inherited Electron editor launches and can open/edit projects, but some UI assumptions still come from GB Studio.    |
-| Project metadata               | Partial     | `engine.json` exposes GBA dimensions and input options, including 240x160 output and A/B/Start/Select/D-pad/L/R buttons. |
-| Templates                      | Partial     | GBA templates exist and can be built; test rigging now validates GB palette rules separately from GBA RGB assets.        |
-| CLI build command              | Working     | `make:rom`, `npm run build:gba`, and `npm run test:compile-options` produce `.gba` files through the GBA path.           |
-| Editor Play/launch             | Partial     | The toolbar Play action now builds a `.gba` ROM and opens it through the OS/emulator file association.                   |
-| Compiler backend               | Prototype   | The GBA compiler path emits native `gba_scene_data` C records, bootstrap bytecode, trigger/actor scripts, and VM bytes.  |
-| Generated C data compatibility | Working     | GBA shims and engine contract tests keep generated C data aligned with the bundled GBA engine headers.                   |
-| Toolchain integration          | Working     | devkitPro/devkitARM detection, `gba.specs`, `objcopy`, and `gbafix` are wired for local and CI builds.                   |
-| ROM boot path                  | Working     | The GBA engine boots through devkitARM startup and runs `engine_run()`.                                                  |
-| VM runtime                     | Prototype   | A native GBA bytecode loop supports end, wait, scene load, palette tone, text dispatch, variables, math, and branches.   |
-| Background rendering           | Prototype   | Mode 0 renders loaded scene dimensions, collision-marked tiles, generated palette tones, and visible scene transitions.  |
-| Actors                         | Stub        | Actor allocation/update functions exist, but sprite/OAM rendering and scene-driven actor loading are not complete.       |
-| Input/buttons                  | Partial     | GBA key polling supports A/B/Start/Select/D-pad/L/R; gameplay bindings still need VM/event integration.                  |
-| Scenes/scripts                 | Prototype   | Compiled scene records, trigger scripts, actor interaction scripts, and constant variable events run on the GBA VM.      |
-| Sprites/projectiles            | Not started | GBA OAM sprite upload, animation, collisions, and projectile runtime need implementation.                                |
-| Audio                          | Not started | GBA APU/DirectSound music and sound effect runtime has not been ported.                                                  |
-| Save/load                      | Not started | SRAM/flash save support and GB Studio variable persistence are not implemented.                                          |
-| CI/release                     | Working     | GitHub Actions build CLI, sample GBA ROM, emulator smoke test, Windows installer, and release artifacts.                 |
-
-## Aims
-
-- Keep GB Studio's approachable visual workflow while targeting Game Boy Advance ROM output.
-- Make the GBA build chain explicit, repeatable, and testable on developer machines and GitHub Actions.
-- Support GBA-sized games deliberately, including the 240x160 display, 30x20 tile viewport, A/B/Start/Select/D-pad plus L/R input, and GBA-aware video, sprite, palette, audio, save, and timing constraints.
-- Add sample projects and emulator smoke tests for each supported GBA feature.
-- Keep the project scriptable through CLI workflows so it can support automation and external tooling.
 
 ## Related Work
 
@@ -285,24 +255,6 @@ cd gba-studio
 npm ci
 npm run make:win
 Get-ChildItem -Path .\out\make -Recurse
-```
-
-Linux:
-
-```bash
-cd gba-studio
-npm ci
-npm run make:linux
-ls -la out/make
-```
-
-macOS:
-
-```bash
-cd gba-studio
-npm ci
-npm run make:mac
-ls -la out/make
 ```
 
 The generated installers are written to `gba-studio/out/make`.

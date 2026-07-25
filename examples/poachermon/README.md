@@ -1,6 +1,6 @@
 ﻿# Poachermon sample
 
-This is an original GBA Studio sample project for exercising the GBA build path.
+This is an original ALXGBA Studio sample project for exercising the GBA build path.
 
 Bundled art is original generated pixel art, not copied from third-party ROMs. The visual target is a lush GBA-era monster-catching RPG mood: green route tiles, tall grass, a small warden office, and compact 16x16 sprites.
 For future richer art, prefer CC0 sources and record provenance here before committing binaries.

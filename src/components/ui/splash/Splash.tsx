@@ -133,7 +133,7 @@ export const SplashAppTitle = () => {
           {VERSION} ({COMMITHASH})
         </div>
       ) : (
-        `GBA Studio ${VERSION}`
+        `ALXGBA Studio ${VERSION}`
       )}
     </SplashAppTitleWrapper>
   );
@@ -549,10 +549,10 @@ export const SplashProject: FC<SplashProjectProps> = ({
       onClick={
         onRemove
           ? (e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              onRemove();
-            }
+            e.preventDefault();
+            e.stopPropagation();
+            onRemove();
+          }
           : undefined
       }
     >

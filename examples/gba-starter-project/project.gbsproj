@@ -1,7 +1,7 @@
 ﻿{
     "_resourceType":  "project",
-    "name":  "GBA Starter Project",
-    "author":  "GBA Studio",
+    "name":  "ALXGBA Starter Project",
+    "author":  "ALXGBA Studio",
     "notes":  "Converted from the bundled GB Studio starter project. Backgrounds are nearest-neighbor scaled from 20x18-tile GB scenes to 30x20-tile GBA-format scenes.",
     "_version":  "4.2.0",
     "_release":  "3"

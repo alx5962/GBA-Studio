@@ -315,8 +315,8 @@ const Splash = () => {
       <GlobalStyle />
       <SplashWindow focus={windowFocus}>
         <SplashSidebar>
-          <SplashLogo aria-label="GBA Studio">
-            <SplashLogoImage src={gbaLogo} alt="GBA Studio" draggable={false} />
+          <SplashLogo aria-label="ALXGBA Studio">
+            <SplashLogoImage src={gbaLogo} alt="ALXGBA Studio" draggable={false} />
             <SplashEasterEggButton
               onClick={() => setOpenCredits(true)}
               tabIndex={-1}
@@ -438,7 +438,7 @@ const Splash = () => {
       {openCredits && (
         <FocusLock>
           <Credits onClose={() => setOpenCredits(false)}>
-            <CreditsTitle>GBA Studio</CreditsTitle>
+            <CreditsTitle>ALXGBA Studio</CreditsTitle>
             <CreditsSubHeading>{l10n("SPLASH_CONTRIBUTORS")}</CreditsSubHeading>
             {goldContributors.map((contributor) => (
               <CreditsPerson

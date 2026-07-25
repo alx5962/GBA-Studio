@@ -31,6 +31,14 @@ const VM_OP_OVERLAY_SHOW = 0x2f;
 const VM_OP_OVERLAY_HIDE = 0x30;
 const VM_OP_OVERLAY_MOVE_TO = 0x31;
 const VM_OP_OVERLAY_SET_SCANLINE_CUTOFF = 0x32;
+const VM_OP_ACTOR_EMOTE = 0x33;
+const VM_OP_SET_TIMER_SCRIPT = 0x34;
+const VM_OP_TIMER_DISABLE = 0x35;
+const VM_OP_TIMER_RESTART = 0x36;
+const VM_OP_REPLACE_TILE_XY = 0x37;
+const VM_OP_SCENE_PUSH_STATE = 0x38;
+const VM_OP_SCENE_POP_STATE = 0x39;
+const VM_OP_SCENE_POP_ALL_STATE = 0x3a;
 
 const noopCtx = {
   sceneIndexById: {} as Record<string, number>,
@@ -956,6 +964,138 @@ describe("compileGBAScript", () => {
     const out = compileGBAScript(events, ctx);
     expect(out).toEqual([0x2d /* VM_OP_ACTOR_SET_SPRITE */, 0, 4, VM_OP_END]);
     expect(ctx.warnings).not.toHaveBeenCalled();
+  });
+
+  it("EVENT_ACTOR_EMOTE emits VM_OP_ACTOR_EMOTE with actor index and emote index", () => {
+    const ctx = {
+      sceneIndexById: {},
+      actorIndexById: { actor1: 2 },
+      emoteIndexById: { emote1: 5 },
+      selfActorIndex: 2,
+      warnings: jest.fn(),
+    };
+    const events: GBAScriptEvent[] = [
+      {
+        command: "EVENT_ACTOR_EMOTE",
+        args: { actorId: "actor1", emoteId: "emote1" },
+      },
+      {
+        command: "EVENT_ACTOR_EMOTE",
+        args: { actorId: "$self$", emoteId: "emote1" },
+      },
+    ];
+    const out = compileGBAScript(events, ctx);
+    expect(out).toEqual([
+      VM_OP_ACTOR_EMOTE,
+      2,
+      5,
+      VM_OP_ACTOR_EMOTE,
+      2,
+      5,
+      VM_OP_END,
+    ]);
+    expect(ctx.warnings).not.toHaveBeenCalled();
+  });
+
+  it("EVENT_SET_TIMER_SCRIPT compiles timer slot, interval frames, and nested script payload", () => {
+    const events: GBAScriptEvent[] = [
+      {
+        command: "EVENT_SET_TIMER_SCRIPT",
+        args: {
+          timer: 2,
+          units: "frames",
+          frames: 60,
+          script: [
+            { command: "EVENT_INC_VALUE", args: { variable: "VAR_1" } },
+          ],
+        },
+      },
+    ];
+    const out = compileGBAScript(events, noopCtx);
+    // VM_OP_SET_TIMER_SCRIPT timer_idx(1) frames_lo(60) frames_hi(0) offset_lo(4) offset_hi(0) payload...
+    expect(out).toEqual([
+      VM_OP_SET_TIMER_SCRIPT,
+      1,
+      60,
+      0,
+      4,
+      0,
+      VM_OP_ADD_CONST,
+      1,
+      1,
+      VM_OP_END,
+      VM_OP_END,
+    ]);
+  });
+
+  it("EVENT_TIMER_DISABLE and EVENT_TIMER_RESTART emit opcodes for timer index", () => {
+    const events: GBAScriptEvent[] = [
+      { command: "EVENT_TIMER_DISABLE", args: { timer: 3 } },
+      { command: "EVENT_TIMER_RESTART", args: { timer: 3 } },
+    ];
+    const out = compileGBAScript(events, noopCtx);
+    expect(out).toEqual([
+      VM_OP_TIMER_DISABLE,
+      2,
+      VM_OP_TIMER_RESTART,
+      2,
+      VM_OP_END,
+    ]);
+  });
+
+  it("EVENT_REPLACE_TILE_XY emits VM_OP_REPLACE_TILE_XY with operands and flags", () => {
+    const events: GBAScriptEvent[] = [
+      {
+        command: "EVENT_REPLACE_TILE_XY",
+        args: {
+          x: 4,
+          y: 7,
+          tileIndex: 12,
+          tileSize: "16px",
+        },
+      },
+    ];
+    const out = compileGBAScript(events, noopCtx);
+    // VM_OP_REPLACE_TILE_XY x(4) y(7) tile_lo(12) tile_hi(0) flags(0x08)
+    expect(out).toEqual([VM_OP_REPLACE_TILE_XY, 4, 7, 12, 0, 8, VM_OP_END]);
+  });
+
+  it("EVENT_REPLACE_TILE_XY_SEQUENCE compiles bounds checking and variable sequence tile replacement", () => {
+    const events: GBAScriptEvent[] = [
+      {
+        command: "EVENT_REPLACE_TILE_XY_SEQUENCE",
+        args: {
+          x: 2,
+          y: 3,
+          tileIndex: 10,
+          frames: 4,
+          variable: "VAR_2",
+          tileSize: "8px",
+        },
+      },
+    ];
+    const out = compileGBAScript(events, noopCtx);
+    expect(out[0]).toBe(0x0e); // VM_OP_IF_VAR_LT_CONST
+    expect(out).toContain(VM_OP_REPLACE_TILE_XY);
+    expect(out).toContain(0x06); // VM_OP_ADD_CONST
+    expect(out[out.length - 1]).toBe(VM_OP_END);
+  });
+
+  it("EVENT_SCENE_PUSH_STATE, EVENT_SCENE_POP_STATE, and EVENT_SCENE_POP_ALL_STATE emit scene stack opcodes", () => {
+    const events: GBAScriptEvent[] = [
+      { command: "EVENT_SCENE_PUSH_STATE" },
+      { command: "EVENT_SCENE_POP_STATE", args: { fadeSpeed: 3 } },
+      { command: "EVENT_SCENE_POP_ALL_STATE", args: { fadeSpeed: 1 } },
+    ];
+    const out = compileGBAScript(events, noopCtx);
+    expect(out).toEqual([
+      VM_OP_SCENE_PUSH_STATE,
+      VM_OP_SCENE_POP_STATE,
+      3,
+      VM_OP_SCENE_POP_ALL_STATE,
+      1,
+      VM_OP_END,
+    ]);
   });
 });
 
