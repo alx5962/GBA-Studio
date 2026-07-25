@@ -153,15 +153,15 @@ describe("compileGBAScript", () => {
     ];
     const out = compileGBAScript(events, ctx);
     expect(out).toEqual([
-      VM_OP_LOAD_SCENE,
-      2,
       VM_OP_ACTOR_SET_POS,
       0,
       192,
       64,
       VM_OP_ACTOR_SET_DIR,
       0,
-      1,
+      3,
+      VM_OP_LOAD_SCENE,
+      2,
       VM_OP_END,
     ]);
   });
@@ -769,7 +769,7 @@ describe("compileGBAScript", () => {
     expect(out).toEqual([VM_OP_ACTOR_MOVE_REL, 0, 0xff, 2, VM_OP_END]);
   });
 
-  it("EVENT_ACTOR_SET_DIRECTION maps direction names (up=3)", () => {
+  it("EVENT_ACTOR_SET_DIRECTION maps direction names (up=2)", () => {
     const events: GBAScriptEvent[] = [
       {
         command: "EVENT_ACTOR_SET_DIRECTION",
@@ -777,7 +777,7 @@ describe("compileGBAScript", () => {
       },
     ];
     const out = compileGBAScript(events, noopCtx);
-    expect(out).toEqual([VM_OP_ACTOR_SET_DIR, 0, 3, VM_OP_END]);
+    expect(out).toEqual([VM_OP_ACTOR_SET_DIR, 0, 2, VM_OP_END]);
   });
 
   it("EVENT_ACTOR_ACTIVATE / DEACTIVATE / SHOW / HIDE toggle hidden", () => {

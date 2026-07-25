@@ -85,12 +85,12 @@ const GBA_KEYS: Record<string, number> = {
   l: 0x0200,
 };
 
-// GB Studio direction_e order: 0=down, 1=left, 2=right, 3=up.
+// GB Studio direction_e order: 0=down, 1=right, 2=up, 3=left (matching gbs_types.h).
 const GBA_DIRECTIONS: Record<string, number> = {
   down: 0,
-  left: 1,
-  right: 2,
-  up: 3,
+  right: 1,
+  up: 2,
+  left: 3,
 };
 
 // Minimal structural type for the script events we receive — matches the
@@ -592,7 +592,6 @@ function compileEvent(
         );
         return false;
       }
-      out.push(VM_OP_LOAD_SCENE, clampU8(sceneIndex));
       if (args.x !== undefined || args.y !== undefined) {
         const scale = args.units === "pixels" ? 1 : 8;
         const x = clampU8(scriptValueToNumber(args.x) * scale);
@@ -610,6 +609,7 @@ function compileEvent(
       if (dirStr && dirStr.toLowerCase() in GBA_DIRECTIONS) {
         out.push(VM_OP_ACTOR_SET_DIR, 0, GBA_DIRECTIONS[dirStr.toLowerCase()]);
       }
+      out.push(VM_OP_LOAD_SCENE, clampU8(sceneIndex));
       return true;
     }
 
