@@ -70,6 +70,8 @@ const VM_OP_LOAD_DATA = 0x3c;
 const VM_OP_CLEAR_DATA = 0x3d;
 const VM_OP_IF_SAVED_DATA = 0x3e;
 const VM_OP_SAVE_PEEK = 0x3f;
+const VM_OP_PROJECTILE_LAUNCH = 0x40;
+const VM_OP_PROJECTILE_LOAD_SLOT = 0x41;
 // Direction operands for VM_OP_IF_ACTOR_RELATIVE_TO_ACTOR (mirror vm.h)
 const ACTOR_RELATIVE_ABOVE = 0;
 const ACTOR_RELATIVE_BELOW = 1;
@@ -1645,6 +1647,60 @@ function compileEvent(
       }
 
       // fxhammer or unknown type — no GBA PSG equivalent, silently no-op.
+      return true;
+    }
+
+    case "EVENT_LAUNCH_PROJECTILE":
+    case "EVENT_LAUNCH_PROJECTILE_SLOT": {
+      const actor = resolveActorIndex(args.actorId, ctx);
+      const projIndex = clampU8(
+        command === "EVENT_LAUNCH_PROJECTILE_SLOT"
+          ? scriptValueToNumber(args.slot ?? 0)
+          : scriptValueToNumber(args.projectileIndex ?? 0),
+      );
+      const dirTypeStr = String(args.directionType ?? "direction");
+      let dirType = 0;
+      let dirParam = 0;
+
+      if (dirTypeStr === "actor") {
+        dirType = 1;
+        dirParam = 0;
+      } else if (dirTypeStr === "target") {
+        dirType = 2;
+        dirParam = resolveActorIndex(args.targetActorId ?? "$self$", ctx);
+      } else if (dirTypeStr === "angle") {
+        dirType = 3;
+        dirParam = clampU8(scriptValueToNumber(args.angle ?? 0));
+      } else if (dirTypeStr === "anglevar") {
+        dirType = 4;
+        dirParam = parseVariableIndex(args.angleVariable);
+      } else {
+        // "direction"
+        dirType = 0;
+        const dirName =
+          typeof args.direction === "string" ? args.direction : "down";
+        dirParam = GBA_DIRECTIONS[dirName.toLowerCase()] ?? 0;
+      }
+
+      const dx = clampS8ToU8(scriptValueToNumber(args.x ?? 0));
+      const dy = clampS8ToU8(scriptValueToNumber(args.y ?? 0));
+
+      out.push(
+        VM_OP_PROJECTILE_LAUNCH,
+        actor,
+        projIndex,
+        dirType,
+        dirParam,
+        dx,
+        dy,
+      );
+      return true;
+    }
+
+    case "EVENT_LOAD_PROJECTILE_SLOT": {
+      const slot = clampU8(scriptValueToNumber(args.slot ?? 0));
+      const projIndex = clampU8(scriptValueToNumber(args.projectileIndex ?? 0));
+      out.push(VM_OP_PROJECTILE_LOAD_SLOT, slot, projIndex);
       return true;
     }
 

@@ -44,6 +44,8 @@ const VM_OP_LOAD_DATA = 0x3c;
 const VM_OP_CLEAR_DATA = 0x3d;
 const VM_OP_IF_SAVED_DATA = 0x3e;
 const VM_OP_SAVE_PEEK = 0x3f;
+const VM_OP_PROJECTILE_LAUNCH = 0x40;
+const VM_OP_PROJECTILE_LOAD_SLOT = 0x41;
 
 const noopCtx = {
   sceneIndexById: {} as Record<string, number>,
@@ -1142,6 +1144,19 @@ describe("compileGBAScript", () => {
     const out = compileGBAScript(events, noopCtx);
     expect(out[0]).toBe(VM_OP_IF_SAVED_DATA);
     expect(out[1]).toBe(0); // slot 0
+  });
+
+  it("EVENT_LAUNCH_PROJECTILE, EVENT_LAUNCH_PROJECTILE_SLOT, and EVENT_LOAD_PROJECTILE_SLOT compile without warnings and emit VM opcodes", () => {
+    const warnings = jest.fn();
+    const events: GBAScriptEvent[] = [
+      { command: "EVENT_LAUNCH_PROJECTILE", args: { spriteSheetId: "s1", direction: "right" } },
+      { command: "EVENT_LAUNCH_PROJECTILE_SLOT", args: { slot: 1 } },
+      { command: "EVENT_LOAD_PROJECTILE_SLOT", args: { slot: 1, projectileIndex: 2 } },
+    ];
+    const out = compileGBAScript(events, { ...noopCtx, warnings });
+    expect(warnings).not.toHaveBeenCalled();
+    expect(out).toContain(VM_OP_PROJECTILE_LAUNCH);
+    expect(out).toContain(VM_OP_PROJECTILE_LOAD_SLOT);
   });
 });
 
