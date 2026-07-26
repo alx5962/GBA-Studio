@@ -2109,7 +2109,7 @@ const compileGBA = async (
                   actor.direction,
                 )}, ${actor.moveSpeed || 1}, ${ensureNumber(
                   actor.animSpeed,
-                  15,
+                  ensureNumber(projectData.settings.startAnimSpeed, 15),
                 )}, ${actor.isPinned ? "false" : "true"}, ${actor.persistent ? "true" : "false"
                   }, ${actor.isPinned ? "true" : "false"}, false, ${interact ?? "NULL"}, ${collisionGroup}, ${hit ?? "NULL"} }`;
               })
