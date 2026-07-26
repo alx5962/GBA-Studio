@@ -39,6 +39,11 @@ const VM_OP_REPLACE_TILE_XY = 0x37;
 const VM_OP_SCENE_PUSH_STATE = 0x38;
 const VM_OP_SCENE_POP_STATE = 0x39;
 const VM_OP_SCENE_POP_ALL_STATE = 0x3a;
+const VM_OP_SAVE_DATA = 0x3b;
+const VM_OP_LOAD_DATA = 0x3c;
+const VM_OP_CLEAR_DATA = 0x3d;
+const VM_OP_IF_SAVED_DATA = 0x3e;
+const VM_OP_SAVE_PEEK = 0x3f;
 
 const noopCtx = {
   sceneIndexById: {} as Record<string, number>,
@@ -1096,6 +1101,47 @@ describe("compileGBAScript", () => {
       1,
       VM_OP_END,
     ]);
+  });
+
+  it("EVENT_SAVE_DATA, EVENT_LOAD_DATA, EVENT_CLEAR_DATA, EVENT_PEEK_DATA emit save opcodes", () => {
+    const events: GBAScriptEvent[] = [
+      {
+        command: "EVENT_SAVE_DATA",
+        args: { saveSlot: 1 },
+        children: {
+          true: [
+            { command: "EVENT_SET_VALUE", args: { variable: "0", value: 5 } },
+          ],
+        },
+      },
+      { command: "EVENT_LOAD_DATA", args: { saveSlot: 1 } },
+      { command: "EVENT_CLEAR_DATA", args: { saveSlot: 1 } },
+      {
+        command: "EVENT_PEEK_DATA",
+        args: { saveSlot: 1, variableSource: "0", variableDest: "1" },
+      },
+    ];
+    const out = compileGBAScript(events, noopCtx);
+    expect(out).toContain(VM_OP_SAVE_DATA);
+    expect(out).toContain(VM_OP_LOAD_DATA);
+    expect(out).toContain(VM_OP_CLEAR_DATA);
+    expect(out).toContain(VM_OP_SAVE_PEEK);
+  });
+
+  it("EVENT_IF_SAVED_DATA emits VM_OP_IF_SAVED_DATA conditional branches", () => {
+    const events: GBAScriptEvent[] = [
+      {
+        command: "EVENT_IF_SAVED_DATA",
+        args: { saveSlot: 0 },
+        children: {
+          true: [{ command: "EVENT_SET_VALUE", args: { variable: "0", value: 1 } }],
+          false: [{ command: "EVENT_SET_VALUE", args: { variable: "0", value: 0 } }],
+        },
+      },
+    ];
+    const out = compileGBAScript(events, noopCtx);
+    expect(out[0]).toBe(VM_OP_IF_SAVED_DATA);
+    expect(out[1]).toBe(0); // slot 0
   });
 });
 

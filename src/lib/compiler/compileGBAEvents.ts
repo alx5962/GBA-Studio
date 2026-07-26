@@ -65,6 +65,11 @@ const VM_OP_REPLACE_TILE_XY = 0x37;
 const VM_OP_SCENE_PUSH_STATE = 0x38;
 const VM_OP_SCENE_POP_STATE = 0x39;
 const VM_OP_SCENE_POP_ALL_STATE = 0x3a;
+const VM_OP_SAVE_DATA = 0x3b;
+const VM_OP_LOAD_DATA = 0x3c;
+const VM_OP_CLEAR_DATA = 0x3d;
+const VM_OP_IF_SAVED_DATA = 0x3e;
+const VM_OP_SAVE_PEEK = 0x3f;
 // Direction operands for VM_OP_IF_ACTOR_RELATIVE_TO_ACTOR (mirror vm.h)
 const ACTOR_RELATIVE_ABOVE = 0;
 const ACTOR_RELATIVE_BELOW = 1;
@@ -1125,6 +1130,62 @@ function compileEvent(
     case "EVENT_SCENE_STACK_POP_ALL": {
       const speed = clampU8(scriptValueToNumber(args.fadeSpeed ?? 2));
       out.push(VM_OP_SCENE_POP_ALL_STATE, speed);
+      return true;
+    }
+
+    case "EVENT_SAVE_DATA": {
+      const slot = clampU8(scriptValueToNumber(args.saveSlot ?? 0));
+      out.push(VM_OP_SAVE_DATA, slot);
+      const saveEvents =
+        (args.true as GBAScriptEvent[] | undefined) ??
+        (args.save as GBAScriptEvent[] | undefined) ??
+        event.children?.true ??
+        event.children?.save;
+      if (saveEvents && saveEvents.length > 0) {
+        out.push(...compileNestedEvents(saveEvents, ctx));
+      }
+      return true;
+    }
+
+    case "EVENT_IF_SAVED_DATA": {
+      const slot = clampU8(scriptValueToNumber(args.saveSlot ?? 0));
+      const trueEvents =
+        (args.true as GBAScriptEvent[] | undefined) ?? event.children?.true;
+      const falseEvents =
+        (args.false as GBAScriptEvent[] | undefined) ?? event.children?.false;
+      const trueBytes = compileNestedEvents(trueEvents, ctx);
+      const falseBytes = compileNestedEvents(falseEvents, ctx);
+
+      out.push(VM_OP_IF_SAVED_DATA, slot);
+      pushS16(out, 3);
+      const jumpToFalseIndex = out.length + 1;
+      pushJump(out, 0);
+      out.push(...trueBytes);
+      const jumpToEndIndex = out.length + 1;
+      pushJump(out, 0);
+      out.push(...falseBytes);
+      patchS16(out, jumpToFalseIndex, trueBytes.length + 3);
+      patchS16(out, jumpToEndIndex, falseBytes.length);
+      return true;
+    }
+
+    case "EVENT_LOAD_DATA": {
+      const slot = clampU8(scriptValueToNumber(args.saveSlot ?? 0));
+      out.push(VM_OP_LOAD_DATA, slot);
+      return true;
+    }
+
+    case "EVENT_CLEAR_DATA": {
+      const slot = clampU8(scriptValueToNumber(args.saveSlot ?? 0));
+      out.push(VM_OP_CLEAR_DATA, slot);
+      return true;
+    }
+
+    case "EVENT_PEEK_DATA": {
+      const dstVar = parseVariableIndex(args.variableDest);
+      const srcVar = parseVariableIndex(args.variableSource);
+      const slot = clampU8(scriptValueToNumber(args.saveSlot ?? 0));
+      out.push(VM_OP_SAVE_PEEK, dstVar, srcVar, slot);
       return true;
     }
 

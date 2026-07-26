@@ -94,6 +94,11 @@ test("GBA event compiler opcodes match bundled engine VM constants", () => {
     { command: "EVENT_SCENE_PUSH_STATE" },
     { command: "EVENT_SCENE_POP_STATE", args: { fadeSpeed: 2 } },
     { command: "EVENT_SCENE_POP_ALL_STATE", args: { fadeSpeed: 2 } },
+    { command: "EVENT_SAVE_DATA", args: { saveSlot: 0 } },
+    { command: "EVENT_IF_SAVED_DATA", args: { saveSlot: 0 } },
+    { command: "EVENT_LOAD_DATA", args: { saveSlot: 0 } },
+    { command: "EVENT_CLEAR_DATA", args: { saveSlot: 0 } },
+    { command: "EVENT_PEEK_DATA", args: { saveSlot: 0, variableSource: "VAR_1", variableDest: "VAR_2" } },
     { command: "EVENT_TEXT", args: { text: "OK" } },
   ];
 
@@ -127,6 +132,11 @@ test("GBA event compiler opcodes match bundled engine VM constants", () => {
   expect(emittedOpcodes).toContain(vmOpcode("VM_OP_SCENE_PUSH_STATE"));
   expect(emittedOpcodes).toContain(vmOpcode("VM_OP_SCENE_POP_STATE"));
   expect(emittedOpcodes).toContain(vmOpcode("VM_OP_SCENE_POP_ALL_STATE"));
+  expect(emittedOpcodes).toContain(vmOpcode("VM_OP_SAVE_DATA"));
+  expect(emittedOpcodes).toContain(vmOpcode("VM_OP_IF_SAVED_DATA"));
+  expect(emittedOpcodes).toContain(vmOpcode("VM_OP_LOAD_DATA"));
+  expect(emittedOpcodes).toContain(vmOpcode("VM_OP_CLEAR_DATA"));
+  expect(emittedOpcodes).toContain(vmOpcode("VM_OP_SAVE_PEEK"));
   expect(emittedOpcodes).toContain(vmOpcode("VM_OP_SHOW_TEXT"));
   expect(bytecode[bytecode.length - 1]).toBe(vmOpcode("VM_OP_END"));
 });
