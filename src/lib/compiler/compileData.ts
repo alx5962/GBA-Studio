@@ -1450,6 +1450,16 @@ const collectUniqueSprites = (
   scene.actors.forEach((actor) => {
     add(usedSprites.find((item) => item.id === actor.spriteSheetId));
   });
+  if (scene.projectiles) {
+    scene.projectiles.forEach((proj) => {
+      if (proj.spriteSheetId) {
+        add(usedSprites.find((item) => item.id === proj.spriteSheetId));
+      }
+    });
+  }
+  usedSprites.forEach((sprite) => {
+    add(sprite);
+  });
 
   return sprites;
 };
@@ -1869,9 +1879,16 @@ const compileGBA = async (
           ],
         );
         const localSprites = collectUniqueSprites(scene, precompiled.usedSprites);
-        const spriteIndexById = Object.fromEntries(
-          localSprites.map((sprite, spriteIndex) => [sprite.id, spriteIndex]),
-        ) as Record<string, number>;
+        const spriteIndexById: Record<string, number> = {};
+        localSprites.forEach((sprite, spriteIndex) => {
+          if (sprite.id) spriteIndexById[sprite.id] = spriteIndex;
+          if ((sprite as { symbol?: string }).symbol)
+            spriteIndexById[(sprite as { symbol?: string }).symbol!] = spriteIndex;
+          if ((sprite as { name?: string }).name)
+            spriteIndexById[(sprite as { name?: string }).name!] = spriteIndex;
+          if ((sprite as { filename?: string }).filename)
+            spriteIndexById[(sprite as { filename?: string }).filename!] = spriteIndex;
+        });
 
         const spriteBlocks = localSprites
           .map((sprite, spriteIndex) => {
@@ -2011,6 +2028,113 @@ const compileGBA = async (
           sceneInitScriptSymbol = `${sceneSymbol}_init_script`;
           const initBytecode = compileGBAScript(sceneInitEvents, sceneEventCtx);
           sceneInitScriptBlock = emitGBAScriptC(sceneInitScriptSymbol, initBytecode);
+        }
+
+        // Helper to extract nested events attached to button "a" via EVENT_SET_INPUT_SCRIPT
+        const findInputScriptEvents = (
+          eventsList: (GBAScriptEvent[] | undefined)[],
+          targetButton: string = "a",
+        ): GBAScriptEvent[] => {
+          const result: GBAScriptEvent[] = [];
+          const visitedCustom = new Set<string>();
+
+          const search = (list: GBAScriptEvent[] | undefined) => {
+            if (!list || !Array.isArray(list)) return;
+            for (const ev of list) {
+              if (!ev) continue;
+              const cmd = ev.command;
+              if (
+                cmd === "EVENT_SET_INPUT_SCRIPT" ||
+                cmd === "EVENT_INPUT_SCRIPT_SET"
+              ) {
+                const inputArg = ev.args?.input;
+                const inputs = Array.isArray(inputArg)
+                  ? inputArg.map((s) => String(s).toLowerCase())
+                  : [String(inputArg ?? "").toLowerCase()];
+
+                if (
+                  inputs.includes(targetButton.toLowerCase()) ||
+                  inputs.includes("a") ||
+                  inputs.length === 0
+                ) {
+                  const childEvents =
+                    (ev.children?.true as GBAScriptEvent[]) ||
+                    (ev.args?.true as GBAScriptEvent[]) ||
+                    (ev.children?.script as GBAScriptEvent[]);
+                  if (childEvents && childEvents.length > 0) {
+                    result.push(...childEvents);
+                  }
+                }
+              }
+
+              if (
+                cmd === "EVENT_CALL_CUSTOM_EVENT" ||
+                cmd === "EVENT_EXECUTE_SCRIPT" ||
+                cmd === "EVENT_CALL_SCRIPT"
+              ) {
+                const scriptId = String(
+                  ev.args?.customEventId ?? ev.args?.scriptId ?? "",
+                );
+                if (
+                  scriptId &&
+                  customEventsById[scriptId]?.script &&
+                  !visitedCustom.has(scriptId)
+                ) {
+                  visitedCustom.add(scriptId);
+                  search(customEventsById[scriptId].script);
+                }
+              }
+
+              if (ev.children) {
+                for (const key of Object.keys(ev.children)) {
+                  if (Array.isArray(ev.children[key])) {
+                    search(ev.children[key] as GBAScriptEvent[]);
+                  }
+                }
+              }
+              if (ev.args) {
+                if (Array.isArray(ev.args.true)) search(ev.args.true as GBAScriptEvent[]);
+                if (Array.isArray(ev.args.false)) search(ev.args.false as GBAScriptEvent[]);
+                if (Array.isArray(ev.args.script)) search(ev.args.script as GBAScriptEvent[]);
+              }
+            }
+          };
+
+          for (const list of eventsList) {
+            search(list);
+          }
+          return result;
+        };
+
+        // Combine direct player hit script and any EVENT_SET_INPUT_SCRIPT targeting "a"
+        const rawPlayerHitScript = (rawScene?.playerHit1Script ?? []) as GBAScriptEvent[];
+        const inputScriptAEvents = findInputScriptEvents(
+          [rawPlayerHitScript, sceneInitEvents, rawSceneInitScript],
+          "a",
+        );
+        const combinedPlayerHitScript = [
+          ...rawPlayerHitScript,
+          ...inputScriptAEvents,
+        ];
+
+        let scenePlayerHitScriptSymbol: string | null = null;
+        let scenePlayerHitScriptBlock = "";
+        if (
+          combinedPlayerHitScript.length > 0 &&
+          !(
+            combinedPlayerHitScript.length === 1 &&
+            combinedPlayerHitScript[0].command === "EVENT_END"
+          )
+        ) {
+          scenePlayerHitScriptSymbol = `${sceneSymbol}_player_hit_script`;
+          const playerHitBytecode = compileGBAScript(
+            combinedPlayerHitScript,
+            sceneEventCtx,
+          );
+          scenePlayerHitScriptBlock = emitGBAScriptC(
+            scenePlayerHitScriptSymbol,
+            playerHitBytecode,
+          );
         }
 
         // Compile trigger scripts and emit trigger array.
@@ -2164,6 +2288,7 @@ static const gba_iso_scene_def_t ${sceneSymbol} = {
     .sprites        = ${sceneSymbol}_sprites,
     .triggers       = ${rawTriggers.length > 0 ? `${sceneSymbol}_triggers` : "NULL"},
     .init_script    = ${sceneInitScriptSymbol ?? "NULL"},
+    .player_hit_script = ${scenePlayerHitScriptSymbol ?? "NULL"},
   },
   .iso_tile_w = ${ISO_TILE_W},
   .iso_tile_h = ${ISO_TILE_H},
@@ -2187,6 +2312,7 @@ static const gba_iso_scene_def_t ${sceneSymbol} = {
   ${sceneSymbol}_sprites,
   ${rawTriggers.length > 0 ? `${sceneSymbol}_triggers` : "NULL"},
   ${sceneInitScriptSymbol ?? "NULL"},
+  ${scenePlayerHitScriptSymbol ?? "NULL"},
 };`;
 
         sceneMap[scene.symbol] = {
@@ -2203,6 +2329,7 @@ static const gba_iso_scene_def_t ${sceneSymbol} = {
           spritePaletteArray,
           collisionArray,
           sceneInitScriptBlock,
+          scenePlayerHitScriptBlock,
           ...triggerScriptBlocks,
           ...actorScriptBlocks,
           actorArray,
@@ -2260,6 +2387,8 @@ extern const gba_game_data_t gba_game_data;
   const platJumpVel = getEngineFieldValue("plat_jump_vel", 16384);
   const platHoldGrav = getEngineFieldValue("plat_hold_grav", 512);
   const platHoldJumpMax = getEngineFieldValue("plat_hold_jump_max", 15);
+  // shooter_scroll_speed is in sub-pixel units (0-128); default 32 ≈ 1 px/frame
+  const shmupScrollSpeed = getEngineFieldValue("shooter_scroll_speed", 32);
 
   output["gba_scene_data.c"] = `#include <stdint.h>
 #include <stddef.h>
@@ -2300,10 +2429,12 @@ const gba_game_data_t gba_game_data = {
     ${platHoldGrav},
     ${platHoldJumpMax},
   },
+  ${Math.max(0, Math.min(255, shmupScrollSpeed))},
   gba_scene_table,
   gba_bootstrap_script,
 };
 `;
+
 
   // Add music data
   output["music_data.h"] = compileMusicHeader(gbaUsedMusic);

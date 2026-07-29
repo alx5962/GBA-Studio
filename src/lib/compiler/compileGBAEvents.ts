@@ -134,11 +134,14 @@ export type GBACompileContext = {
 // Resolve a GB Studio actorId to a runtime actor index.
 // "player" → 0; "$self$" → the enclosing actor; otherwise the per-scene map.
 function resolveActorIndex(actorId: unknown, ctx: GBACompileContext): number {
+  if (typeof actorId === "object" && actorId !== null && "value" in actorId) {
+    return resolveActorIndex((actorId as { value?: unknown }).value, ctx);
+  }
   const id = String(actorId ?? "player");
   if (id === "player" || id === "$player$") {
     return 0;
   }
-  if (id === "$self$") {
+  if (id === "$self$" || id === "0" || id === "$actor[0]$") {
     return ctx.selfActorIndex ?? 0;
   }
   return ctx.actorIndexById?.[id] ?? 0;
@@ -195,9 +198,27 @@ function clampU16(n: number): number {
 }
 
 function parseVariableIndex(variable: unknown): number {
+  if (typeof variable === "object" && variable !== null) {
+    if ("value" in variable) {
+      return parseVariableIndex((variable as { value?: unknown }).value);
+    }
+    if ("id" in variable) {
+      return parseVariableIndex((variable as { id?: unknown }).id);
+    }
+  }
   const variableId = String(variable ?? "0");
   const numericPart = variableId.replace(/[^0-9]/g, "");
   return clampU8(parseInt(numericPart || "0", 10));
+}
+
+function formatGBAText(text: string): string {
+  return text
+    .replace(/\$\$/g, "\x01LITERAL_DOLLAR\x01")
+    .replace(/\$([A-Za-z0-9_-]+)\$?/g, (_match, varName) => {
+      const varIndex = parseVariableIndex(varName);
+      return `{${varIndex}}`;
+    })
+    .replace(/\x01LITERAL_DOLLAR\x01/g, "$");
 }
 
 function scriptValueVariableIndex(value: unknown): number | undefined {
@@ -586,7 +607,8 @@ function compileEvent(
       const raw = Array.isArray(args.text)
         ? (args.text as string[]).join("\n")
         : String(args.text ?? "");
-      out.push(VM_OP_SHOW_TEXT, ...encodeString(raw));
+      const formatted = formatGBAText(raw);
+      out.push(VM_OP_SHOW_TEXT, ...encodeString(formatted));
       return true;
     }
 
@@ -1225,6 +1247,41 @@ function compileEvent(
       return true;
     }
 
+    case "EVENT_SET_VALUE": {
+      const varIndex = parseVariableIndex(args.variable);
+      let val = 1;
+      if (typeof args.value === "object" && args.value !== null) {
+        const vType = (args.value as { type?: string }).type;
+        if (vType === "false") val = 0;
+        else if (vType === "true") val = 1;
+        else if (vType === "number") val = clampU8(Number((args.value as { value?: unknown }).value ?? 0));
+        else val = constValueToU8(args.value) ?? 1;
+      } else {
+        val = constValueToU8(args.value) ?? 1;
+      }
+      out.push(VM_OP_SET_CONST, varIndex, val);
+      return true;
+    }
+
+    case "EVENT_INC_VALUE": {
+      const varIndex = parseVariableIndex(args.variable);
+      out.push(VM_OP_ADD_CONST, varIndex, 1);
+      return true;
+    }
+
+    case "EVENT_DEC_VALUE": {
+      const varIndex = parseVariableIndex(args.variable);
+      out.push(VM_OP_SUB_CONST, varIndex, 1);
+      return true;
+    }
+
+    case "EVENT_ACTOR_SET_ANIMATE": {
+      const actor = resolveActorIndex(args.actorId ?? "$self$", ctx);
+      const animate = args.animate !== false ? 1 : 0;
+      out.push(VM_OP_ACTOR_SET_STATE, actor, animate ? 0 : 1);
+      return true;
+    }
+
     case "EVENT_ACTOR_SET_STATE": {
       const actor = resolveActorIndex(args.actorId, ctx);
       const loopAnim = args.loopAnim !== false ? 1 : 0;
@@ -1375,13 +1432,96 @@ function compileEvent(
         );
         return false;
       }
-      // Inline the custom event's script. Parameter (variable/actor) remapping
-      // is not yet supported — calls to parameterless custom events work fully.
+      // Build parameter remapping table from call arguments
+      const paramMap: Record<string, unknown> = {};
+      for (const [key, val] of Object.entries(args)) {
+        if (key.startsWith("$variable[") && key.endsWith("]$")) {
+          const varParamKey = key.slice(10, -2);
+          paramMap[varParamKey] = val;
+          paramMap[key] = val;
+        } else if (key.startsWith("$actor[") && key.endsWith("]$")) {
+          const actorParamKey = key.slice(7, -2);
+          paramMap[actorParamKey] = val;
+          paramMap[key] = val;
+        }
+      }
+
+      const remapEvents = (eventsList: GBAScriptEvent[]): GBAScriptEvent[] => {
+        return eventsList.map((e) => {
+          const newArgs = { ...(e.args ?? {}) };
+          for (const [aKey, aVal] of Object.entries(newArgs)) {
+            if (typeof aVal === "string" && paramMap[aVal] !== undefined) {
+              const mapped = paramMap[aVal];
+              newArgs[aKey] =
+                typeof mapped === "object" && mapped !== null && "value" in mapped
+                  ? (mapped as { value?: unknown }).value
+                  : mapped;
+            } else if (
+              typeof aVal === "object" &&
+              aVal !== null &&
+              "type" in aVal &&
+              (aVal as { type?: string }).type === "variable" &&
+              "value" in aVal
+            ) {
+              const vVal = String((aVal as { value?: unknown }).value ?? "");
+              if (paramMap[vVal] !== undefined) {
+                const mapped = paramMap[vVal];
+                const finalVal =
+                  typeof mapped === "object" && mapped !== null && "value" in mapped
+                    ? (mapped as { value?: unknown }).value
+                    : mapped;
+                newArgs[aKey] = {
+                  type: "variable",
+                  value: finalVal,
+                };
+              }
+            }
+          }
+
+          ["actorId", "otherActorId", "targetActorId"].forEach((aKey) => {
+            const rawAct =
+              typeof newArgs[aKey] === "object" && newArgs[aKey] !== null && "value" in (newArgs[aKey] as object)
+                ? String((newArgs[aKey] as { value?: unknown }).value ?? "")
+                : String(newArgs[aKey] ?? "");
+            if (paramMap[rawAct] !== undefined) {
+              const mapped = paramMap[rawAct];
+              newArgs[aKey] =
+                typeof mapped === "object" && mapped !== null && "value" in mapped
+                  ? (mapped as { value?: unknown }).value
+                  : mapped;
+            } else if (rawAct === "0" || rawAct === "$actor[0]$") {
+              newArgs[aKey] = "$self$";
+            }
+          });
+
+          const newChildren: Record<string, GBAScriptEvent[]> = {};
+          if (e.children) {
+            for (const [cKey, cEvents] of Object.entries(e.children)) {
+              if (Array.isArray(cEvents)) {
+                newChildren[cKey] = remapEvents(cEvents as GBAScriptEvent[]);
+              }
+            }
+          }
+
+          return {
+            ...e,
+            args: newArgs,
+            children: newChildren,
+          };
+        });
+      };
+
+      const rawScript =
+        (event.children?.script as GBAScriptEvent[] | undefined) ??
+        customEvent.script ??
+        [];
+      const remappedScript = remapEvents(rawScript);
+
       const nestedCtx: GBACompileContext = {
         ...ctx,
         customEventCallStack: [...stack, customEventId],
       };
-      out.push(...compileNestedEvents(customEvent.script ?? [], nestedCtx));
+      out.push(...compileNestedEvents(remappedScript, nestedCtx));
       return true;
     }
 
@@ -1653,16 +1793,27 @@ function compileEvent(
     case "EVENT_LAUNCH_PROJECTILE":
     case "EVENT_LAUNCH_PROJECTILE_SLOT": {
       const actor = resolveActorIndex(args.actorId, ctx);
-      const projIndex = clampU8(
-        command === "EVENT_LAUNCH_PROJECTILE_SLOT"
-          ? scriptValueToNumber(args.slot ?? 0)
-          : scriptValueToNumber(args.projectileIndex ?? 0),
-      );
+      let projIndex = 0;
+      if (command === "EVENT_LAUNCH_PROJECTILE_SLOT") {
+        projIndex = clampU8(scriptValueToNumber(args.slot ?? 0));
+      } else {
+        const spriteId = String(args.spriteSheetId ?? "");
+        if (
+          spriteId &&
+          ctx.spriteIndexById &&
+          ctx.spriteIndexById[spriteId] !== undefined
+        ) {
+          projIndex = ctx.spriteIndexById[spriteId];
+        } else if (args.projectileIndex !== undefined) {
+          projIndex = clampU8(scriptValueToNumber(args.projectileIndex));
+        }
+      }
+      projIndex = clampU8(projIndex);
       const dirTypeStr = String(args.directionType ?? "direction");
       let dirType = 0;
       let dirParam = 0;
 
-      if (dirTypeStr === "actor") {
+      if (dirTypeStr === "actor" || dirTypeStr === "dir" || args.direction === "dir") {
         dirType = 1;
         dirParam = 0;
       } else if (dirTypeStr === "target") {

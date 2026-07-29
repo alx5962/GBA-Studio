@@ -195,7 +195,7 @@ export const lexText = (inputText: string): Token[] => {
     if (inputText[i] === "$") {
       const variableMatch = inputText
         .substring(i)
-        .match(/^(\$L[0-9]\$|\$T[0-1]\$|\$V[0-9]\$|\$[0-9]+\$)/)?.[0];
+        .match(/^(\$L[0-9]\$|\$T[0-1]\$|\$V[0-9]\$|\$[A-Za-z0-9_-]+\$|\$[A-Za-z0-9_-]+)/)?.[0];
       if (variableMatch) {
         i += variableMatch.length - 1;
         tokens.push({

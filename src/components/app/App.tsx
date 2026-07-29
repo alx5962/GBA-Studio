@@ -37,8 +37,10 @@ const App = () => {
 
   const onDragEnter = useCallback((e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
-    dragTarget.current = e.target;
-    setDraggingOver(true);
+    if (e.dataTransfer?.types?.includes("Files")) {
+      dragTarget.current = e.target;
+      setDraggingOver(true);
+    }
   }, []);
 
   const onDragOver = useCallback((e: React.DragEvent<HTMLDivElement>) => {
@@ -56,8 +58,10 @@ const App = () => {
     (e: React.DragEvent<HTMLDivElement>) => {
       e.preventDefault();
       setDraggingOver(false);
-      const files = Array.from(e.dataTransfer.files).map((f) => f.path);
-      files.forEach((file) => dispatch(projectActions.addFileToProject(file)));
+      if (e.dataTransfer?.types?.includes("Files")) {
+        const files = Array.from(e.dataTransfer.files).map((f) => f.path);
+        files.forEach((file) => dispatch(projectActions.addFileToProject(file)));
+      }
     },
     [dispatch],
   );

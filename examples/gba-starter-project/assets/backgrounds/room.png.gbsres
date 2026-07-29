@@ -1,13 +1,12 @@
-﻿{
-    "_resourceType":  "background",
-    "id":  "0af9ba31-7864-4664-9603-b211dc0f3793",
-    "name":  "room (GBA)",
-    "symbol":  "bg_room_gba",
-    "tileColors":  "0428+0210+044+0210+044+024+053+029+044+024+053+029+044+024+053+029+044+024+053+029+044+02a+042+024+044+028+03!027+044+0210+044+025+019+022+044+025+019+022+044+025+019+022+049+019+0420+032+042+05!00!041c+",
-    "width":  30,
-    "height":  20,
-    "imageWidth":  240,
-    "imageHeight":  160,
-    "filename":  "room.png",
-    "autoColor":  false
+{
+  "_resourceType": "background",
+  "id": "00925985-f3a8-4ca9-80e9-9b915e7ecbf0",
+  "name": "room",
+  "symbol": "bg_room",
+  "tileColors": "",
+  "filename": "room.png",
+  "width": 30,
+  "height": 20,
+  "imageWidth": 240,
+  "imageHeight": 160
 }

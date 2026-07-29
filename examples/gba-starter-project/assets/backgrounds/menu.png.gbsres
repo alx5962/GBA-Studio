@@ -1,13 +1,13 @@
-﻿{
-    "_resourceType":  "background",
-    "id":  "b49ea566-b022-478c-979d-ec3ee255fdc5",
-    "name":  "menu (GBA)",
-    "symbol":  "bg_menu_gba",
-    "tileColors":  "",
-    "width":  30,
-    "height":  20,
-    "imageWidth":  240,
-    "imageHeight":  160,
-    "filename":  "menu.png",
-    "autoColor":  false
+{
+  "_resourceType": "background",
+  "id": "b49ea566-b022-478c-979d-ec3ee255fdc5",
+  "name": "menu (GBA)",
+  "symbol": "bg_menu_gba",
+  "tileColors": "",
+  "width": 30,
+  "height": 20,
+  "imageWidth": 240,
+  "imageHeight": 160,
+  "filename": "menu.png",
+  "autoColor": false
 }

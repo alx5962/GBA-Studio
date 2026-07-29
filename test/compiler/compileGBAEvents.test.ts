@@ -108,6 +108,16 @@ describe("compileGBAScript", () => {
     expect(out[out.length - 1]).toBe(VM_OP_END);
   });
 
+  it("EVENT_TEXT formats variable references like $Alex1 into GBA variable placeholders", () => {
+    const events: GBAScriptEvent[] = [
+      { command: "EVENT_TEXT", args: { text: "valeur: $Alex1" } },
+    ];
+    const out = compileGBAScript(events, noopCtx);
+    expect(out[0]).toBe(VM_OP_SHOW_TEXT);
+    const str = String.fromCharCode(...out.slice(1, out.indexOf(0x00, 1)));
+    expect(str).toBe("valeur: {1}");
+  });
+
   it("EVENT_TEXT with array of strings joins with newline", () => {
     const events: GBAScriptEvent[] = [
       { command: "EVENT_TEXT", args: { text: ["Hello", "World"] } },
