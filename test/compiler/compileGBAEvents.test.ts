@@ -460,17 +460,17 @@ describe("compileGBAScript", () => {
     expect(out).toEqual([VM_OP_SET_SCENE_TONE, 3, VM_OP_END]);
   });
 
-  it("EVENT_FADE_IN emits VM_OP_SET_SCENE_TONE 0", () => {
+  it("EVENT_FADE_IN emits VM_OP_SET_SCENE_TONE sequence", () => {
     const ctx = makeCtx();
-    const events: GBAScriptEvent[] = [{ command: "EVENT_FADE_IN" }];
+    const events: GBAScriptEvent[] = [{ command: "EVENT_FADE_IN", args: { speed: 0 } }];
     const out = compileGBAScript(events, ctx);
     expect(out).toEqual([VM_OP_SET_SCENE_TONE, 0, VM_OP_END]);
     expect(ctx.warnings).not.toHaveBeenCalled();
   });
 
-  it("EVENT_FADE_OUT emits VM_OP_SET_SCENE_TONE 3", () => {
+  it("EVENT_FADE_OUT emits VM_OP_SET_SCENE_TONE sequence", () => {
     const ctx = makeCtx();
-    const events: GBAScriptEvent[] = [{ command: "EVENT_FADE_OUT" }];
+    const events: GBAScriptEvent[] = [{ command: "EVENT_FADE_OUT", args: { speed: 0 } }];
     const out = compileGBAScript(events, ctx);
     expect(out).toEqual([VM_OP_SET_SCENE_TONE, 3, VM_OP_END]);
     expect(ctx.warnings).not.toHaveBeenCalled();

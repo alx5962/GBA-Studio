@@ -808,11 +808,27 @@ function compileEvent(
     }
 
     case "EVENT_FADE_IN": {
+      const speed = clampU8(Number(args.speed ?? 2));
+      if (speed > 0) {
+        const waitFrames = Math.max(1, Math.round((speed + 1) * 1.5));
+        out.push(VM_OP_SET_SCENE_TONE, 2);
+        out.push(VM_OP_WAIT, waitFrames);
+        out.push(VM_OP_SET_SCENE_TONE, 1);
+        out.push(VM_OP_WAIT, waitFrames);
+      }
       out.push(VM_OP_SET_SCENE_TONE, 0);
       return true;
     }
 
     case "EVENT_FADE_OUT": {
+      const speed = clampU8(Number(args.speed ?? 2));
+      if (speed > 0) {
+        const waitFrames = Math.max(1, Math.round((speed + 1) * 1.5));
+        out.push(VM_OP_SET_SCENE_TONE, 1);
+        out.push(VM_OP_WAIT, waitFrames);
+        out.push(VM_OP_SET_SCENE_TONE, 2);
+        out.push(VM_OP_WAIT, waitFrames);
+      }
       out.push(VM_OP_SET_SCENE_TONE, 3);
       return true;
     }
