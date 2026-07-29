@@ -2137,29 +2137,45 @@ const compileGBA = async (
           );
         }
 
-        // Compile trigger scripts and emit trigger array.
+        // Compile trigger enter/leave scripts and emit trigger array.
         const triggerScriptBlocks: string[] = [];
-        const triggerScriptSymbols: (string | null)[] = rawTriggers.map(
+        type TriggerSymbols = { script: string | null; leaveScript: string | null };
+        const triggerScriptSymbols: TriggerSymbols[] = rawTriggers.map(
           (trigger, triggerIndex) => {
+            let scriptSym: string | null = null;
+            let leaveScriptSym: string | null = null;
+
             const scriptEvents = trigger.script as GBAScriptEvent[] | undefined;
-            if (!scriptEvents || scriptEvents.length === 0) return null;
             if (
-              scriptEvents.length === 1 &&
-              scriptEvents[0].command === "EVENT_END"
-            )
-              return null;
-            const symbol = `${sceneSymbol}_trigger_${triggerIndex}_script`;
-            const bytecode = compileGBAScript(scriptEvents, sceneEventCtx);
-            triggerScriptBlocks.push(emitGBAScriptC(symbol, bytecode));
-            return symbol;
+              scriptEvents &&
+              scriptEvents.length > 0 &&
+              !(scriptEvents.length === 1 && scriptEvents[0].command === "EVENT_END")
+            ) {
+              scriptSym = `${sceneSymbol}_trigger_${triggerIndex}_script`;
+              const bytecode = compileGBAScript(scriptEvents, sceneEventCtx);
+              triggerScriptBlocks.push(emitGBAScriptC(scriptSym, bytecode));
+            }
+
+            const leaveEvents = trigger.leaveScript as GBAScriptEvent[] | undefined;
+            if (
+              leaveEvents &&
+              leaveEvents.length > 0 &&
+              !(leaveEvents.length === 1 && leaveEvents[0].command === "EVENT_END")
+            ) {
+              leaveScriptSym = `${sceneSymbol}_trigger_${triggerIndex}_leave_script`;
+              const bytecode = compileGBAScript(leaveEvents, sceneEventCtx);
+              triggerScriptBlocks.push(emitGBAScriptC(leaveScriptSym, bytecode));
+            }
+
+            return { script: scriptSym, leaveScript: leaveScriptSym };
           },
         );
         const triggerArray =
           rawTriggers.length > 0
             ? `static const gba_trigger_def_t ${sceneSymbol}_triggers[${rawTriggers.length}] = {\n${rawTriggers
               .map((trigger, triggerIndex) => {
-                const scriptSym = triggerScriptSymbols[triggerIndex];
-                return `  { ${trigger.x}, ${trigger.y}, ${trigger.width}, ${trigger.height}, ${scriptSym ?? "NULL"} }`;
+                const syms = triggerScriptSymbols[triggerIndex];
+                return `  { ${trigger.x}, ${trigger.y}, ${trigger.width}, ${trigger.height}, ${syms.script ?? "NULL"}, ${syms.leaveScript ?? "NULL"} }`;
               })
               .join(",\n")}\n};`
             : "";

@@ -476,6 +476,24 @@ describe("compileGBAScript", () => {
     expect(ctx.warnings).not.toHaveBeenCalled();
   });
 
+  it("EVENT_SET_INPUT_SCRIPT emits VM_OP_IF_INPUT button check and child script", () => {
+    const ctx = makeCtx();
+    const events: GBAScriptEvent[] = [
+      {
+        command: "EVENT_SET_INPUT_SCRIPT",
+        args: { input: ["a", "b"] },
+        children: {
+          true: [{ command: "EVENT_TEXT", args: { text: "EN" } }],
+        },
+      },
+    ];
+    const out = compileGBAScript(events, ctx);
+    expect(out[0]).toBe(VM_OP_IF_INPUT);
+    expect(out[1]).toBe(0x03); // A (0x01) | B (0x02) = 0x03
+    expect(out[2]).toBe(0x00);
+    expect(ctx.warnings).not.toHaveBeenCalled();
+  });
+
   it("EVENT_IF_TRUE compiles true and false branches", () => {
     const events: GBAScriptEvent[] = [
       {

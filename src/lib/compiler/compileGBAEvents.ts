@@ -851,8 +851,35 @@ function compileEvent(
     }
 
     case "EVENT_SET_INPUT_SCRIPT":
+    case "EVENT_INPUT_SCRIPT_SET": {
+      const mask = inputMask(args.input);
+      if (mask === 0) {
+        return true;
+      }
+      const childEvents =
+        (args.true as GBAScriptEvent[] | undefined) ??
+        (args.script as GBAScriptEvent[] | undefined) ??
+        event.children?.true ??
+        event.children?.script ??
+        [];
+
+      const trueBytes = compileNestedEvents(childEvents, ctx);
+      if (trueBytes.length === 0) {
+        return true;
+      }
+
+      out.push(VM_OP_IF_INPUT, mask & 0xff, (mask >> 8) & 0xff);
+      pushS16(out, 3); // if input matches, skip the jump below
+
+      const jumpToFalseOffsetIndex = out.length + 1;
+      pushJump(out, 0);
+      out.push(...trueBytes);
+
+      patchS16(out, jumpToFalseOffsetIndex, trueBytes.length + 3);
+      return true;
+    }
+
     case "EVENT_REMOVE_INPUT_SCRIPT":
-    case "EVENT_INPUT_SCRIPT_SET":
     case "EVENT_INPUT_SCRIPT_REMOVE": {
       return true;
     }
@@ -1556,7 +1583,8 @@ function compileEvent(
         (args.true as GBAScriptEvent[] | undefined) ?? event.children?.true;
       const childBytes = compileNestedEvents(children, ctx);
       out.push(...childBytes);
-      pushJump(out, -(childBytes.length + 3));
+      out.push(VM_OP_WAIT, 1);
+      pushJump(out, -(childBytes.length + 5));
       return true;
     }
 
