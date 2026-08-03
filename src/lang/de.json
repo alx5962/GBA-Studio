@@ -1412,6 +1412,8 @@
   "MENU_LANGUAGE": "Sprache",
   "MENU_LANGUAGE_DEFAULT": "Systemvorgabe",
   "MENU_SHOW_COLLISIONS": "Kollisionen anzeigen",
+  "MENU_SHOW_TILES": "Kacheln anzeigen",
+  "MENU_HIDE_TILES": "Kacheln ausblenden",
   "MENU_SHOW_CONNECTIONS": "Verbindungen anzeigen",
   "MENU_SHOW_CONNECTIONS_ALL": "Alle",
   "MENU_SHOW_CONNECTIONS_SELECTED": "Aktuelle Szene",

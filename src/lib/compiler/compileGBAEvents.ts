@@ -72,6 +72,7 @@ const VM_OP_IF_SAVED_DATA = 0x3e;
 const VM_OP_SAVE_PEEK = 0x3f;
 const VM_OP_PROJECTILE_LAUNCH = 0x40;
 const VM_OP_PROJECTILE_LOAD_SLOT = 0x41;
+const VM_OP_ACTOR_SET_ANIM_FRAME_VAR = 0x42;
 // Direction operands for VM_OP_IF_ACTOR_RELATIVE_TO_ACTOR (mirror vm.h)
 const ACTOR_RELATIVE_ABOVE = 0;
 const ACTOR_RELATIVE_BELOW = 1;
@@ -1352,13 +1353,25 @@ function compileEvent(
     }
 
     case "EVENT_ACTOR_SET_FRAME":
-    case "EVENT_ACTOR_SET_FRAME_TO_VALUE": {
+    case "EVENT_ACTOR_SET_FRAME_TO_VALUE":
+    case "EVENT_ACTOR_SET_ANIM_FRAME":
+    case "EVENT_ACTOR_SET_ANIM_FRAME_TO_VALUE": {
       const actor = resolveActorIndex(args.actorId ?? "$self$", ctx);
-      const frame = clampU8(scriptValueToNumber(args.frame ?? 0));
-      out.push(VM_OP_ACTOR_SET_ANIM_FRAME, actor, frame);
+      const varIndex =
+        scriptValueVariableIndex(args.frame) ??
+        scriptValueVariableIndex(args.value) ??
+        scriptValueVariableIndex(args.variable) ??
+        (typeof args.variable === "string" ? parseVariableIndex(args.variable) : undefined) ??
+        (typeof args.frame === "string" ? parseVariableIndex(args.frame) : undefined);
+
+      if (varIndex !== undefined) {
+        out.push(VM_OP_ACTOR_SET_ANIM_FRAME_VAR, actor, varIndex);
+      } else {
+        const frame = constValueToU8(args.frame) ?? constValueToU8(args.value) ?? clampU8(scriptValueToNumber(args.frame ?? args.value ?? 0));
+        out.push(VM_OP_ACTOR_SET_ANIM_FRAME, actor, frame);
+      }
       return true;
     }
-
     case "EVENT_ACTOR_SET_ANIMATION_SPEED": {
       const actor = resolveActorIndex(args.actorId ?? "$self$", ctx);
       const speed = clampU8(scriptValueToNumber(args.speed ?? 15));

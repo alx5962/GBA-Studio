@@ -40,6 +40,7 @@ type MenuListenerKey =
   | "updateLocale"
   | "updateShowCollisions"
   | "updateShowConnections"
+  | "updateShowTiles"
   | "updateShowNavigator"
   | "updateCheckSpelling"
   | "updateEmulatorMuted"
@@ -74,6 +75,7 @@ const listeners: Record<MenuListenerKey, MenuListenerFn[]> = {
   updateLocale: [],
   updateShowCollisions: [],
   updateShowConnections: [],
+  updateShowTiles: [],
   updateShowNavigator: [],
   updateCheckSpelling: [],
   updateEmulatorMuted: [],
@@ -549,6 +551,27 @@ const buildMenu = async ({ themeManager, l10nManager }: BuildMenuProps) => {
             notifyListeners("zoom", "out");
           },
         },
+        { type: "separator" },
+        {
+          id: "debugSubmenu",
+          label: "Debug",
+          submenu: [
+            {
+              id: "showTiles",
+              label: l10n("MENU_SHOW_TILES"),
+              click: () => {
+                notifyListeners("updateShowTiles", true);
+              },
+            },
+            {
+              id: "hideTiles",
+              label: l10n("MENU_HIDE_TILES"),
+              click: () => {
+                notifyListeners("updateShowTiles", false);
+              },
+            },
+          ],
+        },
       ],
     },
     {
@@ -596,12 +619,14 @@ const buildMenu = async ({ themeManager, l10nManager }: BuildMenuProps) => {
   ];
 
   if (isDevMode) {
-    const submenu = template[template.length - 3].submenu || [];
-    if ("push" in submenu) {
-      submenu.push({ type: "separator" });
-      submenu.push({
-        label: "Debug",
-        submenu: [
+    const viewMenu = template[template.length - 3];
+    if (Array.isArray(viewMenu.submenu)) {
+      const debugItem = viewMenu.submenu.find(
+        (item) => item.id === "debugSubmenu",
+      );
+      if (debugItem && Array.isArray(debugItem.submenu)) {
+        debugItem.submenu.push(
+          { type: "separator" },
           { role: "reload" },
           { role: "forceReload" },
           { role: "toggleDevTools" },
@@ -611,8 +636,8 @@ const buildMenu = async ({ themeManager, l10nManager }: BuildMenuProps) => {
               notifyListeners("openMusic");
             },
           },
-        ],
-      });
+        );
+      }
     }
   }
 

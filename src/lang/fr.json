@@ -711,6 +711,8 @@
   "MENU_LANGUAGE": "Langue",
   "MENU_LANGUAGE_DEFAULT": "Système par défaut",
   "MENU_SHOW_COLLISIONS": "Afficher les collisions",
+  "MENU_SHOW_TILES": "Afficher les tuiles",
+  "MENU_HIDE_TILES": "Masquer les tuiles",
   "MENU_SHOW_CONNECTIONS": "Afficher les connexions",
   "MENU_SHOW_CONNECTIONS_ALL": "Tout",
   "MENU_SHOW_CONNECTIONS_SELECTED": "Scène courante",

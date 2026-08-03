@@ -1061,6 +1061,8 @@
   "MENU_LANGUAGE": "Язык",
   "MENU_LANGUAGE_DEFAULT": "Система по умолчанию",
   "MENU_SHOW_COLLISIONS": "Показывать столкновения",
+  "MENU_SHOW_TILES": "Показывать тайлы",
+  "MENU_HIDE_TILES": "Скрыть тайлы",
   "MENU_SHOW_CONNECTIONS": "Показать соединения",
   "MENU_SHOW_CONNECTIONS_ALL": "Все",
   "MENU_SHOW_CONNECTIONS_SELECTED": "Текущая сцена",

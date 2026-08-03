@@ -43,6 +43,7 @@ import renderSceneContextMenu from "./renderSceneContextMenu";
 import SceneScrollBounds from "./SceneScrollBounds";
 import { SceneContext } from "components/script/SceneContext";
 import IsoGridOverlay from "./IsoGridOverlay";
+import TileGridOverlay from "./TileGridOverlay";
 import { isoDepthKey } from "shared/lib/entities/isoUtils";
 import {
   actorSelectors,
@@ -277,6 +278,9 @@ const SceneView = memo(({ id, index, editable }: SceneViewProps) => {
       (tool !== TOOL_COLORS || showLayers) &&
       (state.project.present.settings.showCollisions ||
         tool === TOOL_COLLISIONS),
+  );
+  const showTiles = useAppSelector(
+    (state) => Boolean(state.project.present.settings.showTiles),
   );
   const showPriorityMap = useAppSelector(
     (state) =>
@@ -703,6 +707,14 @@ const SceneView = memo(({ id, index, editable }: SceneViewProps) => {
               userSelect: "none",
             }}
           />
+        )}
+        {showTiles && (
+          <SceneOverlay $noPointerEvents>
+            <TileGridOverlay
+              width={scene.width}
+              height={scene.height}
+            />
+          </SceneOverlay>
         )}
         {showCollisions && (
           <SceneOverlay>

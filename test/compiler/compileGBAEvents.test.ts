@@ -494,6 +494,33 @@ describe("compileGBAScript", () => {
     expect(ctx.warnings).not.toHaveBeenCalled();
   });
 
+  it("EVENT_ACTOR_SET_FRAME compiles constant animation frame", () => {
+    const ctx = makeCtx();
+    const events: GBAScriptEvent[] = [
+      {
+        command: "EVENT_ACTOR_SET_FRAME",
+        args: { actorId: "$self$", frame: 2 },
+      },
+    ];
+    const out = compileGBAScript(events, ctx);
+    expect(out).toEqual([0x24, 0, 2, 0x00]); // VM_OP_ACTOR_SET_ANIM_FRAME actor 0, frame 2
+    expect(ctx.warnings).not.toHaveBeenCalled();
+  });
+
+  it("EVENT_ACTOR_SET_FRAME_TO_VALUE compiles variable animation frame", () => {
+    const ctx = makeCtx();
+    const events: GBAScriptEvent[] = [
+      {
+        command: "EVENT_ACTOR_SET_FRAME_TO_VALUE",
+        args: { actorId: "$self$", frame: { type: "variable", value: "pass1" } },
+      },
+    ];
+    const out = compileGBAScript(events, ctx);
+    expect(out[0]).toBe(0x42); // VM_OP_ACTOR_SET_ANIM_FRAME_VAR
+    expect(out[1]).toBe(0); // actor 0
+    expect(ctx.warnings).not.toHaveBeenCalled();
+  });
+
   it("EVENT_IF_TRUE compiles true and false branches", () => {
     const events: GBAScriptEvent[] = [
       {

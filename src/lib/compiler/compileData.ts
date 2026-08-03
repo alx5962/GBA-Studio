@@ -1913,13 +1913,18 @@ const compileGBA = async (
                 for (const tile of frame) {
                   accumX += tile.x;
                   accumY += tile.y;
-                  const screenY = accumY - 8;
+                  const screenY = accumY;
                   const palette = tile.props & 0x07;
                   const hflip = (tile.props & 0x20) !== 0;
                   const vflip = (tile.props & 0x40) !== 0;
                   if (spriteMode === "8x16") {
-                    tiles.push(`  { ${accumX}, ${screenY}, ${tile.tile}, ${palette}, ${hflip}, ${vflip} }`);
-                    tiles.push(`  { ${accumX}, ${screenY + 8}, ${tile.tile + 1}, ${palette}, ${hflip}, ${vflip} }`);
+                    if (vflip) {
+                      tiles.push(`  { ${accumX}, ${screenY + 8}, ${tile.tile}, ${palette}, ${hflip}, ${vflip} }`);
+                      tiles.push(`  { ${accumX}, ${screenY}, ${tile.tile + 1}, ${palette}, ${hflip}, ${vflip} }`);
+                    } else {
+                      tiles.push(`  { ${accumX}, ${screenY}, ${tile.tile}, ${palette}, ${hflip}, ${vflip} }`);
+                      tiles.push(`  { ${accumX}, ${screenY + 8}, ${tile.tile + 1}, ${palette}, ${hflip}, ${vflip} }`);
+                    }
                   } else {
                     tiles.push(`  { ${accumX}, ${screenY}, ${tile.tile}, ${palette}, ${hflip}, ${vflip} }`);
                   }

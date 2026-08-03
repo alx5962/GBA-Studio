@@ -373,6 +373,7 @@ export const defaultProjectSettings: Settings = {
   startDirection: "down",
   showCollisions: true,
   showConnections: "selected",
+  showTiles: false,
   showCollisionSlopeTiles: false,
   showCollisionExtraTiles: false,
   showCollisionTileValues: false,

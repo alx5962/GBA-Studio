@@ -1697,6 +1697,8 @@
   "MENU_LANGUAGE_DEFAULT": "System Default",
   "MENU_SHOW_COLLISIONS": "Show Collisions",
   "MENU_SHOW_CONNECTIONS": "Show Connections",
+  "MENU_SHOW_TILES": "Show Tiles",
+  "MENU_HIDE_TILES": "Hide Tiles",
   "MENU_SHOW_CONNECTIONS_ALL": "All",
   "MENU_SHOW_CONNECTIONS_SELECTED": "Current Scene",
   "MENU_SHOW_CONNECTIONS_NONE": "None",

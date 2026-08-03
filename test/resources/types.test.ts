@@ -568,6 +568,7 @@ describe("TypeBox Schemas", () => {
       startDirection: "down",
       showCollisions: true,
       showConnections: "all",
+      showTiles: false,
       showCollisionSlopeTiles: true,
       showCollisionExtraTiles: true,
       showCollisionTileValues: false,

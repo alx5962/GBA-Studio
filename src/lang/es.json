@@ -1412,6 +1412,8 @@
   "MENU_LANGUAGE": "Idioma",
   "MENU_LANGUAGE_DEFAULT": "Predeterminado del sistema",
   "MENU_SHOW_COLLISIONS": "Mostrar Colisiones",
+  "MENU_SHOW_TILES": "Mostrar Tiles",
+  "MENU_HIDE_TILES": "Ocultar Tiles",
   "MENU_SHOW_CONNECTIONS": "Mostrar Conexiones",
   "MENU_SHOW_CONNECTIONS_ALL": "Todos",
   "MENU_SHOW_CONNECTIONS_SELECTED": "Escena actual",

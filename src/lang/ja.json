@@ -1688,6 +1688,8 @@
   "MENU_LANGUAGE": "言語",
   "MENU_LANGUAGE_DEFAULT": "システムデフォルト",
   "MENU_SHOW_COLLISIONS": "コリジョンを表示",
+  "MENU_SHOW_TILES": "タイルを表示",
+  "MENU_HIDE_TILES": "タイルを非表示",
   "MENU_SHOW_CONNECTIONS": "接続を表示",
   "MENU_SHOW_CONNECTIONS_ALL": "すべて",
   "MENU_SHOW_CONNECTIONS_SELECTED": "現在のシーン",

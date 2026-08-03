@@ -673,6 +673,7 @@ export const SettingsResource = Type.Object({
   startDirection: ActorDirection,
   showCollisions: Type.Boolean(),
   showConnections: ShowConnectionsSetting,
+  showTiles: Type.Boolean(),
   showCollisionSlopeTiles: Type.Boolean(),
   showCollisionExtraTiles: Type.Boolean(),
   showCollisionTileValues: Type.Boolean(),

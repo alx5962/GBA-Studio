@@ -1198,15 +1198,19 @@ ipcMain.handle("build:delete-cache", async (_event) => {
 });
 
 ipcMain.handle("project:update-project-window-menu", (_event, settings) => {
-  const { showCollisions, showConnections, showNavigator } = settings;
-  setMenuItemChecked("showCollisions", showCollisions);
+  const { showCollisions, showConnections, showNavigator, showTiles } = settings;
+  if (showCollisions !== undefined) {
+    setMenuItemChecked("showCollisions", showCollisions);
+  }
   setMenuItemChecked("showConnectionsAll", showConnections === "all");
   setMenuItemChecked(
     "showConnectionsSelected",
     showConnections === "selected" || showConnections === true,
   );
   setMenuItemChecked("showConnectionsNone", showConnections === false);
-  setMenuItemChecked("showNavigator", showNavigator);
+  if (showNavigator !== undefined) {
+    setMenuItemChecked("showNavigator", showNavigator);
+  }
 });
 
 ipcMain.handle("set-ui-scale", (_, scale: number) => {
@@ -2080,8 +2084,10 @@ menu.on("updateCheckSpelling", (value) => {
 });
 
 menu.on("updateShowCollisions", (value) => {
-  settings.set("showCollisions", value as JsonValue);
-  sendToProjectWindow("setting:changed", "showCollisions", value);
+  const isChecked = value === true;
+  settings.set("showCollisions", isChecked);
+  setMenuItemChecked("showCollisions", isChecked);
+  sendToProjectWindow("setting:changed", "showCollisions", isChecked);
 });
 
 menu.on("updateShowConnections", (value) => {
@@ -2096,8 +2102,16 @@ menu.on("updateShowConnections", (value) => {
 });
 
 menu.on("updateShowNavigator", (value) => {
-  settings.set("showNavigator", value as JsonValue);
-  sendToProjectWindow("setting:changed", "showNavigator", value);
+  const isChecked = value !== false;
+  settings.set("showNavigator", isChecked);
+  setMenuItemChecked("showNavigator", isChecked);
+  sendToProjectWindow("setting:changed", "showNavigator", isChecked);
+});
+
+menu.on("updateShowTiles", (value) => {
+  const isChecked = value === true;
+  settings.set("showTiles", isChecked);
+  sendToProjectWindow("setting:changed", "showTiles", isChecked);
 });
 
 menu.on("arrangeScenes", () => {
