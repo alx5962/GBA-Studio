@@ -9,6 +9,7 @@ import { ParallaxSpeedSelect } from "./ParallaxSpeedSelect";
 import editorActions from "store/features/editor/editorActions";
 import { useAppDispatch } from "store/hooks";
 import { SingleValue } from "react-select";
+import { SCREEN_HEIGHT } from "consts";
 
 interface ParallaxOption {
   value: number;
@@ -88,7 +89,7 @@ export const defaultValues: SceneParallaxLayer[] = [
   },
 ];
 
-const MAX_PARALLAX_HEIGHT = 17;
+const MAX_PARALLAX_HEIGHT = SCREEN_HEIGHT - 1;
 
 const sliceLayers = (
   value: SceneParallaxLayer[] | undefined,

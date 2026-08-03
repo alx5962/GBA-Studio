@@ -24,6 +24,7 @@ import {
   EVENT_END,
   EVENT_PLAYER_SET_SPRITE,
   EVENT_ACTOR_SET_SPRITE,
+  SCREEN_WIDTH,
 } from "consts";
 import compileSprites from "./compileSprites";
 import compileAvatars from "./compileAvatars";
@@ -37,6 +38,7 @@ import {
   compileTilemapAttr,
   compileTilemapAttrHeader,
   compileScene,
+  compileParallax,
   compileSceneActors,
   compileSceneActorsHeader,
   compileSceneHeader,
@@ -2285,6 +2287,10 @@ const compileGBA = async (
         const playerSpriteIndex = scene.playerSprite
           ? spriteIndexById[scene.playerSprite.id] ?? 0
           : 0;
+        const compiledParallax = compileParallax(
+          scene.width > SCREEN_WIDTH ? scene.parallax : undefined,
+        ) ?? ["PARALLAX_STEP(0, 0, 0)"];
+        const parallaxInit = `{ ${compiledParallax.join(", ")} }`;
         const isIsoScene = scene.type === "ISOMETRIC";
         const sceneDef = isIsoScene
           ? `/* Isometric scene: actors/triggers use tile-grid coordinates.
@@ -2310,30 +2316,32 @@ static const gba_iso_scene_def_t ${sceneSymbol} = {
     .triggers       = ${rawTriggers.length > 0 ? `${sceneSymbol}_triggers` : "NULL"},
     .init_script    = ${sceneInitScriptSymbol ?? "NULL"},
     .player_hit_script = ${scenePlayerHitScriptSymbol ?? "NULL"},
+    .parallax_rows  = ${parallaxInit},
   },
   .iso_tile_w = ${ISO_TILE_W},
   .iso_tile_h = ${ISO_TILE_H},
 };`
           : `static const gba_scene_def_t ${sceneSymbol} = {
-  ${scene.width},
-  ${scene.height},
-  ${sceneTypeIds[scene.type] ?? 0},
-  ${playerSpriteIndex},
-  ${scene.actors.length},
-  ${rawTriggers.length},
-  ${bgTileset.length},
-  ${sceneSymbol}_tileset,
-  ${sceneSymbol}_tilemap,
-  ${bgTilemapAttr.length > 0 ? `${sceneSymbol}_tilemap_attr` : "NULL"},
-  ${sceneSymbol}_bg_palette,
-  ${sceneSymbol}_sprite_palette,
-  ${sceneSymbol}_collisions,
-  ${scene.actors.length > 0 ? `${sceneSymbol}_actors` : "NULL"},
-  ${localSprites.length},
-  ${sceneSymbol}_sprites,
-  ${rawTriggers.length > 0 ? `${sceneSymbol}_triggers` : "NULL"},
-  ${sceneInitScriptSymbol ?? "NULL"},
-  ${scenePlayerHitScriptSymbol ?? "NULL"},
+  .width          = ${scene.width},
+  .height         = ${scene.height},
+  .type           = ${sceneTypeIds[scene.type] ?? 0},
+  .player_sprite_index = ${playerSpriteIndex},
+  .actor_count    = ${scene.actors.length},
+  .trigger_count  = ${rawTriggers.length},
+  .tileset_len    = ${bgTileset.length},
+  .tileset        = ${sceneSymbol}_tileset,
+  .tilemap        = ${sceneSymbol}_tilemap,
+  .tilemap_attr   = ${bgTilemapAttr.length > 0 ? `${sceneSymbol}_tilemap_attr` : "NULL"},
+  .bg_palette     = ${sceneSymbol}_bg_palette,
+  .sprite_palette = ${sceneSymbol}_sprite_palette,
+  .collisions     = ${sceneSymbol}_collisions,
+  .actors         = ${scene.actors.length > 0 ? `${sceneSymbol}_actors` : "NULL"},
+  .sprite_count   = ${localSprites.length},
+  .sprites        = ${sceneSymbol}_sprites,
+  .triggers       = ${rawTriggers.length > 0 ? `${sceneSymbol}_triggers` : "NULL"},
+  .init_script    = ${sceneInitScriptSymbol ?? "NULL"},
+  .player_hit_script = ${scenePlayerHitScriptSymbol ?? "NULL"},
+  .parallax_rows  = ${parallaxInit},
 };`;
 
         sceneMap[scene.symbol] = {

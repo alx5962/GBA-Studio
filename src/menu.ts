@@ -651,12 +651,6 @@ const buildMenu = async ({ themeManager, l10nManager }: BuildMenuProps) => {
             openAbout();
           },
         },
-        {
-          label: l10n("MENU_CHECK_FOR_UPDATES"),
-          click: () => {
-            notifyListeners("checkUpdates");
-          },
-        },
         { type: "separator" },
         {
           label: l10n("MENU_PREFERENCES"),
@@ -719,12 +713,6 @@ const buildMenu = async ({ themeManager, l10nManager }: BuildMenuProps) => {
           label: l10n("MENU_ABOUT"),
           click() {
             openAbout();
-          },
-        },
-        {
-          label: l10n("MENU_CHECK_FOR_UPDATES"),
-          click: () => {
-            notifyListeners("checkUpdates");
           },
         },
       );

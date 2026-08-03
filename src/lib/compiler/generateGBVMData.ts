@@ -488,7 +488,7 @@ export const parallaxStep = (
   return `PARALLAX_STEP(${startRow}, ${endRow}, ${wrapSigned8Bit(speed)})`;
 };
 
-const compileParallax = (
+export const compileParallax = (
   parallax: SceneParallaxLayer[] | undefined,
 ): string[] | undefined => {
   if (parallax) {
@@ -501,7 +501,7 @@ const compileParallax = (
         layerIndex === parallax.length - 1 &&
         layer.speed !== 0
       ) {
-        return parallaxStep(row, 18, layer.speed);
+        return parallaxStep(row, SCREEN_HEIGHT, layer.speed);
       }
       if (layerIndex === parallax.length - 1) {
         return parallaxStep(row, 0, layer.speed);
@@ -512,7 +512,7 @@ const compileParallax = (
     });
     // For num layers = 1 or 2 append parallax terminator
     if (parallax.length < 3) {
-      layers.push(parallaxStep(18, 0, 0));
+      layers.push(parallaxStep(SCREEN_HEIGHT, 0, 0));
     }
     return layers;
   }
