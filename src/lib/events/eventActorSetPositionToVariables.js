@@ -36,7 +36,6 @@ const compile = (input, helpers) => {
 
 module.exports = {
   id,
-  deprecated: true,
   groups,
   fields,
   compile,
