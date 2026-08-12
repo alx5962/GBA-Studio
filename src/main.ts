@@ -244,10 +244,6 @@ export const createSplash = async (forceTab?: SplashTab) => {
   splashWindow.webContents.on("did-finish-load", () => {
     setTimeout(() => {
       splashWindow?.show();
-      if (!hasCheckedForUpdate) {
-        hasCheckedForUpdate = true;
-        checkForUpdate();
-      }
     }, 40);
   });
 
@@ -2004,9 +2000,6 @@ menu.on("pasteInPlace", () => {
   sendToProjectWindow("menu:paste-in-place");
 });
 
-menu.on("checkUpdates", () => {
-  checkForUpdate(true);
-});
 
 menu.on("openMusic", () => {
   if (musicWindow) {
