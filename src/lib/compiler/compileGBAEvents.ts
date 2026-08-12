@@ -1032,9 +1032,10 @@ function compileEvent(
       return true;
     }
 
-    case "EVENT_ACTOR_SET_DIRECTION": {
+    case "EVENT_ACTOR_SET_DIRECTION":
+    case "EVENT_ACTOR_SET_DIRECTION_TO_VALUE": {
       const actor = resolveActorIndex(args.actorId, ctx);
-      out.push(VM_OP_ACTOR_SET_DIR, actor, directionValue(args.direction));
+      out.push(VM_OP_ACTOR_SET_DIR, actor, directionValue(args.direction ?? args.variable));
       return true;
     }
 

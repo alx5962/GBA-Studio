@@ -34,5 +34,4 @@ module.exports = {
   subGroups,
   fields,
   compile,
-  deprecated: true,
 };
